@@ -144,9 +144,9 @@ def dataset_from_graph(
             axis=0,
         )
 
+        # TODO: edge attributes
         central_node = np.array([values["x"], values["y"]])
         edge_attr = pos - central_node
-        # print(edge_attr)
 
         item = nx.convert_node_labels_to_integers(sub_graph)
         edges = list(item.edges)
