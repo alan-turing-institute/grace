@@ -1,0 +1,9 @@
+[tool.black]
+target-version = ['py38', 'py39', 'py310']
+line-length = 79
+
+[tool.isort]
+atomic = true
+profile = "black"
+line_length = 79
+skip_gitignore = true
