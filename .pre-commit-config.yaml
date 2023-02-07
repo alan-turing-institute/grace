@@ -20,6 +20,7 @@ repos:
       rev: 6.0.0
       hooks:
           - id: flake8
+            args: ['--ignore=E203,W503,E501,E731,C901', '--max-line-length=79']
             # this seems to need to be here in addition to setup.cfg
             exclude: __init__.py|examples
     - repo: https://github.com/psf/black
