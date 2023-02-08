@@ -1,0 +1,29 @@
+repos:
+    - repo: https://github.com/PyCQA/isort
+      rev: 5.12.0
+      hooks:
+          - id: isort
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.2.0
+      hooks:
+          - id: check-docstring-first
+          - id: check-executables-have-shebangs
+          - id: check-merge-conflict
+          - id: check-toml
+          - id: end-of-file-fixer
+          - id: mixed-line-ending
+            args: [--fix=lf]
+          - id: requirements-txt-fixer
+          - id: trailing-whitespace
+            args: [--markdown-linebreak-ext=md]
+    - repo: https://github.com/PyCQA/flake8
+      rev: 6.0.0
+      hooks:
+          - id: flake8
+            args: ['--ignore=E203,W503,E501,E731,C901', '--max-line-length=79']
+            # this seems to need to be here in addition to setup.cfg
+            exclude: __init__.py|examples
+    - repo: https://github.com/psf/black
+      rev: 22.3.0
+      hooks:
+          - id: black
