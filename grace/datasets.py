@@ -4,8 +4,6 @@ from typing import List, Set, Tuple
 
 import networkx as nx
 import numpy as np
-import torch
-import torch_geometric
 from scipy.interpolate import interp1d
 from scipy.spatial import Delaunay
 
@@ -14,8 +12,11 @@ from .base import DetectionNode
 RNG = np.random.default_rng()
 
 
-def _line_motif(src: DetectionNode, dst: DetectionNode) -> List[DetectionNode]:
-    n_points = int(np.sqrt((dst.x - src.x) ** 2 + (dst.y - src.y) ** 2) / 0.02)
+def _line_motif(
+    src: DetectionNode, dst: DetectionNode, *, density: float
+) -> List[DetectionNode]:
+    length = np.sqrt((dst.x - src.x) ** 2 + (dst.y - src.y) ** 2)
+    n_points = int(length / density)
 
     dx = np.linspace(src.x, dst.x, n_points)
     dy = np.linspace(src.y, dst.y, n_points)
@@ -31,10 +32,12 @@ def _line_motif(src: DetectionNode, dst: DetectionNode) -> List[DetectionNode]:
     ]
 
 
-def _random_node(features: np.ndarray, label: int) -> DetectionNode:
+def _random_node(
+    features: np.ndarray, label: int, *, scale: float = 1.0
+) -> DetectionNode:
     node = DetectionNode(
-        x=RNG.uniform(0, 1),
-        y=RNG.uniform(0, 1),
+        x=RNG.uniform(0, 1 * scale),
+        y=RNG.uniform(0, 1 * scale),
         features=features,
         label=label,
     )
@@ -58,7 +61,10 @@ def _edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
 
 
 def random_graph(
-    n_lines: int = 3, n_chaff: int = 100, n_features: int = 3
+    n_lines: int = 3,
+    n_chaff: int = 100,
+    n_features: int = 3,
+    scale: float = 1,
 ) -> nx.Graph:
     """Create a random graph with line objects.
 
@@ -78,16 +84,18 @@ def random_graph(
 
     """
     chaff = [
-        _random_node(RNG.uniform(0.0, 1.0, size=(n_features,)), label=0)
+        _random_node(
+            RNG.uniform(0.0, 1.0, size=(n_features,)), label=0, scale=scale
+        )
         for _ in range(n_chaff)
     ]
     lines = []
     ground_truth = []
 
     for n in range(n_lines):
-        src = _random_node(np.ones((n_features,)), label=1)
-        dst = _random_node(np.ones((n_features,)), label=1)
-        line = _line_motif(src, dst)
+        src = _random_node(np.ones((n_features,)), label=1, scale=scale)
+        dst = _random_node(np.ones((n_features,)), label=1, scale=scale)
+        line = _line_motif(src, dst, density=0.02 * scale)
         lines += line
         ground_truth.append(line)
 
@@ -106,61 +114,3 @@ def random_graph(
         graph.add_edge(*edge)
 
     return graph
-
-
-def dataset_from_graph(
-    graph: nx.Graph, n_hop: int = 1
-) -> List[torch_geometric.data.Data]:
-    """Create a pytorch geometric dataset from a give networkx graph.
-
-    Parameters
-    ----------
-    graph : graph
-        A networkx graph.
-    n_hop : int
-        The number of hops from the central node when creating the subgraphs.
-
-
-    Returns
-    -------
-    dataset : list
-        A list of pytorch geometric data objects representing the extracted
-        subgraphs.
-    """
-
-    dataset = []
-
-    for node, values in graph.nodes(data=True):
-
-        sub_graph = nx.ego_graph(graph, node, radius=n_hop)
-
-        x = np.stack(
-            [node["features"] for _, node in sub_graph.nodes(data=True)],
-            axis=0,
-        )
-
-        pos = np.stack(
-            [(node["x"], node["y"]) for _, node in sub_graph.nodes(data=True)],
-            axis=0,
-        )
-
-        # TODO: edge attributes
-        central_node = np.array([values["x"], values["y"]])
-        edge_attr = pos - central_node
-
-        item = nx.convert_node_labels_to_integers(sub_graph)
-        edges = list(item.edges)
-        edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
-
-        data = torch_geometric.data.Data(
-            x=torch.Tensor(x),
-            edge_index=edge_index,
-            edge_attr=torch.Tensor(edge_attr),
-            pos=torch.Tensor(pos),
-            # y=F.one_hot(torch.as_tensor(values["label"]), num_classes=2),
-            y=torch.as_tensor([values["label"]]),
-        )
-
-        dataset.append(data)
-
-    return dataset
