@@ -15,13 +15,14 @@ class DetectionNode:
     y : float
     features : array
     label : int
-
+    object_idx : int
     """
 
     x: float
     y: float
     features: np.ndarray
     label: int
+    object_idx: int = 0
 
     def asdict(self) -> DetectionNode:
         return dataclasses.asdict(self)

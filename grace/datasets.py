@@ -61,10 +61,12 @@ def _edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
 
 
 def random_graph(
+    *,
     n_lines: int = 3,
     n_chaff: int = 100,
     n_features: int = 3,
-    scale: float = 1,
+    scale: float = 1.0,
+    density: float = 0.02,
 ) -> nx.Graph:
     """Create a random graph with line objects.
 
@@ -76,12 +78,16 @@ def random_graph(
         The number of false positive detections.
     n_features : int
         The number of feature for each detection.
+    scale : float
+        A scaling factor. The default detections are generated in a 2D box in
+        the range of (0.0, 1.0), i.e. a scaling factor of 1.0
+    density : float
+        The density of detections when forming a line.
 
     Returns
     -------
     graph : graph
         A networkx graph.
-
     """
     chaff = [
         _random_node(
@@ -95,7 +101,11 @@ def random_graph(
     for n in range(n_lines):
         src = _random_node(np.ones((n_features,)), label=1, scale=scale)
         dst = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        line = _line_motif(src, dst, density=0.02 * scale)
+        line = _line_motif(src, dst, density=density * scale)
+
+        for node in line:
+            node.object_idx = n + 1
+
         lines += line
         ground_truth.append(line)
 
