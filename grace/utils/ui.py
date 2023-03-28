@@ -70,7 +70,6 @@ def cut_graph_using_mask(
 
     # iterate over the indices, and find simplices containing those detections
     for idx in indices:
-
         adjacent_edges = graph.edges(idx)
 
         for edge in adjacent_edges:
@@ -104,7 +103,6 @@ def _ray_trace_along_edge(ray: SpatialEdge, mask: np.ndarray) -> bool:
     err = dx + dy
 
     while True:
-
         if mask[x0, y0] == 0:
             return False
 

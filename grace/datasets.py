@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import List, Set, Tuple
+from typing import List
 
 import networkx as nx
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.spatial import Delaunay
 
-from .base import DetectionNode
+
+from .base import DetectionNode, _edges_from_delaunay
 
 RNG = np.random.default_rng()
 
@@ -42,22 +43,6 @@ def _random_node(
         label=label,
     )
     return node
-
-
-def _sorted_vertices(vertices: np.array) -> Set[Tuple[int, int]]:
-    ndim = len(vertices)
-    edges = []
-    for idx in range(ndim):
-        edge = tuple(sorted([vertices[idx], vertices[(idx + 1) % ndim]]))
-        edges.append(edge)
-    return set(edges)
-
-
-def _edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
-    edges = set()
-    for idx in range(tri.nsimplex):
-        edges.update(_sorted_vertices(tri.simplices[idx, ...]))
-    return edges
 
 
 def random_graph(
