@@ -29,7 +29,6 @@ def dataset_from_graph(
     dataset = []
 
     for node, values in graph.nodes(data=True):
-
         sub_graph = nx.ego_graph(graph, node, radius=n_hop)
 
         x = np.stack(
