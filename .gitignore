@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VScode and ruff
+.vscode
+.ruff_cache
