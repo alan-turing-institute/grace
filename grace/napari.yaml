@@ -1,0 +1,13 @@
+name: grace
+display_name: grace
+schema_version: 0.1.0
+
+contributions:
+  commands:
+  - id: grace.annotate
+    title: GRACE
+    python_name: grace.napari.main:create_grace_widget
+
+  widgets:
+    - command: grace.annotate
+      display_name: GRACE
