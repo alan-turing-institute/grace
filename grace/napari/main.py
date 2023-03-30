@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     # import numpy.typing as npt
     from magicgui.widgets import Container, Widget
 
+import enum
 import magicgui
 import napari
 import numpy as np
@@ -20,9 +21,11 @@ from pathlib import Path
 LOGO_WIDTH = 200
 LOGO_HEIGHT = 60
 
-ENCLOSED_EDGE_COLOR = "green"
-CUT_EDGE_COLOR = "magenta"
-DEFAULT_EDGE_COLOR = "blue"
+
+class EdgeColor(str, enum.Enum):
+    ENCLOSED = "green"
+    CUT = "magenta"
+    DEFAULT = "blue"
 
 
 def branding_widget() -> Widget:
@@ -105,11 +108,12 @@ def status_widget() -> Widget:
 def color_edge(edge: int, enclosed: set[int], cut: set[int]) -> str:
     """Color an edge based on the set it belongs too."""
     if edge in enclosed:
-        return ENCLOSED_EDGE_COLOR
+        color = EdgeColor.ENCLOSED
     elif edge in cut:
-        return CUT_EDGE_COLOR
+        color = EdgeColor.CUT
     else:
-        return DEFAULT_EDGE_COLOR
+        color = EdgeColor.DEFAULT
+    return color.value
 
 
 class GraceManager:
@@ -164,7 +168,7 @@ class GraceManager:
                 name=f"edges_{image_layer.name}",
                 shape_type="line",
                 edge_width=5,
-                edge_color=DEFAULT_EDGE_COLOR,
+                edge_color=EdgeColor.DEFAULT.value,
             )
 
         self.edge_layer.data = []
