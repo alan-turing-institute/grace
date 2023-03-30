@@ -2,15 +2,40 @@ from __future__ import annotations
 
 from typing import List
 
+import dataclasses
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
+
 from scipy.interpolate import interp1d
 from scipy.spatial import Delaunay
 
-
-from .base import DetectionNode, _edges_from_delaunay
+from .base import edges_from_delaunay
 
 RNG = np.random.default_rng()
+
+
+@dataclasses.dataclass
+class DetectionNode:
+    """A detection node object from a detection module.
+
+    Parameters
+    ----------
+    x : float
+    y : float
+    features : array
+    label : int
+    object_idx : int
+    """
+
+    x: float
+    y: float
+    features: npt.NDArray
+    label: int
+    object_idx: int = 0
+
+    def asdict(self) -> DetectionNode:
+        return dataclasses.asdict(self)
 
 
 def _line_motif(
@@ -34,7 +59,7 @@ def _line_motif(
 
 
 def _random_node(
-    features: np.ndarray, label: int, *, scale: float = 1.0
+    features: npt.NDArray, label: int, *, scale: float = 1.0
 ) -> DetectionNode:
     node = DetectionNode(
         x=RNG.uniform(0, 1 * scale),
@@ -104,7 +129,7 @@ def random_graph(
     for idx, node in enumerate(all_nodes):
         graph.add_node(idx, **node.asdict())
 
-    edges = _edges_from_delaunay(tri)
+    edges = edges_from_delaunay(tri)
     for edge in edges:
         graph.add_edge(*edge)
 
