@@ -136,7 +136,7 @@ def random_graph(
     return graph
 
 
-def alans_test_function():
-    x = 1
-    y = 1
+def alans_test_function(a, b):
+    x = a
+    y = b
     return x + y
