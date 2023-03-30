@@ -80,10 +80,13 @@ def cut_graph_using_mask(
             )
             r = _ray_trace_along_edge(ray, mask)
 
+            # get the index of the edge, and store that
+            edge_idx = list(graph.edges()).index(tuple(sorted(edge)))
+
             if r:
-                enclosed_edges.add(edge)
+                enclosed_edges.add(edge_idx)
             else:
-                cut_edges.add(edge)
+                cut_edges.add(edge_idx)
 
     return indices, enclosed_edges, cut_edges
 

@@ -9,13 +9,20 @@ if TYPE_CHECKING:
 import magicgui
 import napari
 import numpy as np
+import pandas as pd
 
-from grace.base import edges_from_delaunay
+from grace.base import graph_from_dataframe
+from grace.napari.utils import graph_to_napari_layers, cut_graph_using_mask
 from pathlib import Path
-from scipy.spatial import Delaunay
+
+# from scipy.spatial import Delaunay
 
 LOGO_WIDTH = 200
 LOGO_HEIGHT = 60
+
+ENCLOSED_EDGE_COLOR = "green"
+CUT_EDGE_COLOR = "magenta"
+DEFAULT_EDGE_COLOR = "blue"
 
 
 def branding_widget() -> Widget:
@@ -76,7 +83,12 @@ def process_widget() -> Widget:
         options={"tooltip": inference_tooltip},
     )
 
-    return [build_widget, cut_widget, train_widget, inference_widget]
+    return [
+        build_widget,
+        cut_widget,
+        train_widget,
+        inference_widget,
+    ]
 
 
 def status_widget() -> Widget:
@@ -88,6 +100,16 @@ def status_widget() -> Widget:
     return [
         bar_widget,
     ]
+
+
+def color_edge(edge: int, enclosed: set[int], cut: set[int]) -> str:
+    """Color an edge based on the set it belongs too."""
+    if edge in enclosed:
+        return ENCLOSED_EDGE_COLOR
+    elif edge in cut:
+        return CUT_EDGE_COLOR
+    else:
+        return DEFAULT_EDGE_COLOR
 
 
 class GraceManager:
@@ -107,6 +129,7 @@ class GraceManager:
         return self.viewer.layers[f"nodes_{self.selected_layer.name}"]
 
     def create_layers(self):
+        """Create new annotation laters based on the selected image layer."""
         image_layer = self.selected_layer
 
         self.annotation_layer = self.viewer.add_labels(
@@ -114,11 +137,24 @@ class GraceManager:
             name=f"annotation_{image_layer.name}",
         )
         self.annotation_layer.brush_size = 100
+        self.annotation_layer.mode = "PAINT"
 
-    def build_graph(self, *, progress=None) -> None:
+    def build_graph(self, *, progress: Widget | None = None) -> None:
+        """Build a graph using the node layer."""
         points = self.node_layer().data
-        tri = Delaunay(points)
-        edges = [points[(i, j), :] for i, j in edges_from_delaunay(tri)]
+        features = self.node_layer().features
+
+        # TODO(arl): this is pretty ugly right now
+        df = pd.DataFrame(
+            {
+                "y": points[:, 0],
+                "x": points[:, 1],
+                "features": features["features"],
+            }
+        )
+
+        self.graph = graph_from_dataframe(df)
+        _, edges = graph_to_napari_layers(self.graph)
 
         image_layer = self.selected_layer
 
@@ -128,19 +164,27 @@ class GraceManager:
                 name=f"edges_{image_layer.name}",
                 shape_type="line",
                 edge_width=5,
-                edge_color="blue",
+                edge_color=DEFAULT_EDGE_COLOR,
             )
 
         self.edge_layer.data = []
         self.edge_layer.add_lines(edges)
 
-    def cut_graph(self, *, progress=None) -> None:
+    def cut_graph(self, *, progress: Widget | None = None) -> None:
+        """Cut the graph according to the annotation layer."""
+        idx, enclosed, cut = cut_graph_using_mask(
+            self.graph, self.annotation_layer.data
+        )
+
+        num_edges = self.graph.number_of_edges()
+        self.edge_layer.edge_color = [
+            color_edge(e, enclosed, cut) for e in range(num_edges)
+        ]
+
+    def train(self, *, progress: Widget | None = None) -> None:
         pass
 
-    def train(self, *, progress=None) -> None:
-        pass
-
-    def predict(self, *, progress=None) -> None:
+    def predict(self, *, progress: Widget | None = None) -> None:
         pass
 
     def __del__(self):

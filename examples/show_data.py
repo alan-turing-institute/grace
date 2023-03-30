@@ -18,13 +18,16 @@ with mrcfile.open(IMAGE_PATH, "r") as mrc:
     image_data = mrc.data.astype(int)
 nodes_data = pd.read_hdf(NODES_PATH)
 points = np.asarray(nodes_data.loc[:, ["y", "x"]])
-
+features = nodes_data.loc[:, "features"]
+assert len(features) == points.shape[0]
 
 data_name = f"{IMAGE_PATH.stem[:10]}..."
 
 viewer = napari.Viewer()
 img_layer = viewer.add_image(image_data, name=data_name)
-pts_layer = viewer.add_points(points, size=32, name=f"nodes_{data_name}")
+pts_layer = viewer.add_points(
+    points, features=features, size=32, name=f"nodes_{data_name}"
+)
 
 
 _, widget = viewer.window.add_plugin_dock_widget(
