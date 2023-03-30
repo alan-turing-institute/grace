@@ -134,3 +134,9 @@ def random_graph(
         graph.add_edge(*edge)
 
     return graph
+
+
+def alans_test_function():
+    x = 1
+    y = 1
+    return x + y
