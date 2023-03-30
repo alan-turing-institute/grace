@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
-
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -10,29 +8,6 @@ from typing import Set, Tuple
 from scipy.spatial import Delaunay
 
 import numpy.typing as npt
-
-
-@dataclasses.dataclass
-class DetectionNode:
-    """A detection node object from a detection module.
-
-    Parameters
-    ----------
-    x : float
-    y : float
-    features : array
-    label : int
-    object_idx : int
-    """
-
-    x: float
-    y: float
-    features: npt.NDArray
-    label: int
-    object_idx: int = 0
-
-    def asdict(self) -> DetectionNode:
-        return dataclasses.asdict(self)
 
 
 def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
@@ -44,7 +19,19 @@ def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
     return set(edges)
 
 
-def _edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
+def edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
+    """Return the set of unique edges from a Delaunay graph.
+
+    Parameters
+    ----------
+    tri : Delaunay
+        An instance of a scipy Delaunay triangulation.
+
+    Returns
+    -------
+    edges : set
+        A set of unique edges {(source_id, target_id), ... }
+    """
     edges = set()
     for idx in range(tri.nsimplex):
         edges.update(_sorted_vertices(tri.simplices[idx, ...]))
@@ -73,7 +60,7 @@ def graph_from_dataframe(
     points = np.asarray(df.loc[:, ["y", "x"]])
     features = np.asarray(np.squeeze(np.asarray(df.loc[:, "features"])))
     tri = Delaunay(points)
-    edges = _edges_from_delaunay(tri)
+    edges = edges_from_delaunay(tri)
 
     assert features.shape[0] == points.shape[0]
 
