@@ -10,15 +10,31 @@ import magicgui
 import napari
 import numpy as np
 
-from grace.base import _edges_from_delaunay
+from grace.base import edges_from_delaunay
+from pathlib import Path
 from scipy.spatial import Delaunay
+
+LOGO_WIDTH = 200
+LOGO_HEIGHT = 60
+
+
+def branding_widget() -> Widget:
+    logo_widget = magicgui.widgets.create_widget(
+        value=Path(__file__).parent / "logo.png",
+        widget_type="Image",
+    )
+    logo_widget.min_width = LOGO_WIDTH
+    logo_widget.min_height = LOGO_HEIGHT
+    return [
+        logo_widget,
+    ]
 
 
 def selection_widget() -> Widget:
     image_tooltip = "Select an 'Image' layer to use for annotation."
     image_widget = magicgui.widgets.create_widget(
         annotation=napari.layers.Image,
-        name="image",
+        name="selected_image",
         label="image: ",
         options={"tooltip": image_tooltip},
     )
@@ -28,18 +44,18 @@ def selection_widget() -> Widget:
 
 
 def process_widget() -> Widget:
-    triangulate_tooltip = "Build the graph by triangulation."
-    triangulate_widget = magicgui.widgets.create_widget(
-        name="triangulate_button",
-        label="triangulate",
+    build_tooltip = "Build the graph by triangulation."
+    build_widget = magicgui.widgets.create_widget(
+        name="build_button",
+        label="build graph",
         widget_type="PushButton",
-        options={"tooltip": triangulate_tooltip},
+        options={"tooltip": build_tooltip},
     )
 
     cut_tooltip = "Cut the graph using the mask."
     cut_widget = magicgui.widgets.create_widget(
         name="cut_button",
-        label="cut",
+        label="cut graph",
         widget_type="PushButton",
         options={"tooltip": cut_tooltip},
     )
@@ -60,7 +76,7 @@ def process_widget() -> Widget:
         options={"tooltip": inference_tooltip},
     )
 
-    return [triangulate_widget, cut_widget, train_widget, inference_widget]
+    return [build_widget, cut_widget, train_widget, inference_widget]
 
 
 def status_widget() -> Widget:
@@ -87,6 +103,9 @@ class GraceManager:
     def selected_layer(self, selected_layer: str):
         self.selected_layer = self.viewer.layers[str(selected_layer)]
 
+    def node_layer(self) -> napari.Layer:
+        return self.viewer.layers[f"nodes_{self.selected_layer.name}"]
+
     def create_layers(self):
         image_layer = self.selected_layer
 
@@ -96,10 +115,10 @@ class GraceManager:
         )
         self.annotation_layer.brush_size = 100
 
-    def triangulate(self) -> None:
-        points = self.viewer.layers["nodes"].data
+    def build_graph(self, *, progress=None) -> None:
+        points = self.node_layer().data
         tri = Delaunay(points)
-        edges = [points[(i, j), :] for i, j in _edges_from_delaunay(tri)]
+        edges = [points[(i, j), :] for i, j in edges_from_delaunay(tri)]
 
         image_layer = self.selected_layer
 
@@ -116,10 +135,12 @@ class GraceManager:
         self.edge_layer.add_lines(edges)
 
     def cut_graph(self, *, progress=None) -> None:
-        for i in range(1000):
-            print(progress.value)
-            progress.value = i
-            # yield
+        pass
+
+    def train(self, *, progress=None) -> None:
+        pass
+
+    def predict(self, *, progress=None) -> None:
         pass
 
     def __del__(self):
@@ -131,6 +152,7 @@ def create_grace_widget() -> Container:
 
     # First create our UI along with some default configs for the widgets
     widgets = [
+        *branding_widget(),
         *selection_widget(),
         *process_widget(),
         *status_widget(),
@@ -142,15 +164,17 @@ def create_grace_widget() -> Container:
     grace_widget.viewer = napari.current_viewer()
 
     grace_manager = GraceManager(grace_widget.viewer)
-    grace_manager.selected_layer = grace_widget.image.value
+    grace_manager.selected_layer = grace_widget.selected_image.value
     grace_manager.create_layers()
 
-    # grace_widget.image.changed.connect(
-    #     lambda: grace_widget.create_layers(str(grace_widget.image.value)),
-    # )
+    # if we choose another input image, create new annotation layers
+    grace_widget.selected_image.changed.connect(
+        lambda: grace_widget.create_layers(),
+    )
 
-    grace_widget.triangulate_button.changed.connect(
-        lambda: grace_manager.triangulate(),
+    # connect buttons to methods
+    grace_widget.build_button.changed.connect(
+        lambda: grace_manager.build_graph(progress=grace_widget.progress),
     )
 
     grace_widget.cut_button.changed.connect(
