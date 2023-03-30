@@ -21,9 +21,8 @@ points = np.asarray(nodes_data.loc[:, ["y", "x"]])
 
 
 viewer = napari.Viewer()
-viewer.add_image(image_data, name=f"{IMAGE_PATH.stem[:10]}...")
-viewer.add_points(points, size=32, name="Detections")
-viewer.add_labels(np.zeros_like(image_data), name="Annotation")
+img_layer = viewer.add_image(image_data, name=f"{IMAGE_PATH.stem[:10]}...")
+pts_layer = viewer.add_points(points, size=32, name="nodes")
 
 
 _, widget = viewer.window.add_plugin_dock_widget(
