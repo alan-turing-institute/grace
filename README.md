@@ -5,14 +5,17 @@
 [![Actions status](https://github.com/alan-turing-institute/grace/workflows/CI/badge.svg)](https://github.com/alan-turing-institute/grace/actions)
 
 
-# GRACE - __G__ raph __R__ epresentation __A__ nalysis for __C__ onnected __E__ mbeddings 🌐 📊 🤓
+# GRACE - Graph Representation Analysis for Connected Embeddings 🌐 📊 🤓
 
 <img width="40%" align="right" alt="logo" src="./assets/logo.png"/>
 
 
 This `grace` repository contains a Python library 🐍 for identification of patterns in imaging data. The package combines computer vision, deep neural networks and object detection approaches 🖥️ for analysing graph-like structures to find connected objects & regions of interest from their latent representations 🔮 .
 
-Read more about the [science](#science) behind this project 👩‍🔬👨‍🔬, the [workflow](#workflow) of the individual steps 👩‍💻👨‍💻 & don't forget to give us a '⭐' -> 😉
+Read more about:
++ the [science](#science) behind this project 👩‍🔬👨‍🔬,
++ the [workflow](#workflow) of the individual steps 👩‍💻👨‍💻
++ don't forget to give us a '⭐' -> 😉
 
 ---
 
@@ -35,7 +38,7 @@ The `grace` workflow consists of the following steps:
 3. Organisation of the bounding boxes into a 2D graphical structure
 4. Latent feature extraction from image patches (_e.g._ pre-trained neural network, such as _ResNet-50_)
 5. Classification of graph 'nodeness' and 'edgeness' confidence
-6. Annotation of the desired pattern in the image data (see the [napari plugin](#development---🚧-work-in-progress-🚧) below)
+6. Annotation of the desired pattern in the image data (see the [napari plugin](#development) below)
 6. Optimisation to connect the object nodes via edges
 7. Ta-da! 🥳
 
@@ -53,13 +56,15 @@ pip install -e .
 ```
 
 
-## Development -> 🚧 Work in progress 🚧
+## Development
+
+🚧 **Work in progress** 🚧
 
 <img width="60%" align="left" alt="logo" src="./assets/napari.png"/>
 
 This repository contains a few example notebooks, which will lead the user through the entire pipeline.
 
-The image shows a *napari*-based GUI widget for annotation of the desired filamentous proteins.
+The image on the left shows a *napari*-based GUI widget for annotation of the desired filamentous proteins.
 
 More details about how this type of graph representation analysis could be applied to image data processing will become available soon.
 
@@ -84,7 +89,9 @@ More details about how this type of graph representation analysis could be appli
 
 ---
 
-## Citation -> 🚧 Work in progress 🚧
+## Citation
+
+🚧 **Work in progress** 🚧
 
 [![doi:placeholder](https://img.shields.io/badge/doi:placeholder-blue)](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets)
 
