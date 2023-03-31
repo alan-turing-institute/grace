@@ -15,9 +15,9 @@ Read more about the [science](#science) behind this project 👩‍🔬👨‍�
 
 ## Science
 
-The acronym `grace` stands for __G__ raph __R__ epresentation __A__ nalysis for __C__ onnected __E__ mbeddings. This tool was developed as part of a scientific project at The Alan Turing Institute researchers in the [Data Science for Science programme](https://www.turing.ac.uk/research/research-programmes/data-science-science-and-humanities). 
+The acronym `grace` stands for __G__ raph __R__ epresentation __A__ nalysis for __C__ onnected __E__ mbeddings. This tool was developed as part of a scientific project at The Alan Turing Institute researchers in the [Data Science for Science programme](https://www.turing.ac.uk/research/research-programmes/data-science-science-and-humanities).
 
-As the initial use case, we (see the [list of contributors](#contributors) below) developed `grace` for localising filaments in cryo-electron microscopy (cryoEM) imaging datasets as an image processing tool that automatically identifies filamentous proteins and locates the regions of interest, an accessory or binding protein. 
+As the initial use case, we (see the [list of contributors](#contributors) below) developed `grace` for localising filaments in cryo-electron microscopy (cryoEM) imaging datasets as an image processing tool that automatically identifies filamentous proteins and locates the regions of interest, an accessory or binding protein.
 
 Find out more details about the project aims & objectives [here](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets).
 
@@ -54,7 +54,7 @@ pip install -e .
 
 <img width="60%" align="left" alt="logo" src="./assets/napari.png"/>
 
-This repository contains a few example notebooks, which will lead the user through the entire pipeline. 
+This repository contains a few example notebooks, which will lead the user through the entire pipeline.
 
 The image shows a *napari*-based GUI widget for annotation of the desired filamentous proteins.
 
