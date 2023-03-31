@@ -12,6 +12,10 @@ import numpy.typing as npt
 
 
 class GraphAttrs(str, enum.Enum):
+    """These are key names for graph attributes used by grace."""
+
+    NODE_X = "x"
+    NODE_Y = "y"
     NODE_GROUND_TRUTH = "ground_truth"
     NODE_PREDICTION = "prediction"
     NODE_PROB_DETECTION = "prob_detection"
@@ -66,8 +70,10 @@ def graph_from_dataframe(
 
     # TODO(arl): do we want some kind of schema to enforce what's required?
     # TODO(arl): what if we don't have any image features at this point?
-    points = np.asarray(df.loc[:, ["y", "x"]])
-    features = np.asarray(np.squeeze(np.asarray(df.loc[:, "features"])))
+    points = np.asarray(df.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
+    features = np.asarray(
+        np.squeeze(np.asarray(df.loc[:, GraphAttrs.NODE_FEATURES]))
+    )
     tri = Delaunay(points)
     edges = edges_from_delaunay(tri)
     num_nodes = points.shape[0]
@@ -78,8 +84,8 @@ def graph_from_dataframe(
         (
             idx,
             {
-                "x": points[idx, 0],
-                "y": points[idx, 1],
+                GraphAttrs.NODE_X: points[idx, 0],
+                GraphAttrs.NODE_Y: points[idx, 1],
                 GraphAttrs.NODE_PROB_DETECTION: 0.0,
                 GraphAttrs.NODE_FEATURES: features[idx, ...],
             },

@@ -1,9 +1,11 @@
 from grace import graph_from_dataframe
-
+from grace.base import GraphAttrs
 
 SIMPLE_GRAPH_NUM_EDGES = 3
-REQUIRED_NODE_ATTRIBUTES = set(["x", "y", "prob_detection"])
-REQUIRED_EDGE_ATTRIBUTES = set(["prob_link"])
+REQUIRED_NODE_ATTRIBUTES = set(
+    [GraphAttrs.NODE_X, GraphAttrs.NODE_Y, GraphAttrs.NODE_PROB_DETECTION]
+)
+REQUIRED_EDGE_ATTRIBUTES = set([GraphAttrs.EDGE_PROB_LINK])
 
 
 def test_graph_from_dataframe(simple_graph_dataframe):
@@ -11,7 +13,9 @@ def test_graph_from_dataframe(simple_graph_dataframe):
     G = graph_from_dataframe(simple_graph_dataframe)
 
     # first check that we have all the correct number of nodes and edges
-    assert G.number_of_nodes() == len(simple_graph_dataframe.loc[:, "x"])
+    assert G.number_of_nodes() == len(
+        simple_graph_dataframe.loc[:, GraphAttrs.NODE_X]
+    )
     assert G.number_of_edges() == SIMPLE_GRAPH_NUM_EDGES
 
 
