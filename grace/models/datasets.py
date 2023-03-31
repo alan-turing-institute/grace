@@ -36,6 +36,8 @@ def dataset_from_graph(
             axis=0,
         )
 
+        x = np.squeeze(x)
+
         pos = np.stack(
             [(node["x"], node["y"]) for _, node in sub_graph.nodes(data=True)],
             axis=0,
