@@ -2,7 +2,7 @@
 
 This software is licensed under the BSD 3-Clause License.
 
-Copyright (c) 2023, <copyright holder>
+Copyright (c) 2023, The Alan Turing Institute
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
