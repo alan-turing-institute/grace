@@ -10,7 +10,7 @@
 <img width="40%" align="right" alt="logo" src="./assets/logo.png"/>
 
 
-This `grace` repository contains a Python library 🐍 for identification of patterns in imaging data. The package combines computer vision, deep neural networks and object detection approaches 🖥️ for analysing graph-like structures to find connected objects & regions of interest from their latent representations 🔮 .
+This `grace` repository contains a Python library 🐍 for identification of patterns in imaging data. The package provides a method 🖥️ to find connected objects & regions of interest in images by constructing a graph-like representations 🌐 .
 
 Read more about:
 + the [science](#science) behind this project 👩‍🔬👨‍🔬,
@@ -25,7 +25,7 @@ The acronym `grace` stands for __G__ raph __R__ epresentation __A__ nalysis for 
 
 As the initial use case, we (see the [list of contributors](#contributors) below) developed `grace` for localising filaments in cryo-electron microscopy (cryoEM) imaging datasets as an image processing tool that automatically identifies filamentous proteins and locates the regions of interest, an accessory or binding protein.
 
-Find out more details about the project aims & objectives [here](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets).
+Find out more details about the project aims & objectives [here](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets) & [here](https://www.turing.ac.uk/research/research-projects/molecular-structure-images-under-physical-constraints).
 
 ---
 
@@ -34,13 +34,13 @@ Find out more details about the project aims & objectives [here](https://www.tur
 The `grace` workflow consists of the following steps:
 
 1. Image data acquisition (_e.g._ cryo-electron microscopy)
-2. Object detection via bounding boxes (_e.g._ crYOLO software)
+2. Object detection via bounding boxes (_e.g._ crYOLO, RELION, or FasterRCNN)
 3. Organisation of the bounding boxes into a 2D graphical structure
 4. Latent feature extraction from image patches (_e.g._ pre-trained neural network, such as _ResNet-50_)
 5. Classification of graph 'nodeness' and 'edgeness' confidence
-6. Annotation of the desired pattern in the image data (see the [napari plugin](#development) below)
-6. Optimisation to connect the object nodes via edges
-7. Ta-da! 🥳
+6. *'Human-in-the-loop'* annotation of the desired pattern in the image data (see the [napari plugin](#development) below)
+7. Combinatorial optimisation to connect the object nodes via edges
+8. Ta-da! 🥳
 
 
 ---
@@ -93,7 +93,9 @@ More details about how this type of graph representation analysis could be appli
 
 🚧 **Work in progress** 🚧
 
-[![doi:placeholder](https://img.shields.io/badge/doi:placeholder-blue)](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets)
+[![Project:ML_for_CryoEM](https://img.shields.io/badge/Project-Machine_Learning_for_CryoEM-blue)](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets)
+
+[![Project:Mol_Structures](https://img.shields.io/badge/Project-Molecular_Structure_Imaging-blue)](https://www.turing.ac.uk/research/research-projects/molecular-structure-images-under-physical-constraints)
 
 We are writing up our methodology and key results, so please stay tuned for future updates!
 
