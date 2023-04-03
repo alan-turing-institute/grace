@@ -109,3 +109,8 @@ def random_graph(
         graph.add_edge(*edge)
 
     return graph
+
+
+def read_coordinates(graph: nx.Graph) -> dict[int, tuple[float, float]]:
+    pos = {idx: (node["x"], node["y"]) for idx, node in graph.nodes(data=True)}
+    return pos
