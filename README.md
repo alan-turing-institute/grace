@@ -1,4 +1,3 @@
-
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v1.json)](https://github.com/charliermarsh/ruff)
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
@@ -21,7 +20,7 @@ Read more about:
 
 ## Science
 
-The acronym `grace` stands for __G__ raph __R__ epresentation __A__ nalysis for __C__ onnected __E__ mbeddings. This tool was developed as part of a scientific project at The Alan Turing Institute researchers in the [Data Science for Science programme](https://www.turing.ac.uk/research/research-programmes/data-science-science-and-humanities).
+The acronym `grace` stands for __G__ raph __R__ epresentation __A__ nalysis for __C__ onnected __E__ mbeddings. This tool was developed by researchers as a scientific project at The Alan Turing Institute in the [Data Science for Science programme](https://www.turing.ac.uk/research/research-programmes/data-science-science-and-humanities).
 
 As the initial use case, we (see the [list of contributors](#contributors) below) developed `grace` for localising filaments in cryo-electron microscopy (cryoEM) imaging datasets as an image processing tool that automatically identifies filamentous proteins and locates the regions of interest, an accessory or binding protein.
 
@@ -36,7 +35,7 @@ The `grace` workflow consists of the following steps:
 1. Image data acquisition (_e.g._ cryo-electron microscopy)
 2. Object detection via bounding boxes (_e.g._ crYOLO, RELION, or FasterRCNN)
 3. Organisation of the bounding boxes into a 2D graphical structure
-4. Latent feature extraction from image patches (_e.g._ pre-trained neural network, such as _ResNet-50_)
+4. Latent feature extraction from image patches (_e.g._ pre-trained neural network, such as _ResNet-152_)
 5. Classification of graph 'nodeness' and 'edgeness' confidence
 6. *'Human-in-the-loop'* annotation of the desired pattern in the image data (see the [napari plugin](#development) below)
 7. Combinatorial optimisation to connect the object nodes via edges
@@ -74,12 +73,12 @@ More details about how this type of graph representation analysis could be appli
 
 ## Contributors
 
-**Dataset generation:**
+**Dataset generation (The University of Bristol):**
 
-+ 👨‍🔬 Marston Bradshaw
-+ 👩‍🔬 Danielle Paul
++ 👨‍🔬 [Marston Bradshaw](https://research-information.bris.ac.uk/en/persons/marston-bradshaw "Marston Bradshaw")
++ 👩‍🔬 [Danielle Paul](https://www.turing.ac.uk/people/researchers/danielle-paul "Danielle Paul")
 
-**Software development:**
+**Software development (The Alan Turing Institute):**
 
 + 👩‍💻 [Beatriz Costa Gomes](https://github.com/mooniean "mooniean")
 + 👩‍💻 [Kristina Ulicna](https://github.com/KristinaUlicna "KristinaUlicna")
