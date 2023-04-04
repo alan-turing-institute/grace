@@ -4,7 +4,9 @@ import mrcfile
 import pandas as pd
 import numpy as np
 
+from grace.base import GraphAttrs
 from pathlib import Path
+
 
 DATA_PATH = Path("/Users/arl/Documents/Turing/Data/Bea/")
 IMAGE_PATH = (
@@ -17,7 +19,7 @@ NODES_PATH = DATA_PATH / "data.h5"
 with mrcfile.open(IMAGE_PATH, "r") as mrc:
     image_data = mrc.data.astype(int)
 nodes_data = pd.read_hdf(NODES_PATH)
-points = np.asarray(nodes_data.loc[:, ["y", "x"]])
+points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
 features = nodes_data.loc[:, "features"]
 assert len(features) == points.shape[0]
 
