@@ -6,12 +6,12 @@
 
 # GRACE - Graph Representation Analysis for Connected Embeddings 🌐 📊 🤓
 
-<img width="40%" align="right" alt="logo" src="./assets/logo.png"/>
+<img width="40%" align="right" alt="project logo" src="./assets/logo.png"/>
 
 
-This `grace` repository contains a Python library 🐍 for identification of patterns in imaging data. The package provides a method 🖥️ to find connected objects & regions of interest in images by constructing a graph-like representations 🌐 .
+This `grace` repository contains a Python library 🐍 for identification of patterns in imaging data. The package provides a method 🖥️ to find connected objects & regions of interest in images by constructing graph-like representations 🌐 .
 
-Read more about:
+*Read more about:*
 + the [science](#science) behind this project 👩‍🔬👨‍🔬,
 + the [workflow](#workflow) of the individual steps 👩‍💻👨‍💻
 + don't forget to give us a '⭐' -> 😉
@@ -20,11 +20,11 @@ Read more about:
 
 ## Science
 
-The acronym `grace` stands for __G__ raph __R__ epresentation __A__ nalysis for __C__ onnected __E__ mbeddings. This tool was developed by researchers as a scientific project at The Alan Turing Institute in the [Data Science for Science programme](https://www.turing.ac.uk/research/research-programmes/data-science-science-and-humanities).
+The acronym `grace` stands for __G__ raph __R__ epresentation __A__ nalysis for __C__ onnected __E__ mbeddings 📈📉. This tool was developed by researchers as a scientific project at The Alan Turing Institute in the [Data Science for Science programme](https://www.turing.ac.uk/research/research-programmes/data-science-science-and-humanities).
 
 As the initial use case, we (see the [list of contributors](#contributors) below) developed `grace` for localising filaments in cryo-electron microscopy (cryoEM) imaging datasets as an image processing tool that automatically identifies filamentous proteins and locates the regions of interest, an accessory or binding protein.
 
-Find out more details about the project aims & objectives [here](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets) & [here](https://www.turing.ac.uk/research/research-projects/molecular-structure-images-under-physical-constraints).
+Find out more details about the project aims & objectives [here](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets) & [here](https://www.turing.ac.uk/research/research-projects/molecular-structure-images-under-physical-constraints) or visit the [citation](#citation) panel below to check out the overarching research projects.
 
 ---
 
@@ -39,8 +39,8 @@ The `grace` workflow consists of the following steps:
 5. Classification of graph 'nodeness' and 'edgeness' confidence
 6. *'Human-in-the-loop'* annotation of the desired pattern in the image data (see the [napari plugin](#development) below)
 7. Combinatorial optimisation to connect the object nodes via edges
-8. Ta-da! 🥳
-
+8. Evaluate the performance of the filament detection
+9. Ta-da! 🥳
 
 ---
 
@@ -54,20 +54,17 @@ cd ./grace
 pip install -e .
 ```
 
-
 ## Development
 
 🚧 **Work in progress** 🚧
 
-<img width="60%" align="left" alt="logo" src="./assets/napari.png"/>
+<img width="60%" align="left" alt="napari widget" src="./assets/napari.png"/>
 
 This repository contains a few example notebooks, which will lead the user through the entire pipeline.
 
 The image on the left shows a *napari*-based GUI widget for annotation of the desired filamentous proteins.
 
 More details about how this type of graph representation analysis could be applied to image data processing will become available soon.
-
-
 
 ---
 
@@ -98,7 +95,7 @@ More details about how this type of graph representation analysis could be appli
 
 We are writing up our methodology and key results, so please stay tuned for future updates!
 
-In the meantime, please do not hesitate to let us know your suggestions for potential improvements by [raising an issue via GitHub](https://github.com/alan-turing-institute/grace/issues "Grace GitHub | Issues").
+In the meantime, please do not hesitate to let us know your suggestions for potential improvements by [raising an issue on GitHub](https://github.com/alan-turing-institute/grace/issues "Grace GitHub | Issues").
 
 ---
 
