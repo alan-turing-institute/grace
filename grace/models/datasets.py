@@ -5,9 +5,11 @@ import numpy as np
 import torch
 import torch_geometric
 
+from grace.base import GraphAttrs
+
 
 def dataset_from_graph(
-    graph: nx.Graph, n_hop: int = 1
+    graph: nx.Graph, *, n_hop: int = 1
 ) -> List[torch_geometric.data.Data]:
     """Create a pytorch geometric dataset from a give networkx graph.
 
@@ -17,7 +19,6 @@ def dataset_from_graph(
         A networkx graph.
     n_hop : int
         The number of hops from the central node when creating the subgraphs.
-
 
     Returns
     -------
@@ -32,17 +33,25 @@ def dataset_from_graph(
         sub_graph = nx.ego_graph(graph, node, radius=n_hop)
 
         x = np.stack(
-            [node["features"] for _, node in sub_graph.nodes(data=True)],
+            [
+                node[GraphAttrs.NODE_FEATURES]
+                for _, node in sub_graph.nodes(data=True)
+            ],
             axis=0,
         )
 
         pos = np.stack(
-            [(node["x"], node["y"]) for _, node in sub_graph.nodes(data=True)],
+            [
+                (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
+                for _, node in sub_graph.nodes(data=True)
+            ],
             axis=0,
         )
 
         # TODO: edge attributes
-        central_node = np.array([values["x"], values["y"]])
+        central_node = np.array(
+            [values[GraphAttrs.NODE_X], values[GraphAttrs.NODE_Y]]
+        )
         edge_attr = pos - central_node
 
         item = nx.convert_node_labels_to_integers(sub_graph)
@@ -54,7 +63,7 @@ def dataset_from_graph(
             edge_index=edge_index,
             edge_attr=torch.Tensor(edge_attr),
             pos=torch.Tensor(pos),
-            y=torch.as_tensor([values["label"]]),
+            y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
         )
 
         dataset.append(data)

@@ -6,6 +6,8 @@ import networkx as nx
 from cvxopt import matrix, spmatrix
 from cvxopt.glpk import ilp
 
+from grace.base import GraphAttrs
+
 # options for the GLPK optimiser
 OPTIMIZER_OPTIONS = {
     "tm_lim": 10_000,
@@ -139,14 +141,16 @@ def optimise_graph(
     # build a set of false positive hypotheses
     for i, n_dict in graph.nodes.data():
         hypotheses.append(
-            Hypothesis(i=i, j=None, rho=n_dict["prob_detection"])
+            Hypothesis(i=i, j=None, rho=n_dict[GraphAttrs.NODE_PROB_DETECTION])
         )
         hypotheses.append(
-            Hypothesis(i=None, j=i, rho=n_dict["prob_detection"])
+            Hypothesis(i=None, j=i, rho=n_dict[GraphAttrs.NODE_PROB_DETECTION])
         )
     # build a set of link hypotheses
     for i, j, e_dict in graph.edges.data():
-        hypotheses.append(Hypothesis(i=i, j=j, rho=e_dict["prob_link"]))
+        hypotheses.append(
+            Hypothesis(i=i, j=j, rho=e_dict[GraphAttrs.EDGE_PROB_LINK])
+        )
 
     n_hypotheses = len(hypotheses)
 

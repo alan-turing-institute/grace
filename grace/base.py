@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -8,6 +9,18 @@ from typing import Set, Tuple
 from scipy.spatial import Delaunay
 
 import numpy.typing as npt
+
+
+class GraphAttrs(str, enum.Enum):
+    """These are key names for graph attributes used by grace."""
+
+    NODE_X = "x"
+    NODE_Y = "y"
+    NODE_GROUND_TRUTH = "ground_truth"
+    NODE_PREDICTION = "prediction"
+    NODE_PROB_DETECTION = "prob_detection"
+    NODE_FEATURES = "features"
+    EDGE_PROB_LINK = "prob_link"
 
 
 def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
@@ -57,24 +70,32 @@ def graph_from_dataframe(
 
     # TODO(arl): do we want some kind of schema to enforce what's required?
     # TODO(arl): what if we don't have any image features at this point?
-    points = np.asarray(df.loc[:, ["y", "x"]])
-    features = np.asarray(np.squeeze(np.asarray(df.loc[:, "features"])))
+    points = np.asarray(df.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
+    features = np.asarray(
+        np.squeeze(np.asarray(df.loc[:, GraphAttrs.NODE_FEATURES]))
+    )
     tri = Delaunay(points)
     edges = edges_from_delaunay(tri)
-
-    assert features.shape[0] == points.shape[0]
+    num_nodes = points.shape[0]
 
     graph = nx.Graph()
 
-    for idx, row in enumerate(df.iterrows()):
-        graph.add_node(
+    nodes = [
+        (
             idx,
-            x=points[idx, 0],
-            y=points[idx, 1],
-            features=features[idx, ...],
+            {
+                GraphAttrs.NODE_X: points[idx, 0],
+                GraphAttrs.NODE_Y: points[idx, 1],
+                GraphAttrs.NODE_PROB_DETECTION: 0.0,
+                GraphAttrs.NODE_FEATURES: features[idx, ...],
+            },
         )
+        for idx in range(num_nodes)
+    ]
 
-    for edge in edges:
-        graph.add_edge(*edge)
+    # add graph nodes
+    graph.add_nodes_from(nodes)
 
+    # add edge nodes
+    graph.add_edges_from(edges, **{GraphAttrs.EDGE_PROB_LINK: 0.0})
     return graph
