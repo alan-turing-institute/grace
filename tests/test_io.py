@@ -6,10 +6,10 @@ from grace.io.cbox import read_cbox_as_nodes
 from pathlib import Path
 
 
-def test_read_cbox(tmp_path, simple_graph_dataframe, fileformat):
+def test_read_cbox(tmp_path, simple_graph_dataframe):
     """Write out a very simple cbox file and then try to read it back."""
 
-    filename = Path(tmp_path) / f"test.{fileformat}"
+    filename = Path(tmp_path) / "test.cbox"
 
     # create the data
     wh = [100] * simple_graph_dataframe.shape[0]
