@@ -4,6 +4,8 @@ from typing import List, Tuple, Union
 import networkx as nx
 import numpy as np
 
+from grace.base import GraphAttrs
+
 
 @dataclasses.dataclass
 class SpatialEdge:
@@ -26,7 +28,12 @@ def graph_to_napari_layers(graph: nx.Graph) -> Tuple[np.ndarray, np.ndarray]:
     edges : array (N, D, D)
         The edges of the graph.
     """
-    points = np.array([(n["x"], n["y"]) for _, n in graph.nodes(data=True)])
+    points = np.array(
+        [
+            (n[GraphAttrs.NODE_X], n[GraphAttrs.NODE_Y])
+            for _, n in graph.nodes(data=True)
+        ]
+    )
     edges = np.array([(points[i, :], points[j, :]) for i, j in graph.edges])
     return points, edges
 
@@ -80,10 +87,13 @@ def cut_graph_using_mask(
             )
             r = _ray_trace_along_edge(ray, mask)
 
+            # get the index of the edge, and store that
+            edge_idx = list(graph.edges()).index(tuple(sorted(edge)))
+
             if r:
-                enclosed_edges.add(edge)
+                enclosed_edges.add(edge_idx)
             else:
-                cut_edges.add(edge)
+                cut_edges.add(edge_idx)
 
     return indices, enclosed_edges, cut_edges
 
