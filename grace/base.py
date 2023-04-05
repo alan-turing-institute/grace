@@ -16,9 +16,12 @@ class GraphAttrs(str, enum.Enum):
 
     NODE_X = "x"
     NODE_Y = "y"
+    NODE_WIDTH = "width"
+    NODE_HEIGHT = "height"
     NODE_GROUND_TRUTH = "ground_truth"
     NODE_PREDICTION = "prediction"
     NODE_PROB_DETECTION = "prob_detection"
+    NODE_CONFIDENCE = "confidence"
     NODE_FEATURES = "features"
     EDGE_PROB_LINK = "prob_link"
 
