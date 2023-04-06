@@ -16,11 +16,18 @@ class GraphAttrs(str, enum.Enum):
 
     NODE_X = "x"
     NODE_Y = "y"
-    NODE_GROUND_TRUTH = "ground_truth"
-    NODE_PREDICTION = "prediction"
+    NODE_GROUND_TRUTH = "node_ground_truth"
+    NODE_PREDICTION = "node_prediction"
     NODE_PROB_DETECTION = "prob_detection"
     NODE_FEATURES = "features"
     EDGE_PROB_LINK = "prob_link"
+    EDGE_GROUND_TRUTH = "edge_ground_truth"
+
+
+class Annotation(enum.Enum):
+    TRUE_NEGATIVE = 0
+    TRUE_POSITIVE = 1
+    UNKNOWN = 2
 
 
 def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
@@ -97,5 +104,9 @@ def graph_from_dataframe(
     graph.add_nodes_from(nodes)
 
     # add edge nodes
-    graph.add_edges_from(edges, **{GraphAttrs.EDGE_PROB_LINK: 0.0})
+    edge_attrs = {
+        GraphAttrs.EDGE_PROB_LINK: 0.0,
+        GraphAttrs.EDGE_GROUND_TRUTH: Annotation.UNKNOWN,
+    }
+    graph.add_edges_from(edges, **edge_attrs)
     return graph

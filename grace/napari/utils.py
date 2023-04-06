@@ -4,7 +4,7 @@ from typing import List, Tuple, Union
 import networkx as nx
 import numpy as np
 
-from grace.base import GraphAttrs
+from grace.base import Annotation, GraphAttrs
 
 
 @dataclasses.dataclass
@@ -39,7 +39,10 @@ def graph_to_napari_layers(graph: nx.Graph) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def cut_graph_using_mask(
-    graph: nx.Graph, mask: np.ndarray
+    graph: nx.Graph,
+    mask: np.ndarray,
+    *,
+    update_graph: bool = True,
 ) -> Tuple[List[int], List[Tuple[int, int]]]:
     """Given a binary mask, cut the graph to contain only edges that are within
     the mask.
@@ -81,6 +84,7 @@ def cut_graph_using_mask(
 
         for edge in adjacent_edges:
             i, j = edge
+
             ray = SpatialEdge(
                 points_int[i, :],
                 points_int[j, :],
@@ -89,6 +93,12 @@ def cut_graph_using_mask(
 
             # get the index of the edge, and store that
             edge_idx = list(graph.edges()).index(tuple(sorted(edge)))
+
+            if update_graph:
+                annotation = (
+                    Annotation.TRUE_POSITIVE if r else Annotation.TRUE_NEGATIVE
+                )
+                graph[i][j][GraphAttrs.EDGE_GROUND_TRUTH] = annotation
 
             if r:
                 enclosed_edges.add(edge_idx)

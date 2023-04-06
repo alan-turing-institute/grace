@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # import numpy.typing as npt
+    import networkx as nx
     from magicgui.widgets import Container, Widget
 
 import enum
@@ -12,9 +13,12 @@ import napari
 import numpy as np
 import pandas as pd
 
-from grace.base import graph_from_dataframe
+from grace.base import graph_from_dataframe, GraphAttrs
+from grace.io import write_graph
 from grace.napari.utils import graph_to_napari_layers, cut_graph_using_mask
 from pathlib import Path
+
+from qtpy.QtWidgets import QFileDialog
 
 # from scipy.spatial import Delaunay
 
@@ -23,9 +27,9 @@ LOGO_HEIGHT = 60
 
 
 class EdgeColor(str, enum.Enum):
-    ENCLOSED = "green"
-    CUT = "magenta"
-    DEFAULT = "blue"
+    TRUE_POSITIVE = "green"
+    TRUE_NEGATIVE = "magenta"
+    UNKNOWN = "blue"
 
 
 def branding_widget() -> Widget:
@@ -105,15 +109,37 @@ def status_widget() -> Widget:
     ]
 
 
-def color_edge(edge: int, enclosed: set[int], cut: set[int]) -> str:
+def io_widget() -> Widget:
+    export_tooltip = "Export the annotations."
+    export_widget = magicgui.widgets.create_widget(
+        name="export_button",
+        label="export...",
+        widget_type="PushButton",
+        options={"tooltip": export_tooltip},
+    )
+
+    import_tooltip = "Import annotations."
+    import_widget = magicgui.widgets.create_widget(
+        name="import_button",
+        label="import...",
+        widget_type="PushButton",
+        options={"tooltip": import_tooltip},
+    )
+
+    return [
+        import_widget,
+        export_widget,
+    ]
+
+
+def color_edges(graph: nx.Graph) -> str:
     """Color an edge based on the set it belongs too."""
-    if edge in enclosed:
-        color = EdgeColor.ENCLOSED
-    elif edge in cut:
-        color = EdgeColor.CUT
-    else:
-        color = EdgeColor.DEFAULT
-    return color.value
+    edge_colors = []
+    for source, target, edge_attr in graph.edges(data=True):
+        edge_annotation = edge_attr[GraphAttrs.EDGE_GROUND_TRUTH].name
+        color = EdgeColor[edge_annotation]
+        edge_colors.append(color.value)
+    return edge_colors
 
 
 class GraceManager:
@@ -122,19 +148,19 @@ class GraceManager:
         self.edge_layer = None
         self.annotation_layer = None
         self.widgets = []
-        self.selected_layer = None
+        self._selected_layer = None
 
         self.graph = None
 
     def selected_layer(self, selected_layer: str):
-        self.selected_layer = self.viewer.layers[str(selected_layer)]
+        self._selected_layer = self.viewer.layers[str(selected_layer)]
 
     def node_layer(self) -> napari.Layer:
-        return self.viewer.layers[f"nodes_{self.selected_layer.name}"]
+        return self.viewer.layers[f"nodes_{self._selected_layer.name}"]
 
     def create_layers(self):
         """Create new annotation laters based on the selected image layer."""
-        image_layer = self.selected_layer
+        image_layer = self._selected_layer
 
         self.annotation_layer = self.viewer.add_labels(
             np.zeros_like(image_layer.data).astype(int),
@@ -151,16 +177,16 @@ class GraceManager:
         # TODO(arl): this is pretty ugly right now
         df = pd.DataFrame(
             {
-                "y": points[:, 0],
-                "x": points[:, 1],
-                "features": features["features"],
+                GraphAttrs.NODE_Y: points[:, 0],
+                GraphAttrs.NODE_X: points[:, 1],
+                GraphAttrs.NODE_FEATURES: features["features"],
             }
         )
 
         self.graph = graph_from_dataframe(df)
         _, edges = graph_to_napari_layers(self.graph)
 
-        image_layer = self.selected_layer
+        image_layer = self._selected_layer
 
         if self.edge_layer is None:
             self.edge_layer = self.viewer.add_shapes(
@@ -168,7 +194,7 @@ class GraceManager:
                 name=f"edges_{image_layer.name}",
                 shape_type="line",
                 edge_width=5,
-                edge_color=EdgeColor.DEFAULT.value,
+                edge_color=EdgeColor.UNKNOWN.value,
             )
 
         self.edge_layer.data = []
@@ -177,13 +203,12 @@ class GraceManager:
     def cut_graph(self, *, progress: Widget | None = None) -> None:
         """Cut the graph according to the annotation layer."""
         idx, enclosed, cut = cut_graph_using_mask(
-            self.graph, self.annotation_layer.data
+            self.graph,
+            self.annotation_layer.data,
+            update_graph=True,
         )
 
-        num_edges = self.graph.number_of_edges()
-        self.edge_layer.edge_color = [
-            color_edge(e, enclosed, cut) for e in range(num_edges)
-        ]
+        self.edge_layer.edge_color = color_edges(self.graph)
 
     def train(self, *, progress: Widget | None = None) -> None:
         pass
@@ -193,6 +218,19 @@ class GraceManager:
 
     def __del__(self):
         print("Goodbye!")
+
+    def export(self) -> None:
+        """Export the tree as an SVG."""
+        options = QFileDialog.Options()
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export annotations",
+            "annotations.zip",
+            "ZIP Files(*.zip)",
+            options=options,
+        )
+        if filename:
+            write_graph(filename, self.graph)
 
 
 def create_grace_widget() -> Container:
@@ -204,6 +242,7 @@ def create_grace_widget() -> Container:
         *selection_widget(),
         *process_widget(),
         *status_widget(),
+        *io_widget(),
     ]
     grace_widget = magicgui.widgets.Container(
         widgets=widgets,
@@ -212,7 +251,7 @@ def create_grace_widget() -> Container:
     grace_widget.viewer = napari.current_viewer()
 
     grace_manager = GraceManager(grace_widget.viewer)
-    grace_manager.selected_layer = grace_widget.selected_image.value
+    grace_manager.selected_layer(grace_widget.selected_image.value)
     grace_manager.create_layers()
 
     # if we choose another input image, create new annotation layers
@@ -229,6 +268,7 @@ def create_grace_widget() -> Container:
         lambda: grace_manager.cut_graph(progress=grace_widget.progress)
     )
 
+    grace_widget.export_button.changed.connect(lambda: grace_manager.export())
     # grace_widget.progress.value = 500
 
     # grace_widget.run_button.changed.connect(
