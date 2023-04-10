@@ -9,7 +9,7 @@ import networkx as nx
 import numpy as np
 import numpy.typing as npt
 
-from grace.base import Annotation, GraphAttrs
+from grace.base import Annotation, GraphAttrs, graph_from_dataframe
 from pathlib import Path
 from typing import Any, Dict
 
@@ -20,7 +20,7 @@ NODE_SCHEMA = pa.schema(
         pa.field(GraphAttrs.NODE_Y, pa.float32()),
         pa.field(GraphAttrs.NODE_CONFIDENCE, pa.float32()),
         pa.field(GraphAttrs.NODE_GROUND_TRUTH, pa.int64()),
-        pa.field(GraphAttrs.NODE_FEATURES, pa.float32()),
+        # pa.field(GraphAttrs.NODE_FEATURES, pa.float32()),
     ],
     # metadata={"year": "2023"}
 )
@@ -135,23 +135,20 @@ class GraceFile:
     def read(self) -> GraceFileDataset:
         """Read a graph from a `.grace` file."""
 
-        data = GraceFileDataset()
+        data: GraceFileDataset = GraceFileDataset()
+        graph: nx.Graph = None
 
         if self.nodes_filename.exists():
-            nodes_df = pq.read_table(self.nodes_filename).to_pandas()
-            nodes = [
-                (
-                    idx,
-                    {
-                        GraphAttrs.NODE_X: nodes_df[GraphAttrs.NODE_X][idx],
-                        GraphAttrs.NODE_Y: nodes_df[GraphAttrs.NODE_Y][idx],
-                    },
-                )
-                for idx in range(nodes_df.shape[0])
-            ]
+            nodes_df = pq.read_table(
+                self.nodes_filename, schema=NODE_SCHEMA
+            ).to_pandas()
+            graph = graph_from_dataframe(nodes_df, triangulate=False)
 
+        # TODO: fix this to deal with other edge attributes
         if self.edges_filename.exists():
-            edges_df = pq.read_table(self.edges_filename).to_pandas()
+            edges_df = pq.read_table(
+                self.edges_filename, schema=EDGE_SCHEMA
+            ).to_pandas()
             edges = [
                 (
                     edges_df[GraphAttrs.EDGE_SOURCE][idx],
@@ -165,10 +162,10 @@ class GraceFile:
                 for idx in range(edges_df.shape[0])
             ]
 
-            graph = nx.Graph()
-            graph.add_nodes_from(nodes)
-            graph.add_edges_from(edges)
+            if not graph:
+                raise IOError("Graph nodes are missing.")
 
+            graph.add_edges_from(edges)
             data.graph = graph
 
         if self.annotation_filename.exists():

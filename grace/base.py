@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from typing import Set, Tuple
+from typing import Any, Dict, Set, Tuple
 from scipy.spatial import Delaunay
 
 
@@ -24,7 +24,6 @@ class GraphAttrs(str, enum.Enum):
     EDGE_SOURCE = "source"
     EDGE_TARGET = "target"
     EDGE_GROUND_TRUTH = "edge_ground_truth"
-    EDGE_CONFIDENCE = "confidence"
 
 
 class Annotation(enum.IntEnum):
@@ -100,8 +99,25 @@ def delaunay_edges_from_nodes(
     return edges
 
 
+def remap_graph_dict(
+    graph_dict: Dict[str | GraphAttrs, Any]
+) -> Dict[GraphAttrs, Any]:
+    """Remap the keys of a dictionary to the appropriate `GraphAttrs`"""
+    graph_attrs_str_set = {attr.value for attr in GraphAttrs}
+    keys = list(graph_dict.keys())
+    for key in keys:
+        if not isinstance(key, GraphAttrs):
+            key = str(key).lower()
+            if key in graph_attrs_str_set:
+                new_key = GraphAttrs(key)
+                graph_dict[new_key] = graph_dict.pop(key)
+    return graph_dict
+
+
 def graph_from_dataframe(
     df: pd.DataFrame,
+    *,
+    triangulate: bool = True,
 ) -> nx.Graph:
     """Return a NetworkX graph from a DataFrame.
 
@@ -109,6 +125,8 @@ def graph_from_dataframe(
     ----------
     df : DataFrame
         A pandas dataframe containing at least (x, y) centroids and features
+    triangulate : bool
+        Compute the edges based on a delaunay triangulation.
 
     Returns
     -------
@@ -117,27 +135,15 @@ def graph_from_dataframe(
         triangulation.
     """
 
-    points = np.asarray(df.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
-    num_nodes = points.shape[0]
-
     graph = nx.Graph()
-
     nodes = [
-        (
-            idx,
-            {
-                GraphAttrs.NODE_X: points[idx, 0],
-                GraphAttrs.NODE_Y: points[idx, 1],
-                GraphAttrs.NODE_PROB_DETECTION: 0.0,
-                # GraphAttrs.NODE_FEATURES: features[idx, ...],
-            },
-        )
-        for idx in range(num_nodes)
+        (idx, remap_graph_dict(row.to_dict())) for idx, row in df.iterrows()
     ]
 
     # add graph nodes
     graph.add_nodes_from(nodes)
 
     # create edges
-    delaunay_edges_from_nodes(graph, update_graph=True)
+    if triangulate:
+        delaunay_edges_from_nodes(graph, update_graph=True)
     return graph

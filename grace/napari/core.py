@@ -217,6 +217,7 @@ class GraceManager:
             _, edges = graph_to_napari_layers(self.graph)
             self.edge_layer.data = []
             self.edge_layer.add_lines(edges)
+            self.edge_layer.edge_color = color_edges(self.graph)
 
         if annotation is None:
             annotation = np.zeros_like(self.selected_layer.data).astype(int)
@@ -243,8 +244,8 @@ class GraceManager:
         # TODO(arl): this is pretty ugly right now
         df = pd.DataFrame(
             {
-                GraphAttrs.NODE_X: points[:, 0],
-                GraphAttrs.NODE_Y: points[:, 1],
+                GraphAttrs.NODE_Y: points[:, 0],
+                GraphAttrs.NODE_X: points[:, 1],
                 **features,
             }
         )
