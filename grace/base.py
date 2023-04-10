@@ -10,6 +10,7 @@ from typing import Any, Dict, Set, Tuple
 from scipy.spatial import Delaunay
 
 
+@enum.unique
 class GraphAttrs(str, enum.Enum):
     """These are key names for graph attributes used by grace."""
 
