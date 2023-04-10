@@ -4,29 +4,30 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # import numpy.typing as npt
-    import networkx as nx
     from magicgui.widgets import Container, Widget
 
 import enum
 import magicgui
 import napari
+import networkx as nx
 import numpy as np
 import pandas as pd
 
 from grace.base import graph_from_dataframe, GraphAttrs
-from grace.io import write_graph
+from grace.io import write_annotation, write_graph
 from grace.napari.utils import graph_to_napari_layers, cut_graph_using_mask
 from pathlib import Path
 
 from qtpy.QtWidgets import QFileDialog
 
-# from scipy.spatial import Delaunay
 
 LOGO_WIDTH = 200
 LOGO_HEIGHT = 60
 
 
 class EdgeColor(str, enum.Enum):
+    """Colour mapping for `Annotation`."""
+
     TRUE_POSITIVE = "green"
     TRUE_NEGATIVE = "magenta"
     UNKNOWN = "blue"
@@ -52,6 +53,7 @@ def selection_widget() -> Widget:
         label="image: ",
         options={"tooltip": image_tooltip},
     )
+    image_widget.max_width = 200
     return [
         image_widget,
     ]
@@ -82,6 +84,15 @@ def process_widget() -> Widget:
         options={"tooltip": train_tooltip},
     )
 
+    optimise_tooltip = "Optimise the graph after inference."
+    optimise_widget = magicgui.widgets.create_widget(
+        name="optimise_option",
+        label="optimise graph",
+        widget_type="CheckBox",
+        value=True,
+        options={"tooltip": optimise_tooltip},
+    )
+
     inference_tooltip = "Process the graph using GRACE"
     inference_widget = magicgui.widgets.create_widget(
         name="inference_button",
@@ -94,6 +105,7 @@ def process_widget() -> Widget:
         build_widget,
         cut_widget,
         train_widget,
+        optimise_widget,
         inference_widget,
     ]
 
@@ -133,7 +145,7 @@ def io_widget() -> Widget:
 
 
 def color_edges(graph: nx.Graph) -> str:
-    """Color an edge based on the set it belongs too."""
+    """Color an edge based on the set it belongs to."""
     edge_colors = []
     for source, target, edge_attr in graph.edges(data=True):
         edge_annotation = edge_attr[GraphAttrs.EDGE_GROUND_TRUTH].name
@@ -143,59 +155,84 @@ def color_edges(graph: nx.Graph) -> str:
 
 
 class GraceManager:
+    """GraceManager acts to coordinate grace functionality and provide an
+    interface to the napari plugin.
+
+    Parameters
+    ----------
+    viewer : napari.Viewer
+        An instance of the napari viewer.
+    """
+
     def __init__(self, viewer: napari.Viewer):
         self.viewer = viewer
-        self.edge_layer = None
         self.annotation_layer = None
-        self.widgets = []
-        self._selected_layer = None
-
         self.graph = None
 
-    def selected_layer(self, selected_layer: str):
-        self._selected_layer = self.viewer.layers[str(selected_layer)]
+        # the currently selected layer in the napari viewer
+        self._selected_layer = None
 
+    @property
+    def selected_layer(self) -> napari.Layer:
+        return self._selected_layer
+
+    @selected_layer.setter
+    def selected_layer(self, selected_layer: str) -> None:
+        self._selected_layer = self.viewer.layers[str(selected_layer)]
+        self.node_layer.events.data.connect(self.build_graph)
+
+    @property
     def node_layer(self) -> napari.Layer:
-        return self.viewer.layers[f"nodes_{self._selected_layer.name}"]
+        node_layer_name = f"nodes_{self.selected_layer.name}"
+        return self.viewer.layers[node_layer_name]
+
+    @property
+    def edge_layer(self) -> napari.Layer:
+        """The layer containing edges."""
+        edge_layer_name = f"edges_{self.selected_layer.name}"
+        if edge_layer_name not in self.viewer.layers:
+            _edge_layer = self.viewer.add_shapes(
+                ndim=2,
+                name=f"edges_{self.selected_layer.name}",
+                shape_type="line",
+                edge_width=5,
+                edge_color=EdgeColor.UNKNOWN.value,
+            )
+        return self.viewer.layers[edge_layer_name]
 
     def create_layers(self):
         """Create new annotation laters based on the selected image layer."""
-        image_layer = self._selected_layer
-
         self.annotation_layer = self.viewer.add_labels(
-            np.zeros_like(image_layer.data).astype(int),
-            name=f"annotation_{image_layer.name}",
+            np.zeros_like(self.selected_layer.data).astype(int),
+            name=f"annotation_{self.selected_layer.name}",
         )
         self.annotation_layer.brush_size = 100
         self.annotation_layer.mode = "PAINT"
 
-    def build_graph(self, *, progress: Widget | None = None) -> None:
+    def clear_graph(self) -> None:
+        """Clear the graph."""
+        self.graph = None
+        self.edge_layer.data = []
+
+    def build_graph(
+        self, *, graph: nx.Graph | None = None, progress: Widget | None = None
+    ) -> None:
         """Build a graph using the node layer."""
-        points = self.node_layer().data
-        features = self.node_layer().features
+
+        points = self.node_layer.data
+        features = self.node_layer.features
 
         # TODO(arl): this is pretty ugly right now
         df = pd.DataFrame(
             {
-                GraphAttrs.NODE_Y: points[:, 0],
-                GraphAttrs.NODE_X: points[:, 1],
+                GraphAttrs.NODE_X: points[:, 0],
+                GraphAttrs.NODE_Y: points[:, 1],
                 GraphAttrs.NODE_FEATURES: features["features"],
             }
         )
 
         self.graph = graph_from_dataframe(df)
         _, edges = graph_to_napari_layers(self.graph)
-
-        image_layer = self._selected_layer
-
-        if self.edge_layer is None:
-            self.edge_layer = self.viewer.add_shapes(
-                ndim=2,
-                name=f"edges_{image_layer.name}",
-                shape_type="line",
-                edge_width=5,
-                edge_color=EdgeColor.UNKNOWN.value,
-            )
 
         self.edge_layer.data = []
         self.edge_layer.add_lines(edges)
@@ -219,18 +256,24 @@ class GraceManager:
     def __del__(self):
         print("Goodbye!")
 
-    def export(self) -> None:
-        """Export the tree as an SVG."""
+    def export(self, widget: Widget) -> None:
+        """Export the data as a `.grace` file."""
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getSaveFileName(
-            self,
+            widget,
             "Export annotations",
-            "annotations.zip",
-            "ZIP Files(*.zip)",
+            "annotations.grace",
+            "GRACE Files(*.grace)",
             options=options,
         )
         if filename:
-            write_graph(filename, self.graph)
+            metadata = {
+                "image_filename": str(self.selected_layer.name),
+            }
+
+            filename = Path(filename)
+            write_graph(filename, graph=self.graph, metadata=metadata)
+            write_annotation(filename, annotation=self.annotation_layer.data)
 
 
 def create_grace_widget() -> Container:
@@ -251,7 +294,7 @@ def create_grace_widget() -> Container:
     grace_widget.viewer = napari.current_viewer()
 
     grace_manager = GraceManager(grace_widget.viewer)
-    grace_manager.selected_layer(grace_widget.selected_image.value)
+    grace_manager.selected_layer = grace_widget.selected_image.value
     grace_manager.create_layers()
 
     # if we choose another input image, create new annotation layers
@@ -268,7 +311,9 @@ def create_grace_widget() -> Container:
         lambda: grace_manager.cut_graph(progress=grace_widget.progress)
     )
 
-    grace_widget.export_button.changed.connect(lambda: grace_manager.export())
+    grace_widget.export_button.changed.connect(
+        lambda: grace_manager.export(grace_widget.native)
+    )
     # grace_widget.progress.value = 500
 
     # grace_widget.run_button.changed.connect(

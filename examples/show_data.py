@@ -23,7 +23,7 @@ points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
 features = nodes_data.loc[:, "features"]
 assert len(features) == points.shape[0]
 
-data_name = f"{IMAGE_PATH.stem[:10]}..."
+data_name = f"{IMAGE_PATH.stem}"
 
 viewer = napari.Viewer()
 img_layer = viewer.add_image(image_data, name=data_name)

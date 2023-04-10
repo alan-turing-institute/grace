@@ -3,12 +3,11 @@ from __future__ import annotations
 import enum
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from typing import Set, Tuple
 from scipy.spatial import Delaunay
-
-import numpy.typing as npt
 
 
 class GraphAttrs(str, enum.Enum):
@@ -20,11 +19,15 @@ class GraphAttrs(str, enum.Enum):
     NODE_PREDICTION = "node_prediction"
     NODE_PROB_DETECTION = "prob_detection"
     NODE_FEATURES = "features"
+    NODE_CONFIDENCE = "confidence"
     EDGE_PROB_LINK = "prob_link"
+    EDGE_SOURCE = "source"
+    EDGE_TARGET = "target"
     EDGE_GROUND_TRUTH = "edge_ground_truth"
+    EDGE_CONFIDENCE = "confidence"
 
 
-class Annotation(enum.Enum):
+class Annotation(enum.IntEnum):
     TRUE_NEGATIVE = 0
     TRUE_POSITIVE = 1
     UNKNOWN = 2
@@ -58,6 +61,45 @@ def edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
     return edges
 
 
+def delaunay_edges_from_nodes(
+    graph: nx.Graph, *, update_graph: bool = True
+) -> Set[Tuple[int, int]]:
+    """Create a Delaunay triangulation from a graph containing only nodes.
+
+    Parameters
+    ----------
+    graph : nx.Graph
+        The graph containing only nodes.
+    update_graph : bool (default: True)
+        An option to update the graph in-place with the new edges.
+
+    Returns
+    -------
+    edges : set
+        A set of unique edges {(source_id, target_id), ... }
+    """
+
+    if graph.number_of_edges() > 0:
+        raise ValueError(f"Graph already contains edges ({graph})")
+
+    points = [
+        (node_attr[GraphAttrs.NODE_X], node_attr[GraphAttrs.NODE_Y])
+        for _, node_attr in graph.nodes(data=True)
+    ]
+    points_arr = np.asarray(points)
+    tri = Delaunay(points_arr)
+    edges = edges_from_delaunay(tri)
+
+    # add edge nodes
+    if update_graph:
+        edge_attrs = {
+            GraphAttrs.EDGE_PROB_LINK: 0.0,
+            GraphAttrs.EDGE_GROUND_TRUTH: Annotation.UNKNOWN,
+        }
+        graph.add_edges_from(edges, **edge_attrs)
+    return edges
+
+
 def graph_from_dataframe(
     df: pd.DataFrame,
 ) -> nx.Graph:
@@ -75,14 +117,7 @@ def graph_from_dataframe(
         triangulation.
     """
 
-    # TODO(arl): do we want some kind of schema to enforce what's required?
-    # TODO(arl): what if we don't have any image features at this point?
     points = np.asarray(df.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
-    features = np.asarray(
-        np.squeeze(np.asarray(df.loc[:, GraphAttrs.NODE_FEATURES]))
-    )
-    tri = Delaunay(points)
-    edges = edges_from_delaunay(tri)
     num_nodes = points.shape[0]
 
     graph = nx.Graph()
@@ -94,7 +129,7 @@ def graph_from_dataframe(
                 GraphAttrs.NODE_X: points[idx, 0],
                 GraphAttrs.NODE_Y: points[idx, 1],
                 GraphAttrs.NODE_PROB_DETECTION: 0.0,
-                GraphAttrs.NODE_FEATURES: features[idx, ...],
+                # GraphAttrs.NODE_FEATURES: features[idx, ...],
             },
         )
         for idx in range(num_nodes)
@@ -103,10 +138,6 @@ def graph_from_dataframe(
     # add graph nodes
     graph.add_nodes_from(nodes)
 
-    # add edge nodes
-    edge_attrs = {
-        GraphAttrs.EDGE_PROB_LINK: 0.0,
-        GraphAttrs.EDGE_GROUND_TRUTH: Annotation.UNKNOWN,
-    }
-    graph.add_edges_from(edges, **edge_attrs)
+    # create edges
+    delaunay_edges_from_nodes(graph, update_graph=True)
     return graph
