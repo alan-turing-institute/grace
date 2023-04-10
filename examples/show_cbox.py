@@ -35,8 +35,6 @@ nodes = [
             GraphAttrs.NODE_Y: cbox_df["CoordinateY"][idx]
             + cbox_df["Height"][idx] / 2,
             GraphAttrs.NODE_CONFIDENCE: cbox_df["Confidence"][idx],
-            # GraphAttrs.NODE_WIDTH: cbox_df["Width"][idx],
-            # GraphAttrs.NODE_HEIGHT: cbox_df["Height"][idx],
         },
     )
     for idx in range(num_nodes)
@@ -46,14 +44,22 @@ graph = nx.Graph()
 graph.add_nodes_from(nodes)
 points, _ = graph_to_napari_layers(graph)
 
-features = {"features": np.asarray(cbox_df["Confidence"])}
+features = {GraphAttrs.NODE_CONFIDENCE: np.asarray(cbox_df["Confidence"])}
 
 data_name = f"{IMAGE_PATH.stem}"
 
 viewer = napari.Viewer()
 img_layer = viewer.add_image(image_data, name=data_name)
 pts_layer = viewer.add_points(
-    points, features=features, size=32, name=f"nodes_{data_name}"
+    points,
+    features=features,
+    size=32,
+    name=f"nodes_{data_name}",
+    # text= {
+    #     "string": "{confidence:.2f}",
+    #     "size": 8,
+    #     "color": "r",
+    # }
 )
 
 

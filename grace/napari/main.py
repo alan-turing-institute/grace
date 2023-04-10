@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    # import numpy.typing as npt
+    import numpy.typing as npt
     from magicgui.widgets import Container, Widget
 
 import enum
@@ -13,8 +13,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from grace.base import graph_from_dataframe, GraphAttrs
-from grace.io import write_annotation, write_graph
+from grace.base import Annotation, graph_from_dataframe, GraphAttrs
+from grace.io import read_graph, write_graph
 from grace.napari.utils import graph_to_napari_layers, cut_graph_using_mask
 from pathlib import Path
 
@@ -166,7 +166,6 @@ class GraceManager:
 
     def __init__(self, viewer: napari.Viewer):
         self.viewer = viewer
-        self.annotation_layer = None
         self.graph = None
 
         # the currently selected layer in the napari viewer
@@ -187,11 +186,16 @@ class GraceManager:
         return self.viewer.layers[node_layer_name]
 
     @property
+    def annotation_layer(self) -> napari.Layer:
+        annotation_layer_name = f"annotation_{self.selected_layer.name}"
+        return self.viewer.layers[annotation_layer_name]
+
+    @property
     def edge_layer(self) -> napari.Layer:
         """The layer containing edges."""
         edge_layer_name = f"edges_{self.selected_layer.name}"
         if edge_layer_name not in self.viewer.layers:
-            _edge_layer = self.viewer.add_shapes(
+            self.viewer.add_shapes(
                 ndim=2,
                 name=f"edges_{self.selected_layer.name}",
                 shape_type="line",
@@ -200,12 +204,28 @@ class GraceManager:
             )
         return self.viewer.layers[edge_layer_name]
 
-    def create_layers(self):
+    def create_layers(
+        self,
+        *,
+        graph: nx.Graph | None = None,
+        annotation: npt.NDArray | None = None,
+    ):
         """Create new annotation laters based on the selected image layer."""
-        self.annotation_layer = self.viewer.add_labels(
-            np.zeros_like(self.selected_layer.data).astype(int),
-            name=f"annotation_{self.selected_layer.name}",
-        )
+
+        if graph is not None:
+            self.graph = graph
+            _, edges = graph_to_napari_layers(self.graph)
+            self.edge_layer.data = []
+            self.edge_layer.add_lines(edges)
+
+        if annotation is None:
+            annotation = np.zeros_like(self.selected_layer.data).astype(int)
+            self.viewer.add_labels(
+                annotation,
+                name=f"annotation_{self.selected_layer.name}",
+            )
+        else:
+            self.annotation_layer.data = annotation
         self.annotation_layer.brush_size = 100
         self.annotation_layer.mode = "PAINT"
 
@@ -214,9 +234,7 @@ class GraceManager:
         self.graph = None
         self.edge_layer.data = []
 
-    def build_graph(
-        self, *, graph: nx.Graph | None = None, progress: Widget | None = None
-    ) -> None:
+    def build_graph(self, *, progress: Widget | None = None) -> None:
         """Build a graph using the node layer."""
 
         points = self.node_layer.data
@@ -227,7 +245,7 @@ class GraceManager:
             {
                 GraphAttrs.NODE_X: points[:, 0],
                 GraphAttrs.NODE_Y: points[:, 1],
-                GraphAttrs.NODE_FEATURES: features["features"],
+                **features,
             }
         )
 
@@ -239,6 +257,13 @@ class GraceManager:
 
     def cut_graph(self, *, progress: Widget | None = None) -> None:
         """Cut the graph according to the annotation layer."""
+
+        # reset all of the edge annotations
+        nx.set_edge_attributes(
+            self.graph, GraphAttrs.EDGE_GROUND_TRUTH, Annotation.UNKNOWN
+        )
+
+        # recalculate based on the current mask
         idx, enclosed, cut = cut_graph_using_mask(
             self.graph,
             self.annotation_layer.data,
@@ -256,7 +281,7 @@ class GraceManager:
     def __del__(self):
         print("Goodbye!")
 
-    def export(self, widget: Widget) -> None:
+    def export_data(self, widget: Widget) -> None:
         """Export the data as a `.grace` file."""
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getSaveFileName(
@@ -272,8 +297,27 @@ class GraceManager:
             }
 
             filename = Path(filename)
-            write_graph(filename, graph=self.graph, metadata=metadata)
-            write_annotation(filename, annotation=self.annotation_layer.data)
+            write_graph(
+                filename,
+                graph=self.graph,
+                metadata=metadata,
+                annotation=self.annotation_layer.data,
+            )
+
+    def import_data(self, widget: Widget) -> None:
+        """Export the data as a `.grace` file."""
+        options = QFileDialog.Options()
+        filename = QFileDialog.getExistingDirectory(
+            widget,
+            "Import annotations",
+            "GRACE Files(*.grace)",
+            options=options,
+        )
+        if filename:
+            filename = Path(filename)
+            data = read_graph(filename)
+
+            self.create_layers(graph=data.graph, annotation=data.annotation)
 
 
 def create_grace_widget() -> Container:
@@ -312,7 +356,11 @@ def create_grace_widget() -> Container:
     )
 
     grace_widget.export_button.changed.connect(
-        lambda: grace_manager.export(grace_widget.native)
+        lambda: grace_manager.export_data(grace_widget.native)
+    )
+
+    grace_widget.import_button.changed.connect(
+        lambda: grace_manager.import_data(grace_widget.native)
     )
     # grace_widget.progress.value = 500
 
