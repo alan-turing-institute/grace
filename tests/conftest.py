@@ -5,19 +5,19 @@ import numpy as np
 
 from grace.base import GraphAttrs, graph_from_dataframe
 
-RNG_SEED = 1234
-RNG = np.random.default_rng(seed=RNG_SEED)
-
 
 @pytest.fixture
 def default_rng() -> np.random._generator.Generator:
-    return RNG
+    """RNG for tests."""
+    _seed = 1234
+    return np.random.default_rng(seed=_seed)
 
 
 @pytest.fixture
 def simple_graph_dataframe(default_rng) -> pd.DataFrame:
     """Fixture for as simple graph as a dataframe."""
-    features = [default_rng.uniform(size=(32,)) for _ in range(3)]
+    feature_ndim = 32
+    features = [default_rng.uniform(size=(feature_ndim,)) for _ in range(3)]
     df = pd.DataFrame(
         {
             GraphAttrs.NODE_X: [0.0, 1.0, 2.0],
