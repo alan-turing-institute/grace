@@ -20,8 +20,12 @@ with mrcfile.open(IMAGE_PATH, "r") as mrc:
     image_data = mrc.data.astype(int)
 nodes_data = pd.read_hdf(NODES_PATH)
 points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
-features = nodes_data.loc[:, "features"]
-assert len(features) == points.shape[0]
+# features = {
+#     GraphAttrs.NODE_FEATURES:
+#     [np.squeeze(f.numpy()) for f in nodes_data.loc[:, "features"]]
+# }
+features = None
+
 
 data_name = f"{IMAGE_PATH.stem}"
 
