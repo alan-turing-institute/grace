@@ -17,16 +17,17 @@ class GraphAttrs(str, enum.Enum):
     NODE_Y = "y"
     NODE_GROUND_TRUTH = "node_ground_truth"
     NODE_PREDICTION = "node_prediction"
-    NODE_PROB_DETECTION = "prob_detection"
     NODE_FEATURES = "features"
     NODE_CONFIDENCE = "confidence"
-    EDGE_PROB_LINK = "prob_link"
     EDGE_SOURCE = "source"
     EDGE_TARGET = "target"
     EDGE_GROUND_TRUTH = "edge_ground_truth"
+    EDGE_PREDICTION = "edge_prediction"
 
 
 class Annotation(enum.IntEnum):
+    """Annotations for edges and nodes."""
+
     TRUE_NEGATIVE = 0
     TRUE_POSITIVE = 1
     UNKNOWN = 2
@@ -92,7 +93,7 @@ def delaunay_edges_from_nodes(
     # add edge nodes
     if update_graph:
         edge_attrs = {
-            GraphAttrs.EDGE_PROB_LINK: 0.0,
+            GraphAttrs.EDGE_PREDICTION: 0.0,
             GraphAttrs.EDGE_GROUND_TRUTH: Annotation.UNKNOWN,
         }
         graph.add_edges_from(edges, **edge_attrs)
@@ -102,7 +103,7 @@ def delaunay_edges_from_nodes(
 def remap_graph_dict(
     graph_dict: Dict[str | GraphAttrs, Any]
 ) -> Dict[GraphAttrs, Any]:
-    """Remap the keys of a dictionary to the appropriate `GraphAttrs`"""
+    """Remap the keys of a dictionary to the appropriate `GraphAttrs`."""
     graph_attrs_str_set = {attr.value for attr in GraphAttrs}
     keys = list(graph_dict.keys())
     for key in keys:

@@ -27,7 +27,6 @@ def simple_graph_dataframe(default_rng) -> pd.DataFrame:
             GraphAttrs.NODE_CONFIDENCE: [0.9, 0.1, 0.8],
         }
     )
-    print(df.head())
     return df
 
 
