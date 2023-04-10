@@ -1,14 +1,10 @@
 import napari
 
 import mrcfile
-import networkx as nx
 import numpy as np
 import starfile
 
 from grace.base import GraphAttrs
-from grace.napari.utils import graph_to_napari_layers
-
-# from grace.io.cbox import read_cbox_as_nodes
 from pathlib import Path
 
 DATA_PATH = Path("/Users/arl/Documents/Turing/Data/Bea/")
@@ -24,25 +20,14 @@ with mrcfile.open(IMAGE_PATH, "r") as mrc:
 
 
 cbox_df = starfile.read(CBOX_PATH)["cryolo"]
-num_nodes = cbox_df.shape[0]
 
-nodes = [
-    (
-        idx,
-        {
-            GraphAttrs.NODE_X: cbox_df["CoordinateX"][idx]
-            + cbox_df["Width"][idx] / 2,
-            GraphAttrs.NODE_Y: cbox_df["CoordinateY"][idx]
-            + cbox_df["Height"][idx] / 2,
-            GraphAttrs.NODE_CONFIDENCE: cbox_df["Confidence"][idx],
-        },
-    )
-    for idx in range(num_nodes)
-]
-
-graph = nx.Graph()
-graph.add_nodes_from(nodes)
-points, _ = graph_to_napari_layers(graph)
+points = np.stack(
+    [
+        cbox_df["CoordinateY"] + cbox_df["Height"] / 2,
+        cbox_df["CoordinateX"] + cbox_df["Width"] / 2,
+    ],
+    axis=-1,
+)
 
 features = {GraphAttrs.NODE_CONFIDENCE: np.asarray(cbox_df["Confidence"])}
 
