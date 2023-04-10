@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     import numpy.typing as npt
     from magicgui.widgets import Container, Widget
 
-import enum
 import magicgui
 import napari
 import networkx as nx
@@ -15,143 +14,22 @@ import pandas as pd
 
 from grace.base import Annotation, graph_from_dataframe, GraphAttrs
 from grace.io import read_graph, write_graph
-from grace.napari.utils import graph_to_napari_layers, cut_graph_using_mask
+from grace.napari.utils import (
+    EdgeColor,
+    color_edges,
+    graph_to_napari_layers,
+    cut_graph_using_mask,
+)
+from grace.napari.widgets import (
+    branding_widget,
+    io_widget,
+    process_widget,
+    status_widget,
+    selection_widget,
+)
 from pathlib import Path
 
 from qtpy.QtWidgets import QFileDialog
-
-
-LOGO_WIDTH = 200
-LOGO_HEIGHT = 60
-
-
-class EdgeColor(str, enum.Enum):
-    """Colour mapping for `Annotation`."""
-
-    TRUE_POSITIVE = "green"
-    TRUE_NEGATIVE = "magenta"
-    UNKNOWN = "blue"
-
-
-def branding_widget() -> Widget:
-    logo_widget = magicgui.widgets.create_widget(
-        value=Path(__file__).parent / "logo.png",
-        widget_type="Image",
-    )
-    logo_widget.min_width = LOGO_WIDTH
-    logo_widget.min_height = LOGO_HEIGHT
-    return [
-        logo_widget,
-    ]
-
-
-def selection_widget() -> Widget:
-    image_tooltip = "Select an 'Image' layer to use for annotation."
-    image_widget = magicgui.widgets.create_widget(
-        annotation=napari.layers.Image,
-        name="selected_image",
-        label="image: ",
-        options={"tooltip": image_tooltip},
-    )
-    image_widget.max_width = 200
-    return [
-        image_widget,
-    ]
-
-
-def process_widget() -> Widget:
-    build_tooltip = "Build the graph by triangulation."
-    build_widget = magicgui.widgets.create_widget(
-        name="build_button",
-        label="build graph",
-        widget_type="PushButton",
-        options={"tooltip": build_tooltip},
-    )
-
-    cut_tooltip = "Cut the graph using the mask."
-    cut_widget = magicgui.widgets.create_widget(
-        name="cut_button",
-        label="cut graph",
-        widget_type="PushButton",
-        options={"tooltip": cut_tooltip},
-    )
-
-    train_tooltip = "Train GRACE using the annotations"
-    train_widget = magicgui.widgets.create_widget(
-        name="train_button",
-        label="train GRACE",
-        widget_type="PushButton",
-        options={"tooltip": train_tooltip},
-    )
-
-    optimise_tooltip = "Optimise the graph after inference."
-    optimise_widget = magicgui.widgets.create_widget(
-        name="optimise_option",
-        label="optimise graph",
-        widget_type="CheckBox",
-        value=True,
-        options={"tooltip": optimise_tooltip},
-    )
-
-    inference_tooltip = "Process the graph using GRACE"
-    inference_widget = magicgui.widgets.create_widget(
-        name="inference_button",
-        label="run GRACE",
-        widget_type="PushButton",
-        options={"tooltip": inference_tooltip},
-    )
-
-    return [
-        build_widget,
-        cut_widget,
-        train_widget,
-        optimise_widget,
-        inference_widget,
-    ]
-
-
-def status_widget() -> Widget:
-    bar_widget = magicgui.widgets.create_widget(
-        name="progress",
-        label="status: ",
-        widget_type="ProgressBar",
-    )
-    return [
-        bar_widget,
-    ]
-
-
-def io_widget() -> Widget:
-    export_tooltip = "Export the annotations."
-    export_widget = magicgui.widgets.create_widget(
-        name="export_button",
-        label="export...",
-        widget_type="PushButton",
-        options={"tooltip": export_tooltip},
-    )
-
-    import_tooltip = "Import annotations."
-    import_widget = magicgui.widgets.create_widget(
-        name="import_button",
-        label="import...",
-        widget_type="PushButton",
-        options={"tooltip": import_tooltip},
-    )
-
-    return [
-        import_widget,
-        export_widget,
-    ]
-
-
-def color_edges(graph: nx.Graph) -> str:
-    """Color an edge based on the set it belongs to."""
-    edge_colors = []
-    for source, target, edge_attr in graph.edges(data=True):
-        edge_annotation = edge_attr[GraphAttrs.EDGE_GROUND_TRUTH].name
-        color = EdgeColor[edge_annotation]
-        edge_colors.append(color.value)
-    return edge_colors
 
 
 class GraceManager:

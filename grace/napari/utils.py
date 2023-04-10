@@ -1,10 +1,29 @@
 from typing import List, Tuple
 
+import enum
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
 
 from grace.base import Annotation, GraphAttrs
+
+
+class EdgeColor(str, enum.Enum):
+    """Colour mapping for `Annotation`."""
+
+    TRUE_POSITIVE = "green"
+    TRUE_NEGATIVE = "magenta"
+    UNKNOWN = "blue"
+
+
+def color_edges(graph: nx.Graph) -> str:
+    """Color an edge based on the set it belongs to."""
+    edge_colors = []
+    for source, target, edge_attr in graph.edges(data=True):
+        edge_annotation = edge_attr[GraphAttrs.EDGE_GROUND_TRUTH].name
+        color = EdgeColor[edge_annotation]
+        edge_colors.append(color.value)
+    return edge_colors
 
 
 def graph_to_napari_layers(graph: nx.Graph) -> Tuple[npt.NDArray, npt.NDArray]:
