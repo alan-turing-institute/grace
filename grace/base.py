@@ -34,6 +34,14 @@ class Annotation(enum.IntEnum):
     UNKNOWN = 2
 
 
+def _map_annotation(annotation: int | Annotation) -> Annotation:
+    if isinstance(annotation, Annotation):
+        return Annotation
+    if Annotation(annotation):
+        return Annotation(annotation)
+    return Annotation.UNKNOWN
+
+
 def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
     ndim = len(vertices)
     edges = []
@@ -113,6 +121,12 @@ def remap_graph_dict(
             if key in graph_attrs_str_set:
                 new_key = GraphAttrs(key)
                 graph_dict[new_key] = graph_dict.pop(key)
+
+    # set the annotation type
+    if GraphAttrs.NODE_GROUND_TRUTH in graph_dict:
+        graph_dict[GraphAttrs.NODE_GROUND_TRUTH] = Annotation(
+            graph_dict[GraphAttrs.NODE_GROUND_TRUTH]
+        )
     return graph_dict
 
 
@@ -120,7 +134,6 @@ def graph_from_dataframe(
     df: pd.DataFrame,
     *,
     triangulate: bool = True,
-    set_node_ground_truth: bool = True,
 ) -> nx.Graph:
     """Return a NetworkX graph from a DataFrame.
 
@@ -138,6 +151,14 @@ def graph_from_dataframe(
         triangulation.
     """
 
+    ground_truth_provided = GraphAttrs.NODE_GROUND_TRUTH in df.keys()
+
+    # set graph nodes to unknown if not recognized
+    if not ground_truth_provided:
+        df[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.UNKNOWN
+
+    df[GraphAttrs.NODE_GROUND_TRUTH].apply(lambda x: _map_annotation(x))
+
     graph = nx.Graph()
     nodes = [
         (idx, remap_graph_dict(row.to_dict())) for idx, row in df.iterrows()
@@ -145,12 +166,6 @@ def graph_from_dataframe(
 
     # add graph nodes
     graph.add_nodes_from(nodes)
-
-    # set graph nodes to unknown
-    if set_node_ground_truth:
-        nx.set_node_attributes(
-            graph, Annotation.UNKNOWN, GraphAttrs.NODE_GROUND_TRUTH
-        )
 
     # create edges
     if triangulate:

@@ -120,6 +120,7 @@ def cut_graph_using_mask(
             else:
                 cut_edges.add(edge_idx)
 
+        # if the node is inside the object, classify it as a true positive
         if update_graph:
             graph.nodes[idx][
                 GraphAttrs.NODE_GROUND_TRUTH
