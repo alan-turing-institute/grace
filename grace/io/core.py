@@ -10,29 +10,9 @@ import numpy as np
 import numpy.typing as npt
 
 from grace.base import Annotation, GraphAttrs, graph_from_dataframe
+from grace.io.schema import NODE_SCHEMA, EDGE_SCHEMA
 from pathlib import Path
 from typing import Any, Dict
-
-
-NODE_SCHEMA = pa.schema(
-    [
-        pa.field(GraphAttrs.NODE_X, pa.float32()),
-        pa.field(GraphAttrs.NODE_Y, pa.float32()),
-        pa.field(GraphAttrs.NODE_CONFIDENCE, pa.float32()),
-        pa.field(GraphAttrs.NODE_GROUND_TRUTH, pa.int64()),
-        # pa.field(GraphAttrs.NODE_FEATURES, pa.float32()),
-    ],
-    # metadata={"year": "2023"}
-)
-
-EDGE_SCHEMA = pa.schema(
-    [
-        pa.field(GraphAttrs.EDGE_SOURCE, pa.int64()),
-        pa.field(GraphAttrs.EDGE_TARGET, pa.int64()),
-        pa.field(GraphAttrs.EDGE_GROUND_TRUTH, pa.int64()),
-    ],
-    # metadata={"year": "2023"}
-)
 
 
 @dataclasses.dataclass
