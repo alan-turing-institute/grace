@@ -122,7 +122,11 @@ class GraceFile:
             nodes_df = pq.read_table(
                 self.nodes_filename, schema=NODE_SCHEMA
             ).to_pandas()
-            graph = graph_from_dataframe(nodes_df, triangulate=False)
+            graph = graph_from_dataframe(
+                nodes_df,
+                triangulate=False,
+                set_node_ground_truth=False,
+            )
 
         # TODO: fix this to deal with other edge attributes
         if self.edges_filename.exists():

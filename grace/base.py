@@ -120,6 +120,7 @@ def graph_from_dataframe(
     df: pd.DataFrame,
     *,
     triangulate: bool = True,
+    set_node_ground_truth: bool = True,
 ) -> nx.Graph:
     """Return a NetworkX graph from a DataFrame.
 
@@ -144,6 +145,12 @@ def graph_from_dataframe(
 
     # add graph nodes
     graph.add_nodes_from(nodes)
+
+    # set graph nodes to unknown
+    if set_node_ground_truth:
+        nx.set_node_attributes(
+            graph, Annotation.UNKNOWN, GraphAttrs.NODE_GROUND_TRUTH
+        )
 
     # create edges
     if triangulate:

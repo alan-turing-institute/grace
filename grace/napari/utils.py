@@ -120,6 +120,11 @@ def cut_graph_using_mask(
             else:
                 cut_edges.add(edge_idx)
 
+        if update_graph:
+            graph.nodes[idx][
+                GraphAttrs.NODE_GROUND_TRUTH
+            ] = Annotation.TRUE_POSITIVE
+
     return indices, enclosed_edges, cut_edges
 
 
