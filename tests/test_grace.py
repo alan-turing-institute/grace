@@ -3,9 +3,9 @@ from grace.base import GraphAttrs
 
 SIMPLE_GRAPH_NUM_EDGES = 3
 REQUIRED_NODE_ATTRIBUTES = set(
-    [GraphAttrs.NODE_X, GraphAttrs.NODE_Y, GraphAttrs.NODE_PROB_DETECTION]
+    [GraphAttrs.NODE_X, GraphAttrs.NODE_Y, GraphAttrs.NODE_GROUND_TRUTH]
 )
-REQUIRED_EDGE_ATTRIBUTES = set([GraphAttrs.EDGE_PROB_LINK])
+REQUIRED_EDGE_ATTRIBUTES = set([GraphAttrs.EDGE_GROUND_TRUTH])
 
 
 def test_graph_from_dataframe(simple_graph_dataframe):

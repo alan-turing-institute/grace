@@ -1,5 +1,5 @@
-from grace.napari import main
+from grace.napari import core
 
 __all__ = [
-    "main",
+    "core",
 ]
