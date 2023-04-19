@@ -139,7 +139,7 @@ class GraceManager:
 
         # reset all of the edge annotations
         nx.set_edge_attributes(
-            self.graph, GraphAttrs.EDGE_GROUND_TRUTH, Annotation.UNKNOWN
+            self.graph, Annotation.UNKNOWN, GraphAttrs.EDGE_GROUND_TRUTH
         )
 
         # recalculate based on the current mask
