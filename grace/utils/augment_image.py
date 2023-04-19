@@ -11,15 +11,16 @@ class RandomEdgeCrop:
 
     Crops all images in a stack uniformly.
 
-    Args:
-        max_fraction (float): Max fraction of image dimension that can be
-        cropped.
+    Parameters
+    ----------
+    max_fraction : float
+        Maximum fraction of image dimension that can be cropped.
     """
 
     def __init__(self, max_fraction: float = 0.5):
         self.max_fraction = max_fraction
 
-    def __call__(self, x: torch.Tensor):
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
         fraction = torch.rand((1,)) * self.max_fraction * 100
         fraction = fraction.type(torch.IntTensor)
         dims = x.size()
