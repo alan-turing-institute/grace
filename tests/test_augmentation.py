@@ -56,15 +56,16 @@ expected_outputs_random_edge_crop = [
     ),
 ]
 
+
 @pytest.mark.parametrize(
     "n, max_fraction, fraction, num_rot",
     [
-        (0, .5, 1., 0), 
-        (1, .5, .5, 1), 
-        (2, 1., 0., 2), 
-        (3, 1., .75, 3), 
-        (4, .5, 1., 3),
-    ]
+        (0, 0.5, 1.0, 0),
+        (1, 0.5, 0.5, 1),
+        (2, 1.0, 0.0, 2),
+        (3, 1.0, 0.75, 3),
+        (4, 0.5, 1.0, 3),
+    ],
 )
 def test_augment_random_edge_crop(n, max_fraction, fraction, num_rot):
     img = np.array(
@@ -74,16 +75,32 @@ def test_augment_random_edge_crop(n, max_fraction, fraction, num_rot):
             [9.8, 8.5, 1.3, 3.8, 5.1, 2.2],
             [2.2, 1.2, 7.4, 3.2, 9.1, 2.3],
         ],
-        dtype=np.float32
+        dtype=np.float32,
     )
     img_3d = transforms.ToTensor()(img)
     img_4d = img_3d[None, ...]
     random_edge_crop = RandomEdgeCrop(max_fraction=max_fraction)
-    
+
     with (
-        patch("torch.rand", return_value=torch.tensor([fraction,], dtype=torch.float32)),
-        patch("torch.randint", return_value=torch.tensor([num_rot,], dtype=torch.int32)),
-    ):    
+        patch(
+            "torch.rand",
+            return_value=torch.tensor(
+                [
+                    fraction,
+                ],
+                dtype=torch.float32,
+            ),
+        ),
+        patch(
+            "torch.randint",
+            return_value=torch.tensor(
+                [
+                    num_rot,
+                ],
+                dtype=torch.int32,
+            ),
+        ),
+    ):
         augmented_3d = random_edge_crop(img_3d).numpy()
         augmented_4d = random_edge_crop(img_4d).numpy()
 
