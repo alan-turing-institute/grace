@@ -98,6 +98,10 @@ _Demonstration of the napari widget to annotate cryo-EM images._
 <!--![](https://github.com/alan-turing-institute/grace/blob/documentation/assets/napari_demo.mov)-->
 
 
+https://user-images.githubusercontent.com/48791041/233156173-cf2a69d3-d4be-4ba1-ae57-aebf6b9501cc.mov
+
+
+
 ### TODO: Detail the documentation:
 
 Here!
