@@ -81,12 +81,19 @@ The image on the left shows a *napari*-based GUI widget for annotation of the de
 
 More details about how this type of graph representation analysis could be applied to image data processing will become available soon.
 
-
 ---
 
 ## Outcomes
 
+🚧 **Work in progress** 🚧
 
+The expected outcome of the `grace` workflow is to identify all connected objects as individual filament instances. We tested the combinatorial optimisation step on simulated data with 3 levels of 'line-seeding' densities: dense, medium and sparse. 
+
+<img width="100%" align="left" alt="optimising dummy graphs" src="./assets/optimiser_dummy.png">
+
+As you can see, the optimiser works well to identify filamentous object instances, and appears to work across object cross-overs (middle image, pink objects). 
+
+---
 
 ## Contributors
 
