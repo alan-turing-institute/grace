@@ -71,40 +71,29 @@ pip install -e ".[dev]"
 
 Our repository contains a graphical user interface (GUI) which allows the user to manually annotate the regions of interests (motifs) in their cryo-EM data.
 
-To try it out, make sure you've [installed](#installation) the repository & navigate to:
+To test the annotator, make sure you've [installed](#installation) the repository & navigate to:
 
 ```sh
 python examples/show_data.py
 ```
 
-_Demonstration of the napari widget to annotate cryo-EM images._
-
-<img width="60%" align="left" alt="napari widget" src="./assets/napari_anno.png">
-
-The image on the left shows a *napari*-based GUI widget for annotation of the desired filamentous proteins.
-
-More details about how this type of graph representation analysis could be applied to image data processing will become available soon.
-
-
-### TODO: Add the compressed video demo:
-
-_Demonstration of the napari widget to annotate cryo-EM images._
-
-<!--<img width="60%" align="left" alt="napari widget" src="./assets/napari_demo.mov"> -->
-
-<!--![](https://raw.githubusercontent.com/lowe-lab-ucl/arboretum/main/examples/arboretum.gif)-->
-<!--![](https://raw.githubusercontent.com/alan-turing-institute/grace/blob/documentation/assets/napari_demo.mov)-->
-
-<!--![](https://github.com/alan-turing-institute/grace/blob/documentation/assets/napari_demo.mov)-->
-
 
 https://user-images.githubusercontent.com/48791041/233156173-cf2a69d3-d4be-4ba1-ae57-aebf6b9501cc.mov
 
+_Demonstration of the napari widget to annotate cryo-EM images._
 
 
-### TODO: Detail the documentation:
+The recodring above 👆 shows a *napari*-based GUI widget for annotation of the desired motifs, in our case, filamentous proteins. Follow these steps to test the plugin out:
 
-Here!
+1. Build the graph from all vertices (node, white circle) using the `'build graph'` function in the right-hand panel.
+2. Navigates the triangulated graph by zooming in/out or moving along the image from either the `'nodes_...'` or `'edges_...'` layer list.
+3. Choose the `'annotation_...'` layer in the left-hand layer list and click on the 'brush'🖌️ icon at the top of the layer control.
+4. Annotate nodes belonging to object instances by drawing over the nodes in a continuous line.
+5. Identify edges within connected objects (green 🟩 lines) _versus_ edges outside of annotated objects (magenta 🟪 lines) by cutting the graph using the `'cut graph'` function in the right-hand panel.
+6. In case of an error ❌, choose the eraser icon at the top of the layer control to erase incorrect annotations. Re-cut the graph until you are happy with the overall annotation of the image.
+7. _Note:_ Not every single node / object has to be accounted for when annotating, take it easy 😎.
+8. Once happy with the annotations, save them out by exporting via the `'export...'` button on the right-hand side. Inversely, you can load previously saved annotations using the `'import...'` button.
+9. Ta-da! 🥳
 
 ---
 
@@ -118,6 +107,8 @@ The expected outcome of the `grace` workflow is to identify all connected object
 <img width="100%" align="left" alt="optimising dummy graphs" src="./assets/optimiser_dummy.png">
 
 As you can see, the optimiser works well to identify filamentous object instances simulated at various densities, and appears to work across object cross-overs (middle image, pink objects).
+
+More details about how this type of graph representation analysis could be applied to other image data processing will become available soon - stay tuned! 😎👌
 
 ---
 
