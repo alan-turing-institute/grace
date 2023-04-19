@@ -90,9 +90,13 @@ More details about how this type of graph representation analysis could be appli
 
 _Demonstration of the napari widget to annotate cryo-EM images._
 
-<img width="60%" align="left" alt="napari widget" src="./assets/napari_demo.mov">
+<!--<img width="60%" align="left" alt="napari widget" src="./assets/napari_demo.mov"> -->
 
-![](./assets/napari_demo.mov)
+<!--![](https://raw.githubusercontent.com/lowe-lab-ucl/arboretum/main/examples/arboretum.gif)-->
+<!--![](https://raw.githubusercontent.com/alan-turing-institute/grace/blob/documentation/assets/napari_demo.mov)-->
+
+<!--![](https://github.com/alan-turing-institute/grace/blob/documentation/assets/napari_demo.mov)-->
+
 
 ### TODO: Detail the documentation:
 
@@ -156,10 +160,28 @@ In the meantime, please use the template below to cite our work:
     url = {https://www.ccpem.ac.uk/downloads/symposium/ccp-em_symp_schedule_2023.pdf},
     author = {Beatriz Costa-Gomes, Kristina Ulicna, Christorpher Soelistyo, Marjan Famili, Alan Lowe​},
     title = {Deconstructing cryoEM micrographs with a graph-based analysis for effective structure detection},
-    abstract = {Reliable detection of structures is a fundamental step in analysis of cryoEM micrographs. Despite intense developments of computational approaches in recent years, time-consuming hand annotating remains inevitable and represents a rate-limiting step in the analysis of cryoEM data samples with heterogeneous objects. Furthermore, many of the current solutions are constrained by image characteristics: the large sizes of individual micrographs, the need to perform extensive re-training of the detection models to find objects of various categories in the same image dataset, and the presence of artefacts that might have similar shapes to the intended targets.
-    To address these challenges, we developed GRACE (Graph Representation Analysis for Connected Embeddings), a computer vision-based Python package for identification of structural motifs in complex imaging data. GRACE sources from large images populated with low-fidelity object detections to build a graph representation of the entire image. This global graph is then traversed to find structured regions of interest via extracting latent node representations from the local image patches and connecting candidate objects in a supervised manner with a graph neural network.
-    Using a human-in-the-loop approach, the user is encouraged to annotate the desired motifs of interest, making our tool agnostic to the type of object detections. The user-nominated structures are then localised and connected using a combinatorial optimisation step, which uses the latent embeddings to decide whether the graph nodes belong to an object instance.
-    Importantly, GRACE reduces the search space from millions of pixels to hundreds of nodes, which allows for fast and efficient implementation and potential tool customisation. In addition, our method can be repurposed to search for different motifs of interest within the same dataset in a significantly smaller time scale to the currently available open-source methods. We envisage that our end-to-end approach could be extended to other types of imaging data where object segmentation and detection remains challenging.}
+    abstract = {Reliable detection of structures is a fundamental step in analysis of cryoEM micrographs.
+    Despite intense developments of computational approaches in recent years, time-consuming hand annotating
+    remains inevitable and represents a rate-limiting step in the analysis of cryoEM data samples with
+    heterogeneous objects. Furthermore, many of the current solutions are constrained by image characteristics:
+    the large sizes of individual micrographs, the need to perform extensive re-training of the detection models
+    to find objects of various categories in the same image dataset, and the presence of artefacts that might
+    have similar shapes to the intended targets.
+    To address these challenges, we developed GRACE (Graph Representation Analysis for Connected Embeddings),
+    a computer vision-based Python package for identification of structural motifs in complex imaging data.
+    GRACE sources from large images populated with low-fidelity object detections to build a graph representation
+    of the entire image. This global graph is then traversed to find structured regions of interest via extracting
+    latent node representations from the local image patches and connecting candidate objects in a supervised manner
+    with a graph neural network.
+    Using a human-in-the-loop approach, the user is encouraged to annotate the desired motifs of interest, making
+    our tool agnostic to the type of object detections. The user-nominated structures are then localised and
+    connected using a combinatorial optimisation step, which uses the latent embeddings to decide whether the
+    graph nodes belong to an object instance.
+    Importantly, GRACE reduces the search space from millions of pixels to hundreds of nodes, which allows for
+    fast and efficient implementation and potential tool customisation. In addition, our method can be repurposed
+    to search for different motifs of interest within the same dataset in a significantly smaller time scale to
+    the currently available open-source methods. We envisage that our end-to-end approach could be extended to
+    other types of imaging data where object segmentation and detection remains challenging.}
 }
 ```
 
