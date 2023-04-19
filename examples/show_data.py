@@ -8,8 +8,7 @@ from grace.base import GraphAttrs
 from pathlib import Path
 
 
-# DATA_PATH = Path("/Users/arl/Documents/Turing/Data/Bea/")
-DATA_PATH = Path("/Users/kulicna/Desktop/data/test/")
+DATA_PATH = Path("/Users/arl/Documents/Turing/Data/Bea/")
 IMAGE_PATH = (
     DATA_PATH
     / "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW.mrc"

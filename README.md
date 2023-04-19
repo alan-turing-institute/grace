@@ -14,7 +14,7 @@ This `grace` repository contains a Python library 🐍 for identification of pat
 *Read more about:*
 + the [science](#science) behind this project 👩‍🔬👨‍🔬,
 + the [workflow](#workflow) of the individual steps 👩‍💻👨‍💻
-+ the [contributors](#contributors) participating in the project design 
++ the [contributors](#contributors) participating in the project design
     + how to bring in your own ideas
     + how to provide your feedback
 + don't forget to give us a '⭐' -> 😉
@@ -30,7 +30,8 @@ As the initial use case, we (see the [list of contributors](#contributors) below
 
 Find out more details about the project aims & objectives [here](https://www.turing.ac.uk/research/research-projects/machine-learning-and-large-cryogenic-electron-microscopy-data-sets) & [here](https://www.turing.ac.uk/research/research-projects/molecular-structure-images-under-physical-constraints) or visit the [citation](#citation) panel below to check out the overarching research projects.
 
---- 
+---
+
 
 ## Workflow
 
@@ -50,6 +51,7 @@ The `grace` workflow consists of the following steps:
 
 ---
 
+
 ## Installation
 
 `grace` has been tested with Python 3.8+ on OS X.
@@ -64,9 +66,10 @@ pip install -e ".[dev]"
 
 ---
 
+
 ## Annotator GUI
 
-Our repository contains a graphical user interface (GUI) which allows the user to manually annotate the regions of interests (motifs) in their cryo-EM data. 
+Our repository contains a graphical user interface (GUI) which allows the user to manually annotate the regions of interests (motifs) in their cryo-EM data.
 
 To try it out, make sure you've [installed](#installation) the repository & navigate to:
 
@@ -97,18 +100,19 @@ Here!
 
 ---
 
+
 ## Outcomes
 
 🚧 **Work in progress** 🚧
 
-The expected outcome of the `grace` workflow is to identify all connected objects as individual filament instances. We tested the combinatorial optimisation step on simulated data with 3 levels of 'line-seeding' densities: dense, medium and sparse. 
+The expected outcome of the `grace` workflow is to identify all connected objects as individual filament instances. We tested the combinatorial optimisation step on simulated data with 3 levels of 'line-seeding' densities: dense, medium and sparse.
 
 <img width="100%" align="left" alt="optimising dummy graphs" src="./assets/optimiser_dummy.png">
 
-As you can see, the optimiser works well to identify filamentous object instances simulated at various densities, and appears to work across object cross-overs (middle image, pink objects). 
-
+As you can see, the optimiser works well to identify filamentous object instances simulated at various densities, and appears to work across object cross-overs (middle image, pink objects).
 
 ---
+
 
 ## Contributors
 
@@ -145,16 +149,16 @@ In the meantime, please use the template below to cite our work:
 
 ```
 @unpublished{grace_repository,
-	year = {2023},
-	month = {April},
-  	publisher = {{CCP-EM} Collaborative Computational Project for Electron cryo-Microscopy},
+    year = {2023},
+    month = {April},
+    publisher = {{CCP-EM} Collaborative Computational Project for Electron cryo-Microscopy},
     howpublished = {Paper presented at the 2023 {CCP-EM} Spring Symposium},
     url = {https://www.ccpem.ac.uk/downloads/symposium/ccp-em_symp_schedule_2023.pdf},
-	author = {Beatriz Costa-Gomes, Kristina Ulicna, Christorpher Soelistyo, Marjan Famili, Alan Lowe​},
+    author = {Beatriz Costa-Gomes, Kristina Ulicna, Christorpher Soelistyo, Marjan Famili, Alan Lowe​},
     title = {Deconstructing cryoEM micrographs with a graph-based analysis for effective structure detection},
-	abstract = {Reliable detection of structures is a fundamental step in analysis of cryoEM micrographs. Despite intense developments of computational approaches in recent years, time-consuming hand annotating remains inevitable and represents a rate-limiting step in the analysis of cryoEM data samples with heterogeneous objects. Furthermore, many of the current solutions are constrained by image characteristics: the large sizes of individual micrographs, the need to perform extensive re-training of the detection models to find objects of various categories in the same image dataset, and the presence of artefacts that might have similar shapes to the intended targets.
+    abstract = {Reliable detection of structures is a fundamental step in analysis of cryoEM micrographs. Despite intense developments of computational approaches in recent years, time-consuming hand annotating remains inevitable and represents a rate-limiting step in the analysis of cryoEM data samples with heterogeneous objects. Furthermore, many of the current solutions are constrained by image characteristics: the large sizes of individual micrographs, the need to perform extensive re-training of the detection models to find objects of various categories in the same image dataset, and the presence of artefacts that might have similar shapes to the intended targets.
     To address these challenges, we developed GRACE (Graph Representation Analysis for Connected Embeddings), a computer vision-based Python package for identification of structural motifs in complex imaging data. GRACE sources from large images populated with low-fidelity object detections to build a graph representation of the entire image. This global graph is then traversed to find structured regions of interest via extracting latent node representations from the local image patches and connecting candidate objects in a supervised manner with a graph neural network.
-    Using a human-in-the-loop approach, the user is encouraged to annotate the desired motifs of interest, making our tool agnostic to the type of object detections. The user-nominated structures are then localised and connected using a combinatorial optimisation step, which uses the latent embeddings to decide whether the graph nodes belong to an object instance. 
+    Using a human-in-the-loop approach, the user is encouraged to annotate the desired motifs of interest, making our tool agnostic to the type of object detections. The user-nominated structures are then localised and connected using a combinatorial optimisation step, which uses the latent embeddings to decide whether the graph nodes belong to an object instance.
     Importantly, GRACE reduces the search space from millions of pixels to hundreds of nodes, which allows for fast and efficient implementation and potential tool customisation. In addition, our method can be repurposed to search for different motifs of interest within the same dataset in a significantly smaller time scale to the currently available open-source methods. We envisage that our end-to-end approach could be extended to other types of imaging data where object segmentation and detection remains challenging.}
 }
 ```
