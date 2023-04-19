@@ -6,7 +6,7 @@
 
 # GRACE - Graph Representation Analysis for Connected Embeddings 🌐 📊 🤓
 
-<img width="40%" align="right" alt="project logo" src="./assets/logo_trans.png"/>
+<img width="40%" align="right" alt="project logo" src="./assets/logo_white.png"/>
 
 
 This `grace` repository contains a Python library 🐍 for identification of patterns in imaging data. The package provides a method 🖥️ to find connected objects & regions of interest in images by constructing graph-like representations 🌐 .
@@ -18,8 +18,6 @@ This `grace` repository contains a Python library 🐍 for identification of pat
     + how to bring in your own ideas
     + how to provide your feedback
 + don't forget to give us a '⭐' -> 😉
-
-<!-- 🅰 🅱 🅲 🅳 🅴 🅵 🅶 🅷 🅸 🅹 🅺 🅻 🅼 🅽 🅾 🅿 🆀 🆁 🆂 🆃 🆄 🆅 🆆 🆇 🆈 🆉 -->
 
 ---
 
@@ -68,18 +66,34 @@ pip install -e ".[dev]"
 
 ## Annotator GUI
 
-<img width="60%" align="left" alt="napari widget" src="./assets/napari_anno.png">
+Our repository contains a graphical user interface (GUI) which allows the user to manually annotate the regions of interests (motifs) in their cryo-EM data. 
 
-<!--![](./assets/napari_demo.mov)-->
-<!--![](./assets/napari_anno.png)-->
+To try it out, make sure you've [installed](#installation) the repository & navigate to:
+
+```sh
+python examples/show_data.py
+```
 
 _Demonstration of the napari widget to annotate cryo-EM images._
 
-Our repository contains a graphical user interface (GUI) which allows the user to manually annotate the regions of interests (motifs) in their cryo-EM data. 
+<img width="60%" align="left" alt="napari widget" src="./assets/napari_anno.png">
 
 The image on the left shows a *napari*-based GUI widget for annotation of the desired filamentous proteins.
 
 More details about how this type of graph representation analysis could be applied to image data processing will become available soon.
+
+
+### TODO: Add the compressed video demo:
+
+_Demonstration of the napari widget to annotate cryo-EM images._
+
+<img width="60%" align="left" alt="napari widget" src="./assets/napari_demo.mov">
+
+![](./assets/napari_demo.mov)
+
+### TODO: Detail the documentation:
+
+Here!
 
 ---
 
@@ -91,7 +105,8 @@ The expected outcome of the `grace` workflow is to identify all connected object
 
 <img width="100%" align="left" alt="optimising dummy graphs" src="./assets/optimiser_dummy.png">
 
-As you can see, the optimiser works well to identify filamentous object instances, and appears to work across object cross-overs (middle image, pink objects). 
+As you can see, the optimiser works well to identify filamentous object instances simulated at various densities, and appears to work across object cross-overs (middle image, pink objects). 
+
 
 ---
 
@@ -126,16 +141,17 @@ If you'd like to contribute to our ongoing work, please do not hesitate to let u
 
 We are currently writing up our methodology and key results, so please stay tuned for future updates!
 
-In the meantime, please use the citation below to cite our work:
+In the meantime, please use the template below to cite our work:
 
 ```
-@inproceedings{grace_repository,
+@unpublished{grace_repository,
 	year = {2023},
 	month = {April},
-  	booktitle = {2023 {CCP-EM} Spring Symposium}, 
-    publisher = {{CCP-EM} Collaborative Computational Project for Electron cryo-Microscopy},
-    author = {Beatriz Costa-Gomes, Kristina Ulicna, Christorpher Soelistyo, Marjan Famili, Alan Lowe​},
-	title = {Deconstructing cryoEM micrographs with a graph-based analysis for effective structure detection},
+  	publisher = {{CCP-EM} Collaborative Computational Project for Electron cryo-Microscopy},
+    howpublished = {Paper presented at the 2023 {CCP-EM} Spring Symposium},
+    url = {https://www.ccpem.ac.uk/downloads/symposium/ccp-em_symp_schedule_2023.pdf},
+	author = {Beatriz Costa-Gomes, Kristina Ulicna, Christorpher Soelistyo, Marjan Famili, Alan Lowe​},
+    title = {Deconstructing cryoEM micrographs with a graph-based analysis for effective structure detection},
 	abstract = {Reliable detection of structures is a fundamental step in analysis of cryoEM micrographs. Despite intense developments of computational approaches in recent years, time-consuming hand annotating remains inevitable and represents a rate-limiting step in the analysis of cryoEM data samples with heterogeneous objects. Furthermore, many of the current solutions are constrained by image characteristics: the large sizes of individual micrographs, the need to perform extensive re-training of the detection models to find objects of various categories in the same image dataset, and the presence of artefacts that might have similar shapes to the intended targets.
     To address these challenges, we developed GRACE (Graph Representation Analysis for Connected Embeddings), a computer vision-based Python package for identification of structural motifs in complex imaging data. GRACE sources from large images populated with low-fidelity object detections to build a graph representation of the entire image. This global graph is then traversed to find structured regions of interest via extracting latent node representations from the local image patches and connecting candidate objects in a supervised manner with a graph neural network.
     Using a human-in-the-loop approach, the user is encouraged to annotate the desired motifs of interest, making our tool agnostic to the type of object detections. The user-nominated structures are then localised and connected using a combinatorial optimisation step, which uses the latent embeddings to decide whether the graph nodes belong to an object instance. 
@@ -146,5 +162,4 @@ In the meantime, please use the citation below to cite our work:
 ---
 
 ### _Happy graphing!_ 🎮
-- Your GRACE development team 👋
-- If you need any help, please don't...
+- Your GRACE development research team 👋
