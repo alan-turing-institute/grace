@@ -47,7 +47,7 @@ class ImageGraphDataset(Dataset):
         self.target_transform = target_transform
 
     def __len__(self) -> int:
-        return len(self.image_fns)
+        return len(self.grace_paths)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, dict]:
         img_path = self.image_paths[idx]
