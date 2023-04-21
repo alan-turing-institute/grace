@@ -41,13 +41,14 @@ The `grace` workflow consists of the following steps:
 
 1. Image data acquisition (_e.g._ cryo-electron microscopy)
 2. Object detection via bounding boxes (_e.g._ [crYOLO](https://cryolo.readthedocs.io/en/stable/), [RELION](https://github.com/3dem/relion), or [FasterRCNN](https://arxiv.org/pdf/1506.01497.pdf))
-3. Organisation of the bounding boxes into a 2D graphical structure (_e.g._ [Delaunay triangulation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.Delaunay.html))
-4. Latent feature extraction from image patches (_e.g._ pre-trained neural network, such as [_ResNet-152_](https://pytorch.org/vision/main/models/generated/torchvision.models.resnet152.html))
-5. *'Human-in-the-loop'* annotation of the desired pattern in the image data (see the [napari plugin](#development) below)
-6. Classification of each 'nodeness' and 'edgeness' confidence via deep neural network classifiers
-7. Combinatorial optimisation via integer linear programming (ILP) to connect the candidate object nodes via edges (see the [expected outcomes](#outcomes) below)
-8. Quantitative evaluation of the filament detection performance
-9. Ta-da! 🥳
+3. Organisation of the bounding boxes as nodes connected via edges as a 2D graph structure (_e.g._ [Delaunay triangulation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.Delaunay.html))
+4. Cropping of image patches (at various scales) from each bounding box detected in the image
+5. Latent feature extraction from image patches (_e.g._ pre-trained neural network, such as [_ResNet-152_](https://pytorch.org/vision/main/models/generated/torchvision.models.resnet152.html))
+6. *'Human-in-the-loop'* annotation of the desired pattern in the image data (see the [napari plugin](#development) below)
+7. Classification of each 'nodeness' and 'edgeness' confidence via deep neural network classifiers (_e.g._ using immediate [1-hop neighbourhood](https://arxiv.org/pdf/1907.06051.pdf))
+8. Combinatorial optimisation via integer linear programming (ILP) to connect the candidate object nodes via edges (see the [expected outcomes](#outcomes) below)
+9. Quantitative evaluation of the filament detection performance
+10. Ta-da! 🥳
 
 ---
 
@@ -90,7 +91,7 @@ The recodring above 👆 shows a *napari*-based GUI widget for annotation of the
 3. Choose the `'annotation_...'` layer in the left-hand layer list and click on the 'brush'🖌️ icon at the top of the layer control.
 4. Annotate nodes belonging to object instances by drawing over the nodes in a continuous line.
 5. Identify edges within connected objects (green 🟩 lines) _versus_ edges outside of annotated objects (magenta 🟪 lines) by cutting the graph using the `'cut graph'` function in the right-hand panel.
-6. In case of an error ❌, choose the eraser icon at the top of the layer control to erase incorrect annotations. Re-cut the graph until you are happy with the overall annotation of the image.
+6. In case of an annotation error ❌, choose the eraser icon at the top of the layer control to erase incorrect annotations. Re-cut the graph until you are happy with the overall annotation of the image.
 7. _Note:_ Not every single node / object has to be accounted for when annotating, take it easy 😎.
 8. Once happy with the annotations, save them out by exporting via the `'export...'` button on the right-hand side. Inversely, you can load previously saved annotations using the `'import...'` button.
 9. Ta-da! 🥳
@@ -124,6 +125,7 @@ More details about how this type of graph representation analysis could be appli
 
 + 👩‍💻 [Beatriz Costa Gomes](https://github.com/mooniean "mooniean")
 + 👩‍💻 [Kristina Ulicna](https://github.com/KristinaUlicna "KristinaUlicna")
++ 👨‍💻 [Christorpher J Soelistyo](https://github.com/chris-soelistyo "chris-soelistyo")
 + 👨‍💻 [Alan R Lowe](https://github.com/quantumjot "quantumjot")
 
 ...and many others...
