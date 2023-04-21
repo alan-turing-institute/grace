@@ -10,7 +10,6 @@ from ..io import read_graph
 import torch
 from torch.utils.data import Dataset
 
-from pathlib import Path
 
 class ImageGraphDataset(Dataset):
     """Creating a Torch dataset from an image directory and
@@ -39,7 +38,6 @@ class ImageGraphDataset(Dataset):
         transform: Callable = lambda x: x,
         target_transform: Callable = lambda x: x,
     ) -> None:
-
         self.image_fns = list(image_path.iterdir())
         self.grace_fns = list(grace_path.iterdir())
         self.image_reader_fn = image_reader_fn
@@ -50,11 +48,12 @@ class ImageGraphDataset(Dataset):
         return len(self.image_fns)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, dict]:
-
         img_path = self.image_fns[idx]
         grace_path = self.grace_fns[idx]
 
-        image = torch.tensor(self.image_reader_fn(img_path), dtype=torch.float32)
+        image = torch.tensor(
+            self.image_reader_fn(img_path), dtype=torch.float32
+        )
         grace_dataset = read_graph(grace_path)
 
         target = {}
@@ -66,7 +65,8 @@ class ImageGraphDataset(Dataset):
         target = self.target_transform(target)
 
         return image, target
-    
+
+
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:
     with mrcfile.open(fn, "r") as mrc:
         image_data = mrc.data.astype(int)
