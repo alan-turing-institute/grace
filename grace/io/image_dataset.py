@@ -5,10 +5,12 @@ import os
 
 import mrcfile
 
-from ..io import read_graph
+from grace.io import read_graph
 
 import torch
 from torch.utils.data import Dataset
+
+from pathlib import Path
 
 
 class ImageGraphDataset(Dataset):
@@ -31,15 +33,15 @@ class ImageGraphDataset(Dataset):
 
     def __init__(
         self,
-        image_path: os.PathLike,
-        grace_path: os.PathLike,
+        image_dir: os.PathLike,
+        grace_dir: os.PathLike,
         image_reader_fn: Callable,
         *,
         transform: Callable = lambda x: x,
         target_transform: Callable = lambda x: x,
     ) -> None:
-        self.image_fns = list(image_path.iterdir())
-        self.grace_fns = list(grace_path.iterdir())
+        self.image_paths = list(Path(image_dir).iterdir())
+        self.grace_paths = list(Path(grace_dir).glob("*.grace"))
         self.image_reader_fn = image_reader_fn
         self.transform = transform
         self.target_transform = target_transform
@@ -48,8 +50,8 @@ class ImageGraphDataset(Dataset):
         return len(self.image_fns)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, dict]:
-        img_path = self.image_fns[idx]
-        grace_path = self.grace_fns[idx]
+        img_path = self.image_paths[idx]
+        grace_path = self.grace_paths[idx]
 
         image = torch.tensor(
             self.image_reader_fn(img_path), dtype=torch.float32
@@ -68,6 +70,18 @@ class ImageGraphDataset(Dataset):
 
 
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:
+    """Reads a .mrc image file
+
+    Parameters
+    ----------
+    fn: str
+        Image filename
+
+    Returns
+    -------
+    image_data: np.ndarray
+        Image array
+    """
     with mrcfile.open(fn, "r") as mrc:
         image_data = mrc.data.astype(int)
     return image_data
