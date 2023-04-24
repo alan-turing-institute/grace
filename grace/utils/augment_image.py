@@ -44,6 +44,39 @@ class RandomEdgeCrop:
         return y
 
 
+def rotate_coordinates(
+    coords: torch.Tensor, centre_coords: torch.Tensor, rot_angle: float
+) -> torch.Tensor:
+    """Rotates point coordinates by a certain angle.
+
+    Parameters
+    ----------
+    coords:
+        Input coordinates; shape (num_points, 2)
+    centre_coords:
+        Centre around which to rotate ; shape (2,)
+    rot_angle:
+        Counter-clockwise rotation angle in degrees
+
+    Returns
+    -------
+    rotated_coords:
+        Output coordinates
+    """
+    rot_rads = torch.deg2rad(rot_angle)
+    transform_matrix = torch.tensor(
+        [
+            [torch.cos(rot_rads), -torch.sin(rot_rads)],
+            [torch.sin(rot_rads), torch.cos(rot_rads)],
+        ]
+    )
+    rotated_coords = torch.matmul(
+        transform_matrix, (coords - centre_coords).T
+    ).T
+    rotated_coords += centre_coords
+    return rotated_coords
+
+
 def rotate_image_and_graph(image: torch.Tensor, target: dict):
     """Rotate the image and graph in tandem.
 
@@ -73,18 +106,7 @@ def rotate_image_and_graph(image: torch.Tensor, target: dict):
     image = functional.rotate(image, float(rot_angle))
     image = image.squeeze()
 
-    rot_rads = torch.deg2rad(rot_angle)
     centre_coords = torch.tensor(image.size())[-2:] / 2.0
-    transform_matrix = torch.tensor(
-        [
-            [torch.cos(rot_rads), -torch.sin(rot_rads)],
-            [torch.sin(rot_rads), torch.cos(rot_rads)],
-        ]
-    )
-    transform = (
-        lambda x: torch.matmul(transform_matrix, (x - centre_coords).T).T
-        + centre_coords
-    )
 
     coords = torch.tensor(
         [
@@ -93,7 +115,7 @@ def rotate_image_and_graph(image: torch.Tensor, target: dict):
         ],
         dtype=torch.float32,
     )
-    transformed_coords = transform(coords)  # N,2
+    transformed_coords = rotate_coordinates(coords, centre_coords, rot_angle)
 
     update_coords = {
         n: {GraphAttrs.NODE_X: coords[0], GraphAttrs.NODE_Y: coords[1]}

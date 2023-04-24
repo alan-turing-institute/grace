@@ -1,5 +1,3 @@
-from typing import Any, Optional
-
 from unittest.mock import patch
 
 import torch
@@ -167,8 +165,6 @@ def test_augment_rotate_image_and_graph(n):
         ],
         dtype=np.float32,
     )
-
-    print("aug=", augmented_float_coords)
 
     assert np.array_equal(expected_end_coords_img[n], augmented_img_coords)
     assert np.allclose(
