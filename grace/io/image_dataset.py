@@ -26,9 +26,7 @@ class ImageGraphDataset(Dataset):
     image_reader_fn: Callable
         Function to read images from image filenames
     transform : Callable
-        Transformation added to the images
-    target_transform : Callable
-        Transformation added to the targets (graph data)
+        Transformation added to the images and targets
     """
 
     def __init__(
@@ -63,8 +61,7 @@ class ImageGraphDataset(Dataset):
         target["metadata"] = grace_dataset.metadata
         assert img_path.stem == target["metadata"]["image_filename"]
 
-        image = self.transform(image)
-        target = self.target_transform(target)
+        image, target = self.transform(image, target)
 
         return image, target
 
