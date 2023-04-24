@@ -8,22 +8,6 @@ from typing import List, Tuple
 from grace.base import GraphAttrs, graph_from_dataframe
 
 
-class DeterministicNG:
-    """Deterministic number generator class.
-
-    Kwargs define the methods of the instance, which return the kwarg values.
-
-    E.g.
-    dng = DeterministicNG(uniform = 3)
-    dng.uniform()
-    3
-    """
-
-    def __init__(self, **kwargs):
-        for attr, value in kwargs.items():
-            setattr(self, attr, (lambda i: lambda *args, **kwargs: i)(value))
-
-
 def random_image_and_graph(
     rng,
     *,
