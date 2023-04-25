@@ -84,7 +84,7 @@ https://user-images.githubusercontent.com/48791041/233156173-cf2a69d3-d4be-4ba1-
 _Demonstration of the napari widget to annotate cryo-EM images._
 
 
-The recodring above 👆 shows a *napari*-based GUI widget for annotation of the desired motifs, in our case, filamentous proteins. Follow these steps to test the plugin out:
+The recording above 👆 shows a *napari*-based GUI widget for annotation of the desired motifs, in our case, filamentous proteins. Follow these steps to test the plugin out:
 
 1. Build the graph from all vertices (node, white circle) using the `'build graph'` function in the right-hand panel.
 2. Navigates the triangulated graph by zooming in/out or moving along the image from either the `'nodes_...'` or `'edges_...'` layer list.
