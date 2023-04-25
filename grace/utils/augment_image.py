@@ -174,5 +174,4 @@ class RandomImageGraphRotate:
         random_angle = self.rng.uniform(
             low=self.rot_angle_range[0], high=self.rot_angle_range[-1]
         )
-        print("ANGLE=", random_angle)
         return rotate_image_and_graph(x, graph, random_angle, self.rot_center)
