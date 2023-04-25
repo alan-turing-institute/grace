@@ -12,12 +12,12 @@ class GCN(torch.nn.Module):
     Parameters
     ----------
     input_dims : int
-        The dimensions of the input
+        The dimensions of the input.
     embedding_dims : int
-        The dimensions of the hidden embeddings
+        The dimensions of the hidden embeddings.
     output_dims : int
         The dimensions of the output. This is typically the number of classes in
-        a one-hot vector.
+        the classifcation task.
 
     """
 
