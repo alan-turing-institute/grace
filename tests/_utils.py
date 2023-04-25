@@ -9,10 +9,13 @@ from grace.base import GraphAttrs, graph_from_dataframe
 
 
 def random_image_and_graph(
-    rng, *, num_nodes: int = 4
+    rng,
+    *,
+    num_nodes: int = 4,
+    image_size: Tuple[int] = (128, 128),
 ) -> Tuple[npt.NDArray, List[nx.Graph]]:
     """Create a random image and graph."""
-    image = np.zeros((128, 128), dtype=np.uint16)
+    image = np.zeros(image_size, dtype=np.uint16)
 
     feature_ndim = 32
     features = [rng.uniform(size=(feature_ndim,)) for _ in range(num_nodes)]
