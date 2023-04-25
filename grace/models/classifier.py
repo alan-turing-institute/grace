@@ -7,15 +7,33 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 
 
 class GCN(torch.nn.Module):
-    """A graph convolutional network for subgraph classification."""
+    """A graph convolutional network for subgraph classification.
 
-    def __init__(self, input_channels: int, hidden_channels: int):
+    Parameters
+    ----------
+    input_dims : int
+        The dimensions of the input
+    embedding_dims : int
+        The dimensions of the hidden embeddings
+    output_dims : int
+        The dimensions of the output. This is typically the number of classes in
+        a one-hot vector.
+
+    """
+
+    def __init__(
+        self,
+        *,
+        input_dims: int = 3,
+        embedding_dims: int = 64,
+        output_dims: int = 2,
+    ) -> None:
         super(GCN, self).__init__()
-        torch.manual_seed(12345)
-        self.conv1 = GCNConv(input_channels, hidden_channels)
-        self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        self.conv3 = GCNConv(hidden_channels, hidden_channels)
-        self.linear = Linear(hidden_channels, 2)
+        # torch.manual_seed(12345)
+        self.conv1 = GCNConv(input_dims, embedding_dims)
+        self.conv2 = GCNConv(embedding_dims, embedding_dims)
+        self.conv3 = GCNConv(embedding_dims, embedding_dims)
+        self.linear = Linear(embedding_dims, output_dims)
 
     def forward(
         self,
@@ -27,8 +45,10 @@ class GCN(torch.nn.Module):
         x = x.relu()
         x = self.conv2(x, edge_index)
         x = x.relu()
-        x = self.conv3(x, edge_index)
-        x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
+        embeddings = self.conv3(x, edge_index)
+
+        # node/subgraph classification
+        x = global_mean_pool(embeddings, batch)  # [batch_size, embedding_dims]
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.linear(x)
         return x
