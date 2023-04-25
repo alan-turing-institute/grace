@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import numpy as np
 
 from grace.base import GraphAttrs
-from grace.utils.augment_image import RandomEdgeCrop, rotate_image_and_graph
+from grace.utils.augment_image import RandomEdgeCrop, RandomImageGraphRotate
 
 from _utils import random_image_and_graph
 
@@ -119,14 +119,15 @@ augment_rotate_coords = [
     np.array([[0, 1], [1, 0], [0, 0], [1, 1]]),
     np.array([[2, 5], [5, 3], [3, 5], [2, 2]]),
     np.array([[0, 1], [1, 0], [0, 0], [1, 1]]),
+    np.array([[0, 1], [1, 0], [0, 0], [1, 1]]),
 ]
-augment_rotate_angles = [0, 90, 45, 30, 28]
 expected_end_coords_img = [
     (np.array([1, 3, 4, 5]), np.array([2, 3, 3, 3])),
     (np.array([4, 4, 5, 5]), np.array([0, 1, 0, 1])),
     (np.array([2, 3]), np.array([0, 0])),
     (np.array([1, 1, 2, 2, 4, 5]), np.array([4, 5, 2, 5, 4, 4])),
     (np.array([1, 2, 2]), np.array([0, 0, 1])),
+    (np.array([1, 1, 2]), np.array([0, 1, 0])),
 ]
 expected_end_coords_float = [
     np.array([[3.0, 4.0], [2.0, 1.0], [3.0, 5.0], [3.0, 3.0]]),
@@ -134,14 +135,22 @@ expected_end_coords_float = [
     np.array([[3.71, -0.54], [2.29, -0.54], [3.0, -1.24], [3.0, 0.17]]),
     np.array([[5.23, 3.13], [2.0, 4.73], [4.73, 4.0], [2.63, 1.63]]),
     np.array([[2.64, -0.59], [1.29, -0.17], [1.76, -1.06], [2.17, 0.3]]),
+    np.array([[2.06, -0.24], [0.7, 0.18], [1.17, -0.7], [1.59, 0.65]]),
 ]
 
 
 @pytest.mark.parametrize(
-    "n",
-    [0, 1, 2, 3, 4],
+    "n, rot_angle, rot_center",
+    [
+        (0, 0, None),
+        (1, 90, None),
+        (2, 45, None),
+        (3, 30, None),
+        (4, 28, None),
+        (5, 28, [2, 2]),
+    ],
 )
-def test_augment_rotate_image_and_graph(n):
+def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
     with patch("numpy.random.default_rng") as mock:
         rng = mock.return_value
         rng.uniform.return_value = 0
@@ -151,11 +160,11 @@ def test_augment_rotate_image_and_graph(n):
     image = torch.tensor(image.astype("int16"))
     target = {"graph": graph}
 
-    with patch("torch.rand") as mock:
-        mock.return_value = (
-            torch.tensor(augment_rotate_angles[n], dtype=torch.float32) / 360.0
-        )
-        image, target = rotate_image_and_graph(image, target)
+    with patch("numpy.random.default_rng") as mock:
+        rng = mock.return_value
+        rng.uniform.return_value = rot_angle
+        transform = RandomImageGraphRotate(rot_center=rot_center, rng=rng)
+        image, target = transform(image, target)
 
     augmented_img_coords = np.where(image.squeeze().numpy())
     augmented_float_coords = np.array(

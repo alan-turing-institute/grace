@@ -1,9 +1,13 @@
+from typing import Any, Dict, List, Tuple, Union, Optional
+
 import torch
 
 from torchvision.transforms import functional
 
 from grace.base import GraphAttrs
 
+import numpy as np
+import numpy.typing as npt
 import networkx as nx
 
 
@@ -45,39 +49,44 @@ class RandomEdgeCrop:
 
 
 def rotate_coordinates(
-    coords: torch.Tensor, centre_coords: torch.Tensor, rot_angle: float
-) -> torch.Tensor:
+    coords: npt.NDArray[np.float32],
+    rot_center: npt.NDArray[np.float32],
+    rot_angle: float,
+) -> npt.NDArray[np.float32]:
     """Rotates point coordinates by a certain angle.
 
     Parameters
     ----------
-    coords:
+    coords : numpy.array
         Input coordinates; shape (num_points, 2)
-    centre_coords:
-        Centre around which to rotate ; shape (2,)
-    rot_angle:
+    rot_center : numpy.array
+        center around which to rotate ; shape (2,)
+    rot_angle : float
         Counter-clockwise rotation angle in degrees
 
     Returns
     -------
-    rotated_coords:
+    rotated_coords : numpy.array
         Output coordinates
     """
-    rot_rads = torch.deg2rad(rot_angle)
-    transform_matrix = torch.tensor(
+    rot_rads = np.deg2rad(rot_angle)
+    transform_matrix = np.array(
         [
-            [torch.cos(rot_rads), -torch.sin(rot_rads)],
-            [torch.sin(rot_rads), torch.cos(rot_rads)],
+            [np.cos(rot_rads), -np.sin(rot_rads)],
+            [np.sin(rot_rads), np.cos(rot_rads)],
         ]
     )
-    rotated_coords = torch.matmul(
-        transform_matrix, (coords - centre_coords).T
-    ).T
-    rotated_coords += centre_coords
+    rotated_coords = np.matmul(transform_matrix, (coords - rot_center).T).T
+    rotated_coords += rot_center
     return rotated_coords
 
 
-def rotate_image_and_graph(image: torch.Tensor, target: dict):
+def rotate_image_and_graph(
+    image: torch.Tensor,
+    target: Dict[Union[str, GraphAttrs], Any],
+    rot_angle: float,
+    rot_center: List[int],
+) -> Tuple[torch.Tensor, Dict[Union[str, GraphAttrs], Any]]:
     """Rotate the image and graph in tandem.
 
     I.e., the graph x-y coordinates will be transformed to reflect
@@ -89,6 +98,10 @@ def rotate_image_and_graph(image: torch.Tensor, target: dict):
         Input image; shape (B,W,H) or (B,C,W,H)
     target : dict
         Input target dict.
+    rot_angle : float
+        Angle through which to rotate counter-clockwise
+    rot_center: List[int]
+        x-y coordinates of the center of the rotation
 
     Returns
     -------
@@ -98,24 +111,25 @@ def rotate_image_and_graph(image: torch.Tensor, target: dict):
         Output target dict
     """
 
-    rot_angle = torch.rand(1) * 360
-
-    if len(image.size()) < 4:
+    if image.ndim < 4:
         image = image[[None] * (4 - len(image.size()))]
 
-    image = functional.rotate(image, float(rot_angle))
+    image = functional.rotate(image, float(rot_angle), center=rot_center)
     image = image.squeeze()
 
-    centre_coords = torch.tensor(image.size())[-2:] / 2.0
+    if rot_center is None:
+        rot_center = np.array(image.size())[-2:] / 2.0
 
-    coords = torch.tensor(
+    coords = np.array(
         [
             (f[GraphAttrs.NODE_X], f[GraphAttrs.NODE_Y])
             for f in target["graph"].nodes.values()
         ],
-        dtype=torch.float32,
+        dtype=np.float32,
     )
-    transformed_coords = rotate_coordinates(coords, centre_coords, rot_angle)
+    transformed_coords = rotate_coordinates(
+        coords, np.array(rot_center, dtype=np.float32), rot_angle
+    )
 
     update_coords = {
         n: {GraphAttrs.NODE_X: coords[0], GraphAttrs.NODE_Y: coords[1]}
@@ -125,3 +139,40 @@ def rotate_image_and_graph(image: torch.Tensor, target: dict):
     nx.set_node_attributes(target["graph"], update_coords)
 
     return image, target
+
+
+class RandomImageGraphRotate:
+    """Rotate the image and graph in tandem; i.e., the graph x-y coordinates
+    will be transformed to reflect the image rotation.
+
+    Accepts an image stack of size (C,W,H) or (B,C,W,H) and a dictionary
+    which includes the graph object.
+
+    Parameters
+    ----------
+    rot_center : List[int]
+        center of rotation, in x-y coordinates
+    rot_angle_range : Tuple[int]
+        Lower and upper limits on the rotation angle, in degrees
+    rng : numpy.random.Generator
+        Random number generator
+    """
+
+    def __init__(
+        self,
+        rot_center: Optional[List[int]] = None,
+        rot_angle_range: Tuple[float, float] = (0.0, 360.0),
+        rng: np.random.Generator = np.random.default_rng(),
+    ):
+        self.rng = rng
+        self.rot_center = rot_center
+        self.rot_angle_range = rot_angle_range
+
+    def __call__(
+        self, x: torch.Tensor, graph: dict
+    ) -> Tuple[torch.Tensor, dict]:
+        random_angle = self.rng.uniform(
+            low=self.rot_angle_range[0], high=self.rot_angle_range[-1]
+        )
+        print("ANGLE=", random_angle)
+        return rotate_image_and_graph(x, graph, random_angle, self.rot_center)
