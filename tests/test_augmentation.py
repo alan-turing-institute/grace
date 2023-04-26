@@ -8,6 +8,7 @@ import numpy as np
 
 from grace.base import GraphAttrs
 from grace.utils.augment_image import RandomEdgeCrop, RandomImageGraphRotate
+from grace.utils.augment_graph import RandomEdgeAdditionAndRemoval
 
 from _utils import random_image_and_graph
 
@@ -179,3 +180,60 @@ def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
     assert np.allclose(
         expected_end_coords_float[n], augmented_float_coords, atol=0.01
     )
+
+
+@pytest.mark.parametrize(
+    "n_add, n_remove",
+    [
+        (0, 0),
+        (0, 1),
+        (1, 1),
+        (1, 2),
+        (4, 0),
+    ],
+)
+class TestAugmentGraphEdgeAdditionRemoval:
+    @pytest.fixture
+    def outputs(self, n_add, n_remove, default_rng):
+        image, graph = random_image_and_graph(default_rng, num_nodes=4)
+        transform = RandomEdgeAdditionAndRemoval(n_add, n_remove, default_rng)
+        augmented_image, augmented_target = transform(image, {"graph": graph})
+        augmented_graph = augmented_target["graph"]
+        return {
+            "image": image,
+            "graph": graph,
+            "augmented_image": augmented_image,
+            "augmented_graph": augmented_graph,
+        }
+
+    def test_images_remain_same(self, n_add, n_remove, outputs):
+        assert np.array_equal(outputs["image"], outputs["augmented_image"])
+
+    def test_new_edges_in_node_range(self, n_add, n_remove, outputs):
+        assert all(
+            [
+                e in range(outputs["graph"].number_of_nodes())
+                for edge_tuple in outputs["augmented_graph"].edges
+                for e in edge_tuple
+            ]
+        )
+
+    def test_number_of_added_and_removed_edges(
+        self, n_add, n_remove, default_rng, outputs
+    ):
+        add_edges = RandomEdgeAdditionAndRemoval(n_add, 0, default_rng)
+        remove_edges = RandomEdgeAdditionAndRemoval(0, n_remove, default_rng)
+        num_edges_init = outputs["graph"].number_of_edges()
+
+        image, target_added = add_edges(
+            outputs["image"], {"graph": outputs["graph"]}
+        )
+        num_edges_added = target_added["graph"].number_of_edges()
+
+        image, target_removed = remove_edges(image, target_added)
+        num_edges_removed = target_removed["graph"].number_of_edges()
+
+        assert num_edges_init + n_add >= num_edges_added >= num_edges_init
+        assert (
+            num_edges_added >= num_edges_removed >= num_edges_added - n_remove
+        )
