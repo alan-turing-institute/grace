@@ -8,7 +8,10 @@ import numpy as np
 
 from grace.base import GraphAttrs
 from grace.utils.augment_image import RandomEdgeCrop, RandomImageGraphRotate
-from grace.utils.augment_graph import RandomEdgeAdditionAndRemoval
+from grace.utils.augment_graph import (
+    find_average_annotation,
+    RandomEdgeAdditionAndRemoval,
+)
 
 from _utils import random_image_and_graph
 
@@ -186,10 +189,10 @@ def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
     "n_add, n_remove",
     [
         (0, 0),
-        (0, 1),
-        (1, 1),
-        (1, 2),
-        (4, 0),
+        (0, 0.2),
+        (0.2, 0.2),
+        (0.2, 0.4),
+        (0.8, 0),
     ],
 )
 class TestAugmentGraphEdgeAdditionRemoval:
@@ -228,12 +231,31 @@ class TestAugmentGraphEdgeAdditionRemoval:
         image, target_added = add_edges(
             outputs["image"], {"graph": outputs["graph"]}
         )
-        num_edges_added = target_added["graph"].number_of_edges()
+        num_edges_augmented_add = target_added["graph"].number_of_edges()
 
         image, target_removed = remove_edges(image, target_added)
-        num_edges_removed = target_removed["graph"].number_of_edges()
+        num_edges_augmented_remove = target_removed["graph"].number_of_edges()
 
-        assert num_edges_init + n_add >= num_edges_added >= num_edges_init
         assert (
-            num_edges_added >= num_edges_removed >= num_edges_added - n_remove
+            num_edges_init + int(n_add * num_edges_init)
+            >= num_edges_augmented_add
+            >= num_edges_init
         )
+        assert (
+            num_edges_augmented_add
+            >= num_edges_augmented_remove
+            >= num_edges_augmented_add - int(n_remove * num_edges_init)
+        )
+
+    def test_added_edges_have_average_annotations(
+        self, n_add, n_remove, outputs
+    ):
+        added_edges = set(outputs["augmented_graph"].edges).difference(
+            set(outputs["graph"].edges)
+        )
+
+        for e in (
+            outputs["augmented_graph"].edge_subgraph(added_edges).edges.data()
+        ):
+            annotation = find_average_annotation(e[:2], outputs["graph"])
+            assert e[2][GraphAttrs.EDGE_GROUND_TRUTH] == annotation
