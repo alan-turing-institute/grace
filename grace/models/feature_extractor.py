@@ -3,7 +3,13 @@ from typing import Any, Dict, Tuple, Callable
 import torch
 
 from torchvision.models import resnet152, ResNet152_Weights
-from torchvision.transforms import Resize, Lambda, Normalize, Compose, RandomApply
+from torchvision.transforms import (
+    Resize,
+    Lambda,
+    Normalize,
+    Compose,
+    RandomApply,
+)
 
 from grace.base import GraphAttrs
 from grace.utils.augment_image import RandomEdgeCrop
