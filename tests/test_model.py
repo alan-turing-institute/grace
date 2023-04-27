@@ -4,8 +4,6 @@ from grace.models.feature_extractor import FeatureExtractor
 import torch
 import pytest
 
-import numpy as np
-
 from _utils import random_image_and_graph
 
 from grace.base import GraphAttrs
