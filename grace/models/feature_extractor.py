@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple, Callable
 import torch
 
 from torchvision.models import resnet152, ResNet152_Weights
-from torchvision.transforms import Lambda, Normalize, Compose, RandomApply
+from torchvision.transforms import Resize, Lambda, Normalize, Compose, RandomApply
 
 from grace.base import GraphAttrs
 from grace.utils.augment_image import RandomEdgeCrop
@@ -22,6 +22,7 @@ def resnet() -> torch.nn.Module:
 
 default_transforms = Compose(
     [
+        Resize(size=(224, 224)),
         Normalize(mean=[0.0], std=[1.0]),
         Lambda(lambda x: x.expand(1, 3, 224, 224)),
     ]
