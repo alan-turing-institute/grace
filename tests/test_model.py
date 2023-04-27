@@ -46,7 +46,7 @@ class TestFeatureExtractor:
                 transforms=lambda x: x,
                 augmentations=lambda x: x,
             ),
-            "image": image,
+            "image": torch.tensor(image.astype("float32")),
             "graph": graph,
         }
 
@@ -56,7 +56,7 @@ class TestFeatureExtractor:
         )
         graph_out = target_out["graph"]
 
-        assert np.array_equal(vars["image"], image_out.numpy())
+        assert torch.equal(vars["image"], image_out)
 
         for node in graph_out.nodes.data():
             x, y = int(node[1][GraphAttrs.NODE_X]), int(
