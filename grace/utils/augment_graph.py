@@ -1,5 +1,6 @@
 from typing import Any, Dict, Tuple
 
+import enum
 import torch
 
 import numpy as np
@@ -42,7 +43,13 @@ def find_average_annotation(
         return Annotation.UNKNOWN
 
 
-ANNOTATION_MODES = {"random", "unknown", "average"}
+@enum.unique
+class AnnotationModes(str, enum.Enum):
+    """Names of annotation modes used for graph augmentation."""
+
+    RANDOM = "random"
+    UNKNOWN = "unknown"
+    AVERAGE = "average"
 
 
 class RandomEdgeAdditionAndRemoval:
@@ -53,9 +60,9 @@ class RandomEdgeAdditionAndRemoval:
 
     Parameters
     ----------
-    n_add : float
+    p_add : float
         Number of new edges to add, as a fraction of previous edge count
-    n_remove : float
+    p_remove : float
         Number of new edges to remove, as a fraction of previous edge count
     rng : numpy.random.Generator
         Random number generator
@@ -68,42 +75,42 @@ class RandomEdgeAdditionAndRemoval:
 
     def __init__(
         self,
-        n_add: float = 0.1,
-        n_remove: float = 0.1,
+        p_add: float = 0.1,
+        p_remove: float = 0.1,
         rng: np.random.Generator = np.random.default_rng(),
         annotation_mode: str = "random",
     ):
         self.rng = rng
-        self.n_add = n_add
-        self.n_remove = n_remove
+        self.p_add = p_add
+        self.p_remove = p_remove
 
-        if annotation_mode not in ANNOTATION_MODES:
+        if annotation_mode not in iter(AnnotationModes):
             raise ValueError(
-                "annotation_mode must be one of %r." % ANNOTATION_MODES
+                f"annotation_mode must be one of {list(AnnotationModes)}"
             )
 
         if annotation_mode == "random":
             self.assign_annotation = lambda edge, graph: self.rng.choice(
                 Annotation
             )
-        elif annotation_mode == "unknown":
-            self.assign_annotation = lambda edge, graph: Annotation.UNKNOWN
         elif annotation_mode == "average":
             self.assign_annotation = (
                 lambda edge, graph: find_average_annotation(edge, graph)
             )
+        else:
+            self.assign_annotation = lambda edge, graph: Annotation.UNKNOWN
 
     def __call__(
         self, x: torch.Tensor, graph: Dict[str, Any]
     ) -> Tuple[torch.Tensor, dict]:
         edges_list = list(graph["graph"].edges)
         max_node = graph["graph"].number_of_nodes()
-        n_add_int = int(self.n_add * len(edges_list))
-        n_remove_int = int(self.n_remove * len(edges_list))
+        n_add = int(self.p_add * len(edges_list))
+        n_remove = int(self.p_remove * len(edges_list))
 
         edges_to_add = [
             tuple(self.rng.integers(low=0, high=max_node, size=(2,)))
-            for n in range(n_add_int)
+            for n in range(n_add)
         ]
         edge_annotations = [
             self.assign_annotation(e, graph["graph"]) for e in edges_to_add
@@ -115,7 +122,7 @@ class RandomEdgeAdditionAndRemoval:
 
         edges_to_remove = [
             edges_list[e]
-            for e in self.rng.integers(0, len(edges_list), (n_remove_int,))
+            for e in self.rng.integers(0, len(edges_list), (n_remove,))
         ]
 
         graph["graph"].add_edges_from(edges_to_add)

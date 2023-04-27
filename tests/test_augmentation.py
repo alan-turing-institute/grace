@@ -186,7 +186,7 @@ def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
 
 
 @pytest.mark.parametrize(
-    "n_add, n_remove, annotation_mode",
+    "p_add, p_remove, annotation_mode",
     [
         (0, 0, "random"),
         (0, 0.2, "random"),
@@ -197,10 +197,10 @@ def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
 )
 class TestAugmentGraphEdgeAdditionRemoval:
     @pytest.fixture
-    def outputs(self, n_add, n_remove, annotation_mode, default_rng):
+    def outputs(self, p_add, p_remove, annotation_mode, default_rng):
         image, graph = random_image_and_graph(default_rng, num_nodes=4)
         transform = RandomEdgeAdditionAndRemoval(
-            n_add, n_remove, default_rng, annotation_mode
+            p_add, p_remove, default_rng, annotation_mode
         )
         augmented_image, augmented_target = transform(image, {"graph": graph})
         augmented_graph = augmented_target["graph"]
@@ -212,11 +212,11 @@ class TestAugmentGraphEdgeAdditionRemoval:
         }
 
     def test_images_remain_same(
-        self, n_add, n_remove, annotation_mode, outputs
+        self, p_add, p_remove, annotation_mode, outputs
     ):
         assert np.array_equal(outputs["image"], outputs["augmented_image"])
 
-    def test_new_edges_in_node_range(self, n_add, n_remove, outputs):
+    def test_new_edges_in_node_range(self, p_add, p_remove, outputs):
         assert all(
             [
                 e in range(outputs["graph"].number_of_nodes())
@@ -226,10 +226,10 @@ class TestAugmentGraphEdgeAdditionRemoval:
         )
 
     def test_number_of_added_and_removed_edges(
-        self, n_add, n_remove, annotation_mode, default_rng, outputs
+        self, p_add, p_remove, annotation_mode, default_rng, outputs
     ):
-        add_edges = RandomEdgeAdditionAndRemoval(n_add, 0, default_rng)
-        remove_edges = RandomEdgeAdditionAndRemoval(0, n_remove, default_rng)
+        add_edges = RandomEdgeAdditionAndRemoval(p_add, 0, default_rng)
+        remove_edges = RandomEdgeAdditionAndRemoval(0, p_remove, default_rng)
         num_edges_init = outputs["graph"].number_of_edges()
 
         image, target_added = add_edges(
@@ -241,18 +241,18 @@ class TestAugmentGraphEdgeAdditionRemoval:
         num_edges_augmented_remove = target_removed["graph"].number_of_edges()
 
         assert (
-            num_edges_init + int(n_add * num_edges_init)
+            num_edges_init + int(p_add * num_edges_init)
             >= num_edges_augmented_add
             >= num_edges_init
         )
         assert (
             num_edges_augmented_add
             >= num_edges_augmented_remove
-            >= num_edges_augmented_add - int(n_remove * num_edges_init)
+            >= num_edges_augmented_add - int(p_remove * num_edges_init)
         )
 
     def test_added_edges_have_correct_annotations(
-        self, n_add, n_remove, annotation_mode, outputs
+        self, p_add, p_remove, annotation_mode, outputs
     ):
         if annotation_mode == "random":
             return
@@ -268,7 +268,7 @@ class TestAugmentGraphEdgeAdditionRemoval:
                 expected_annotation = find_average_annotation(
                     e[:2], outputs["graph"]
                 )
-            elif annotation_mode == "unknown":
+            else:
                 expected_annotation = Annotation.UNKNOWN
 
             assert e[2][GraphAttrs.EDGE_GROUND_TRUTH] == expected_annotation
