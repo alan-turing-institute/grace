@@ -42,6 +42,9 @@ def find_average_annotation(
         return Annotation.UNKNOWN
 
 
+ANNOTATION_MODES = {"random", "unknown", "average"}
+
+
 class RandomEdgeAdditionAndRemoval:
     """Randomly adds and removes edges to the graph.
 
@@ -56,6 +59,11 @@ class RandomEdgeAdditionAndRemoval:
         Number of new edges to remove, as a fraction of previous edge count
     rng : numpy.random.Generator
         Random number generator
+    annotation_mode : str
+        The scheme by which annotations will be assigned to newly addded edges;
+        random: chosen by random choice; unknown: will always be GraphAttrs.UNKNOWN,
+        average: an average of all edge annotations associated with the nodes of the
+        new edge.
     """
 
     def __init__(
@@ -63,10 +71,27 @@ class RandomEdgeAdditionAndRemoval:
         n_add: float = 0.1,
         n_remove: float = 0.1,
         rng: np.random.Generator = np.random.default_rng(),
+        annotation_mode: str = "random",
     ):
         self.rng = rng
         self.n_add = n_add
         self.n_remove = n_remove
+
+        if annotation_mode not in ANNOTATION_MODES:
+            raise ValueError(
+                "annotation_mode must be one of %r." % ANNOTATION_MODES
+            )
+
+        if annotation_mode == "random":
+            self.assign_annotation = lambda edge, graph: self.rng.choice(
+                Annotation
+            )
+        elif annotation_mode == "unknown":
+            self.assign_annotation = lambda edge, graph: Annotation.UNKNOWN
+        elif annotation_mode == "average":
+            self.assign_annotation = (
+                lambda edge, graph: find_average_annotation(edge, graph)
+            )
 
     def __call__(
         self, x: torch.Tensor, graph: Dict[str, Any]
@@ -81,7 +106,7 @@ class RandomEdgeAdditionAndRemoval:
             for n in range(n_add_int)
         ]
         edge_annotations = [
-            find_average_annotation(e, graph["graph"]) for e in edges_to_add
+            self.assign_annotation(e, graph["graph"]) for e in edges_to_add
         ]
         edges_to_add = [
             e + ({GraphAttrs.EDGE_GROUND_TRUTH: edge_annotations[n]},)
