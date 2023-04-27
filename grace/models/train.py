@@ -4,6 +4,10 @@ import torch
 import torch_geometric
 from torch_geometric.loader import DataLoader
 
+import torch.nn.functional as F
+
+from grace.base import Annotation
+
 
 def train_model(
     model: torch.nn.Module,
@@ -29,26 +33,41 @@ def train_model(
         # weight_decay=5e-4),
     )
 
-    criterion = torch.nn.CrossEntropyLoss()
+    node_criterion = torch.nn.CrossEntropyLoss()
+
+    def edge_criterion(pred, target, edge_index):
+        src, dst = edge_index
+        edge_score = (pred[src] * pred[dst]).sum(dim=-1)
+
+        if target == Annotation.UNKNOWN:
+            return torch.tensor([0.])
+        else:
+            return F.cross_entropy(edge_score, target)
 
     def train():
         model.train()
 
         for data in train_loader:
-            out = model(data.x, data.edge_index, data.batch)
-            loss = criterion(out, data.y)
+            out_x, out_embedding = model(data.x, data.edge_index, data.batch)
+            loss_node = node_criterion(out_x, data.y)
+            loss_edge = edge_criterion(out_embedding, data.edge_label, data.edge_index)
+
+            loss = loss_node + loss_edge
+
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
 
     def test(loader):
+        """Evaluates the GCN on node classification."""
         model.eval()
 
         correct = 0
         for data in loader:
-            out = model(data.x, data.edge_index, data.batch)
-            pred = out.argmax(dim=1)  # Use the class with highest probability.
+            out_x, out_embedding = model(data.x, data.edge_index, data.batch)
+            pred = out_x.argmax(dim=1)  # Use the class with highest probability.
             correct += int((pred == data.y).sum())
+
         return correct / len(loader.dataset)
 
     for epoch in range(1, epochs):

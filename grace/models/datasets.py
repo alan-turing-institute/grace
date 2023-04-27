@@ -54,6 +54,9 @@ def dataset_from_graph(
         )
         edge_attr = pos - central_node
 
+        edge_label = [edge[GraphAttrs.EDGE_GROUND_TRUTH]
+                      for _,edge in sub_graph.edges(data=True)]
+
         item = nx.convert_node_labels_to_integers(sub_graph)
         edges = list(item.edges)
         edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
@@ -62,6 +65,7 @@ def dataset_from_graph(
             x=torch.Tensor(x),
             edge_index=edge_index,
             edge_attr=torch.Tensor(edge_attr),
+            edge_label=torch.Tensor(edge_label),
             pos=torch.Tensor(pos),
             y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
         )
