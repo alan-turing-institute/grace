@@ -44,7 +44,7 @@ def find_average_annotation(
 
 
 @enum.unique
-class AnnotationModes(str, enum.Enum):
+class AnnotationAugmentationModes(str, enum.Enum):
     """Names of annotation modes used for graph augmentation."""
 
     RANDOM = "random"
@@ -84,9 +84,9 @@ class RandomEdgeAdditionAndRemoval:
         self.p_add = p_add
         self.p_remove = p_remove
 
-        if annotation_mode not in iter(AnnotationModes):
+        if annotation_mode not in iter(AnnotationAugmentationModes):
             raise ValueError(
-                f"annotation_mode must be one of {list(AnnotationModes)}"
+                f"annotation_mode must be one of {list(AnnotationAugmentationModes)}"
             )
 
         if annotation_mode == "random":
