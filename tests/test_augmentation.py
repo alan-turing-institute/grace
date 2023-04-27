@@ -6,8 +6,12 @@ import torchvision.transforms as transforms
 
 import numpy as np
 
-from grace.base import GraphAttrs
+from grace.base import GraphAttrs, Annotation
 from grace.utils.augment_image import RandomEdgeCrop, RandomImageGraphRotate
+from grace.utils.augment_graph import (
+    find_average_annotation,
+    RandomEdgeAdditionAndRemoval,
+)
 
 from _utils import random_image_and_graph
 
@@ -179,3 +183,106 @@ def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
     assert np.allclose(
         expected_end_coords_float[n], augmented_float_coords, atol=0.01
     )
+
+
+@pytest.mark.parametrize(
+    "p_add, p_remove, annotation_mode",
+    [
+        (0, 0, "random"),
+        (0, 0.2, "random"),
+        (0.2, 0.2, "average"),
+        (0.2, 0.4, "average"),
+        (0.8, 0, "unknown"),
+    ],
+)
+class TestAugmentGraphEdgeAdditionRemoval:
+    @pytest.fixture
+    def outputs(self, p_add, p_remove, annotation_mode, default_rng):
+        image, graph = random_image_and_graph(default_rng, num_nodes=4)
+        transform = RandomEdgeAdditionAndRemoval(
+            p_add, p_remove, default_rng, annotation_mode
+        )
+        augmented_image, augmented_target = transform(image, {"graph": graph})
+        augmented_graph = augmented_target["graph"]
+        return {
+            "image": image,
+            "graph": graph,
+            "augmented_image": augmented_image,
+            "augmented_graph": augmented_graph,
+        }
+
+    def test_images_remain_same(
+        self, p_add, p_remove, annotation_mode, outputs
+    ):
+        assert np.array_equal(outputs["image"], outputs["augmented_image"])
+
+    def test_new_edges_in_node_range(self, p_add, p_remove, outputs):
+        assert all(
+            [
+                e in range(outputs["graph"].number_of_nodes())
+                for edge_tuple in outputs["augmented_graph"].edges
+                for e in edge_tuple
+            ]
+        )
+
+    def test_number_of_added_and_removed_edges(
+        self, p_add, p_remove, annotation_mode, default_rng, outputs
+    ):
+        add_edges = RandomEdgeAdditionAndRemoval(p_add, 0, default_rng)
+        remove_edges = RandomEdgeAdditionAndRemoval(0, p_remove, default_rng)
+        num_edges_init = outputs["graph"].number_of_edges()
+
+        image, target_added = add_edges(
+            outputs["image"], {"graph": outputs["graph"]}
+        )
+        num_edges_augmented_add = target_added["graph"].number_of_edges()
+
+        image, target_removed = remove_edges(image, target_added)
+        num_edges_augmented_remove = target_removed["graph"].number_of_edges()
+
+        assert (
+            num_edges_init + int(p_add * num_edges_init)
+            >= num_edges_augmented_add
+            >= num_edges_init
+        )
+        assert (
+            num_edges_augmented_add
+            >= num_edges_augmented_remove
+            >= num_edges_augmented_add - int(p_remove * num_edges_init)
+        )
+
+    def test_added_edges_have_correct_annotations(
+        self, p_add, p_remove, annotation_mode, outputs
+    ):
+        if annotation_mode == "random":
+            return
+
+        added_edges = set(outputs["augmented_graph"].edges).difference(
+            set(outputs["graph"].edges)
+        )
+
+        for e in (
+            outputs["augmented_graph"].edge_subgraph(added_edges).edges.data()
+        ):
+            if annotation_mode == "average":
+                expected_annotation = find_average_annotation(
+                    e[:2], outputs["graph"]
+                )
+            else:
+                expected_annotation = Annotation.UNKNOWN
+
+            assert e[2][GraphAttrs.EDGE_GROUND_TRUTH] == expected_annotation
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "randon",
+        "randion",
+        "unkown",
+        "avrage",
+    ],
+)
+def test_invalid_annotation_mode_raises_error(mode):
+    with pytest.raises(ValueError):
+        RandomEdgeAdditionAndRemoval(annotation_mode=mode)
