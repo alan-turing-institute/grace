@@ -54,8 +54,10 @@ def dataset_from_graph(
         )
         edge_attr = pos - central_node
 
-        edge_label = [edge[GraphAttrs.EDGE_GROUND_TRUTH]
-                      for _,edge in sub_graph.edges(data=True)]
+        edge_label = [
+            edge[GraphAttrs.EDGE_GROUND_TRUTH]
+            for _, edge in sub_graph.edges(data=True)
+        ]
 
         item = nx.convert_node_labels_to_integers(sub_graph)
         edges = list(item.edges)

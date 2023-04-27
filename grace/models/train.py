@@ -40,7 +40,7 @@ def train_model(
         edge_score = (pred[src] * pred[dst]).sum(dim=-1)
 
         if target == Annotation.UNKNOWN:
-            return torch.tensor([0.])
+            return torch.tensor([0.0])
         else:
             return F.cross_entropy(edge_score, target)
 
@@ -50,7 +50,9 @@ def train_model(
         for data in train_loader:
             out_x, out_embedding = model(data.x, data.edge_index, data.batch)
             loss_node = node_criterion(out_x, data.y)
-            loss_edge = edge_criterion(out_embedding, data.edge_label, data.edge_index)
+            loss_edge = edge_criterion(
+                out_embedding, data.edge_label, data.edge_index
+            )
 
             loss = loss_node + loss_edge
 
@@ -65,7 +67,9 @@ def train_model(
         correct = 0
         for data in loader:
             out_x, out_embedding = model(data.x, data.edge_index, data.batch)
-            pred = out_x.argmax(dim=1)  # Use the class with highest probability.
+            pred = out_x.argmax(
+                dim=1
+            )  # Use the class with highest probability.
             correct += int((pred == data.y).sum())
 
         return correct / len(loader.dataset)

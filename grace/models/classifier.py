@@ -9,7 +9,13 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 class GCN(torch.nn.Module):
     """A graph convolutional network for subgraph classification."""
 
-    def __init__(self, input_channels: int, hidden_channels: int, *, output_classes: int = 2):
+    def __init__(
+        self,
+        input_channels: int,
+        hidden_channels: int,
+        *,
+        output_classes: int = 2,
+    ):
         super(GCN, self).__init__()
         torch.manual_seed(12345)
         self.conv1 = GCNConv(input_channels, hidden_channels)
@@ -28,7 +34,9 @@ class GCN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         x = x.relu()
         embeddings = self.conv3(x, edge_index)
-        x = global_mean_pool(embeddings, batch)  # [batch_size, hidden_channels]
+        x = global_mean_pool(
+            embeddings, batch
+        )  # [batch_size, hidden_channels]
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.linear(x)
         return x, embeddings
