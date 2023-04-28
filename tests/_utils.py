@@ -24,8 +24,8 @@ def random_image_and_graph(
     node_ground_truth = rng.integers(0, 2, size=(num_nodes,))
     df = pd.DataFrame(
         {
-            GraphAttrs.NODE_X: node_coords[:, 1],
-            GraphAttrs.NODE_Y: node_coords[:, 0],
+            GraphAttrs.NODE_X: node_coords[:, 0],
+            GraphAttrs.NODE_Y: node_coords[:, 1],
             GraphAttrs.NODE_FEATURES: features,
             GraphAttrs.NODE_GROUND_TRUTH: node_ground_truth,
             GraphAttrs.NODE_CONFIDENCE: rng.uniform(
@@ -34,6 +34,6 @@ def random_image_and_graph(
         }
     )
 
-    image[tuple(node_coords[:, 0]), tuple(node_coords[:, 1])] = 1
+    image[tuple(node_coords[:, 1]), tuple(node_coords[:, 0])] = 1
     graph = graph_from_dataframe(df, triangulate=True)
     return image, graph
