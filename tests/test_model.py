@@ -57,7 +57,7 @@ class TestFeatureExtractor:
         assert torch.equal(vars["image"], image_out)
 
         for node in graph_out.nodes.data():
-            y, x = int(node[1][GraphAttrs.NODE_X]), int(
+            x, y = int(node[1][GraphAttrs.NODE_X]), int(
                 node[1][GraphAttrs.NODE_Y]
             )
             features = node[1][GraphAttrs.NODE_FEATURES]
@@ -68,6 +68,6 @@ class TestFeatureExtractor:
             y_low = int(y - bbox_size[1] / 2)
             y_box = slice(y_low, y_low + bbox_size[1])
 
-            bbox_image = vars["image"][..., x_box, y_box]
+            bbox_image = vars["image"][..., y_box, x_box]
 
             assert features == model(bbox_image)
