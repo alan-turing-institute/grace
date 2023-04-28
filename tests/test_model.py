@@ -57,7 +57,6 @@ class TestFeatureExtractor:
         assert torch.equal(vars["image"], image_out)
 
         for node_id, node_attrs in graph_out.nodes.data():
-            
             x, y = node_attrs[GraphAttrs.NODE_X], node_attrs[GraphAttrs.NODE_Y]
             features = node_attrs[GraphAttrs.NODE_FEATURES]
 

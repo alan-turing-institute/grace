@@ -90,7 +90,6 @@ class FeatureExtractor(torch.nn.Module):
             image = image[[None] * (4 - len(image.size()))]
 
         for node_id, node_attrs in graph["graph"].nodes.data():
-
             x, y = node_attrs[GraphAttrs.NODE_X], node_attrs[GraphAttrs.NODE_Y]
 
             x_low = int(x - self.bbox_size[0] / 2)
