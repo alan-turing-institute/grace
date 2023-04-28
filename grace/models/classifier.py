@@ -7,7 +7,19 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 
 
 class GCN(torch.nn.Module):
-    """A graph convolutional network for subgraph classification."""
+    """A graph convolutional network for subgraph classification.
+
+     Parameters
+     ----------
+     input_dims : int
+         The dimensions of the input.
+     embedding_dims : int
+         The dimensions of the hidden embeddings.
+     output_dims : int
+         The dimensions of the output. This is typically the number of classes in
+         the classifcation task.
+
+     """
 
     def __init__(
         self,
