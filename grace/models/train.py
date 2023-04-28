@@ -79,15 +79,15 @@ def train_model(
             src, dst = data.edge_index
             edge_score = (out_embedding[src] * out_embedding[dst]).sum(dim=-1)
             num_edges += edge_score.size(dim=0)
-            correct_edges += int((pred == data.y).sum())
+            correct_edges += int((torch.round(pred) == data.edge_label).sum())
 
-        return correct_nodes / len(loader.dataset)
+        return correct_nodes / len(loader.dataset), correct_edges / num_edges
 
     for epoch in range(1, epochs):
         train()
-        train_acc = test(train_loader)
-        test_acc = test(test_loader)
+        train_acc_node, train_acc_edge = test(train_loader)
+        test_acc_node, test_acc_edge = test(test_loader)
         print(
-            f"Epoch: {epoch:03d}, Train Acc: {train_acc:.4f},"
-            f" Test Acc: {test_acc:.4f}"
+            f"Epoch: {epoch:03d}, Train Acc (Node): {train_acc_node:.4f}, Train Acc (Edge): {train_acc_edge:.4f}"
+            f" Test Acc (Node): {test_acc_node:.4f}, Test Acc (Edge): {test_acc_edge:.4f}"
         )
