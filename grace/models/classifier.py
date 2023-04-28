@@ -11,17 +11,17 @@ class GCN(torch.nn.Module):
 
     def __init__(
         self,
-        input_channels: int,
-        hidden_channels: int,
+        input_dims: int,
+        embedding_dims: int,
         *,
-        output_classes: int = 2,
+        output_dims: int = 2,
     ):
         super(GCN, self).__init__()
         torch.manual_seed(12345)
-        self.conv1 = GCNConv(input_channels, hidden_channels)
-        self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        self.conv3 = GCNConv(hidden_channels, hidden_channels)
-        self.linear = Linear(hidden_channels, output_classes)
+        self.conv1 = GCNConv(input_dims, embedding_dims)
+        self.conv2 = GCNConv(embedding_dims, embedding_dims)
+        self.conv3 = GCNConv(embedding_dims, embedding_dims)
+        self.linear = Linear(embedding_dims, output_dims)
 
     def forward(
         self,
