@@ -11,29 +11,29 @@ class GCN(torch.nn.Module):
 
     Parameters
     ----------
-    input_dims : int
-        The dimensions of the input.
-    embedding_dims : int
-        The dimensions of the hidden embeddings.
+    input_channels : int
+        The dimension of the input.
+    embedding_channels : int
+        The dimension of the hidden embeddings.
     output_dims : int
-        The dimensions of the output. This is typically the number of classes in
+        The dimension of the output. This is typically the number of classes in
         the classifcation task.
 
     """
 
     def __init__(
         self,
-        input_dims: int,
-        embedding_dims: int,
+        input_channels: int,
+        hidden_channels: int,
         *,
-        output_dims: int = 2,
+        output_classes: int = 2,
     ):
         super(GCN, self).__init__()
         torch.manual_seed(12345)
-        self.conv1 = GCNConv(input_dims, embedding_dims)
-        self.conv2 = GCNConv(embedding_dims, embedding_dims)
-        self.conv3 = GCNConv(embedding_dims, embedding_dims)
-        self.linear = Linear(embedding_dims, output_dims)
+        self.conv1 = GCNConv(input_channels, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        self.linear = Linear(hidden_channels, output_classes)
 
     def forward(
         self,

@@ -33,16 +33,13 @@ def train_model(
         # weight_decay=5e-4),
     )
 
-    node_criterion = torch.nn.CrossEntropyLoss()
+    node_criterion = torch.nn.CrossEntropyLoss(ignore_index=Annotation.UNKNOWN)
 
     def edge_criterion(pred, target, edge_index):
         src, dst = edge_index
         edge_score = (pred[src] * pred[dst]).sum(dim=-1)
 
-        if target == Annotation.UNKNOWN:
-            return torch.tensor([0.0])
-        else:
-            return F.cross_entropy(edge_score, target)
+        return F.cross_entropy(edge_score, target, ignore_index=Annotation.UNKNOWN)
 
     def train():
         model.train()
@@ -64,15 +61,27 @@ def train_model(
         """Evaluates the GCN on node classification."""
         model.eval()
 
-        correct = 0
+        correct_nodes = 0
+        correct_edges = 0
+        num_edges = 0
+
         for data in loader:
+
             out_x, out_embedding = model(data.x, data.edge_index, data.batch)
+
+            # node
             pred = out_x.argmax(
                 dim=1
             )  # Use the class with highest probability.
-            correct += int((pred == data.y).sum())
+            correct_nodes += int((pred == data.y).sum())
 
-        return correct / len(loader.dataset)
+            # edge
+            src, dst = data.edge_index
+            edge_score = (out_embedding[src] * out_embedding[dst]).sum(dim=-1)
+            num_edges += edge_score.size(dim=0)
+            correct_edges += int((pred == data.y).sum())
+
+        return correct_nodes / len(loader.dataset)
 
     for epoch in range(1, epochs):
         train()
