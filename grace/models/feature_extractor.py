@@ -15,20 +15,9 @@ from grace.base import GraphAttrs
 from grace.utils.augment_image import RandomEdgeCrop
 
 
-def classifier_to_feature_extractor(classifier: torch.nn.Module) -> torch.nn.Module:
-    """Takes a pre-trained classification model and returns a copy in which
-    the final (classification) layer has been removed.
-    
-    Parameters
-    ----------
-    classifier : torch.nn.Module
-        Classifier model
-
-    Returns
-    -------
-    extractor : torch.nn.Module
-        Feature extractor model
-    """
+def resnet() -> torch.nn.Module:
+    """Returns the pre-trained resnet152 model."""
+    classifier = resnet152(ResNet152_Weights)
     modules = list(classifier.children())[:-1]
     extractor = torch.nn.Sequential(*modules)
     for p in extractor.parameters():
@@ -71,7 +60,7 @@ class FeatureExtractor(torch.nn.Module):
         self,
         *,
         bbox_size: Tuple[int] = (224, 224),
-        model: Callable = classifier_to_feature_extractor(resnet152(ResNet152_Weights)),
+        model: Callable = resnet(),
         transforms: Callable = default_transforms,
         augmentations: Callable = default_augmentations,
     ) -> None:
