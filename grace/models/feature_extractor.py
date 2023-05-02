@@ -9,6 +9,7 @@ from torchvision.transforms import (
     Normalize,
     Compose,
     RandomApply,
+    RandomAffine,
 )
 
 from grace.base import GraphAttrs
@@ -29,11 +30,19 @@ def resnet() -> torch.nn.Module:
 default_transforms = Compose(
     [
         Resize(size=(224, 224)),
-        Normalize(mean=[0.0], std=[1.0]),
         Lambda(lambda x: x.expand(1, 3, 224, 224)),
     ]
 )
-default_augmentations = RandomApply([RandomEdgeCrop(max_fraction=0.1)], p=0.3)
+default_augmentations = RandomApply(
+    [
+        RandomEdgeCrop(max_fraction=0.1),
+        RandomAffine(
+            degrees=0,
+            translate=(0.1, 0.1),
+        ),
+    ],
+    p=0.3,
+)
 
 
 class FeatureExtractor(torch.nn.Module):
@@ -54,6 +63,9 @@ class FeatureExtractor(torch.nn.Module):
     augmentations : Callable
         Series of augmentations to apply to the bbox image
         during training
+    normalize_func : Callable
+        Function to normalize the images after the augmentations
+        and after the transforms
     """
 
     def __init__(
@@ -63,12 +75,14 @@ class FeatureExtractor(torch.nn.Module):
         bbox_size: Tuple[int] = (224, 224),
         transforms: Callable = default_transforms,
         augmentations: Callable = default_augmentations,
+        normalize_func: Callable = Normalize(mean=[0.0], std=[1.0]),
     ) -> None:
         super(FeatureExtractor, self).__init__()
         self.bbox_size = bbox_size
         self.model = model
         self.transforms = transforms
         self.augmentations = augmentations
+        self.normalize_func = normalize_func
 
     def forward(
         self,
@@ -100,10 +114,12 @@ class FeatureExtractor(torch.nn.Module):
 
             bbox_image = image[..., y_box, x_box]
             bbox_image = self.transforms(bbox_image)
+            bbox_image = self.normalize_func(bbox_image)
 
             if self.training:
                 bbox_image = self.augmentations(bbox_image)
 
+            bbox_image = self.normalize_func(bbox_image)
             features = self.model(bbox_image)
             node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
 
