@@ -49,7 +49,7 @@ def train_model(
     )
 
     node_criterion = torch.nn.CrossEntropyLoss(
-        ignore_index=Annotation.UNKNOWN, reduction='mean'
+        ignore_index=Annotation.UNKNOWN, reduction="mean"
     )
 
     def train():

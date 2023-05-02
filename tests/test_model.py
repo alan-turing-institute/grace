@@ -8,7 +8,7 @@ import networkx as nx
 
 from _utils import random_image_and_graph
 
-from grace.base import GraphAttrs
+from grace.base import GraphAttrs, Annotation
 from grace.models.datasets import dataset_from_graph
 
 
@@ -43,8 +43,18 @@ class TestGCN:
         num_nodes,
         default_rng,
     ):
-        image, graph = random_image_and_graph(
+        _, graph = random_image_and_graph(
             default_rng, num_nodes=num_nodes, feature_ndim=input_channels
+        )
+        graph.update(
+            edges=[
+                (
+                    src,
+                    dst,
+                    {GraphAttrs.EDGE_GROUND_TRUTH: Annotation.TRUE_POSITIVE},
+                )
+                for src, dst in graph.edges
+            ]
         )
         data = dataset_from_graph(graph)[0]
 
