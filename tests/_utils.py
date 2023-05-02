@@ -13,11 +13,11 @@ def random_image_and_graph(
     *,
     num_nodes: int = 4,
     image_size: Tuple[int] = (128, 128),
+    feature_ndim: int = 32,
 ) -> Tuple[npt.NDArray, List[nx.Graph]]:
     """Create a random image and graph."""
     image = np.zeros(image_size, dtype=np.uint16)
 
-    feature_ndim = 32
     features = [rng.uniform(size=(feature_ndim,)) for _ in range(num_nodes)]
 
     node_coords = rng.integers(0, image.shape[1], size=(num_nodes, 2))

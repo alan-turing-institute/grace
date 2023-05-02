@@ -12,7 +12,7 @@ class GCN(torch.nn.Module):
     Parameters
     ----------
     input_channels : int
-        The dimension of the input.
+        The dimension of the input; i.e., length of node feature vectors
     embedding_channels : int
         The dimension of the hidden embeddings.
     output_dims : int

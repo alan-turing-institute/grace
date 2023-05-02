@@ -9,12 +9,27 @@ import torch.nn.functional as F
 from grace.base import Annotation
 
 
+def edge_criterion(
+    embed: torch.Tensor,
+    target: torch.Tensor,
+    edge_index: torch.Tensor,
+    masked_class: int,
+) -> torch.Tensor:
+    src, dst = edge_index
+    edge_score = (embed[src] * embed[dst]).sum(dim=-1)  # (num_edges,)
+
+    mask = torch.where(target != masked_class, True, False)
+
+    return F.cross_entropy(edge_score[mask], target[mask])
+
+
 def train_model(
     model: torch.nn.Module,
     dataset: List[torch_geometric.data.Data],
     *,
     epochs: int = 100,
     batch_size: int = 64,
+    masked_class: int = Annotation.UNKNOWN,
 ):
     """Train the pytorch model."""
     train_dataset = dataset[: round(0.7 * len(dataset))]
@@ -33,13 +48,9 @@ def train_model(
         # weight_decay=5e-4),
     )
 
-    node_criterion = torch.nn.CrossEntropyLoss(ignore_index=Annotation.UNKNOWN)
-
-    def edge_criterion(pred, target, edge_index):
-        src, dst = edge_index
-        edge_score = (pred[src] * pred[dst]).sum(dim=-1)
-
-        return F.cross_entropy(edge_score, target, ignore_index=Annotation.UNKNOWN)
+    node_criterion = torch.nn.CrossEntropyLoss(
+        ignore_index=Annotation.UNKNOWN, size_average=True
+    )
 
     def train():
         model.train()
@@ -48,7 +59,7 @@ def train_model(
             out_x, out_embedding = model(data.x, data.edge_index, data.batch)
             loss_node = node_criterion(out_x, data.y)
             loss_edge = edge_criterion(
-                out_embedding, data.edge_label, data.edge_index
+                out_embedding, data.edge_label, data.edge_index, masked_class
             )
 
             loss = loss_node + loss_edge
@@ -56,6 +67,8 @@ def train_model(
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
+
+        return loss, loss_node, loss_edge
 
     def test(loader):
         """Evaluates the GCN on node classification."""
@@ -66,7 +79,6 @@ def train_model(
         num_edges = 0
 
         for data in loader:
-
             out_x, out_embedding = model(data.x, data.edge_index, data.batch)
 
             # node
@@ -84,10 +96,14 @@ def train_model(
         return correct_nodes / len(loader.dataset), correct_edges / num_edges
 
     for epoch in range(1, epochs):
-        train()
+        loss, loss_node, loss_edge = train()
         train_acc_node, train_acc_edge = test(train_loader)
         test_acc_node, test_acc_edge = test(test_loader)
         print(
-            f"Epoch: {epoch:03d}, Train Acc (Node): {train_acc_node:.4f}, Train Acc (Edge): {train_acc_edge:.4f}"
-            f" Test Acc (Node): {test_acc_node:.4f}, Test Acc (Edge): {test_acc_edge:.4f}"
+            f"Epoch: {epoch:03d}, Loss: {loss:.4f},"
+            f" Node Loss: {loss_node:.4f}, Edge Loss: {loss_edge:.4f},"
+            f" Train Acc (Node): {train_acc_node:.4f},"
+            f" Train Acc (Edge): {train_acc_edge:.4f},"
+            f" Test Acc (Node): {test_acc_node:.4f},"
+            f" Test Acc (Edge): {test_acc_edge:.4f}"
         )
