@@ -55,7 +55,7 @@ class FeatureExtractor(torch.nn.Module):
         Size the bounding boxes to be extracted, centered
         on the x-y coordinates of each node; (W, H)
     model : Callable
-        Feature extractor model or sfunction that maps a tensor
+        Feature extractor model or function that maps a tensor
         to a tensor
     transforms : Callable
         Series of transforms to apply to the bbox image before
