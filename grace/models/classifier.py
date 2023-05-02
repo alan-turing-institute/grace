@@ -15,7 +15,7 @@ class GCN(torch.nn.Module):
         The dimension of the input; i.e., length of node feature vectors
     embedding_channels : int
         The dimension of the hidden embeddings.
-    output_dims : int
+    output_classes : int
         The dimension of the output. This is typically the number of classes in
         the classifcation task.
 

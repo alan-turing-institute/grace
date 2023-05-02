@@ -13,7 +13,7 @@ def edge_criterion(
     embed: torch.Tensor,
     target: torch.Tensor,
     edge_index: torch.Tensor,
-    masked_class: int,
+    masked_class: Annotation,
 ) -> torch.Tensor:
     src, dst = edge_index
     edge_score = (embed[src] * embed[dst]).sum(dim=-1)  # (num_edges,)
@@ -29,7 +29,7 @@ def train_model(
     *,
     epochs: int = 100,
     batch_size: int = 64,
-    masked_class: int = Annotation.UNKNOWN,
+    masked_class: Annotation = Annotation.UNKNOWN,
 ):
     """Train the pytorch model."""
     train_dataset = dataset[: round(0.7 * len(dataset))]
@@ -49,7 +49,7 @@ def train_model(
     )
 
     node_criterion = torch.nn.CrossEntropyLoss(
-        ignore_index=Annotation.UNKNOWN, size_average=True
+        ignore_index=Annotation.UNKNOWN, reduction='mean'
     )
 
     def train():

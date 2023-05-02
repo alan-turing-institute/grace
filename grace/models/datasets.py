@@ -32,6 +32,11 @@ def dataset_from_graph(
     for node, values in graph.nodes(data=True):
         sub_graph = nx.ego_graph(graph, node, radius=n_hop)
 
+        edge_label = [
+            edge[GraphAttrs.EDGE_GROUND_TRUTH]
+            for _, _, edge in sub_graph.edges(data=True)
+        ]
+
         x = np.stack(
             [
                 node[GraphAttrs.NODE_FEATURES]
@@ -53,11 +58,6 @@ def dataset_from_graph(
             [values[GraphAttrs.NODE_X], values[GraphAttrs.NODE_Y]]
         )
         edge_attr = pos - central_node
-
-        edge_label = [
-            edge[GraphAttrs.EDGE_GROUND_TRUTH]
-            for _, _, edge in sub_graph.edges(data=True)
-        ]
 
         item = nx.convert_node_labels_to_integers(sub_graph)
         edges = list(item.edges)
