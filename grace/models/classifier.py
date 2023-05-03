@@ -26,14 +26,16 @@ class GCN(torch.nn.Module):
         input_channels: int,
         hidden_channels: int,
         *,
-        output_classes: int = 2,
+        node_output_classes: int = 2,
+        edge_output_classes: int = 2,
     ):
         super(GCN, self).__init__()
         torch.manual_seed(12345)
         self.conv1 = GCNConv(input_channels, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, hidden_channels)
         self.conv3 = GCNConv(hidden_channels, hidden_channels)
-        self.linear = Linear(hidden_channels, output_classes)
+        self.node_classifier = Linear(hidden_channels, node_output_classes)
+        self.edge_classifier = Linear(hidden_channels * 2, edge_output_classes)
 
     def forward(
         self,
@@ -50,5 +52,16 @@ class GCN(torch.nn.Module):
             embeddings, batch
         )  # [batch_size, hidden_channels]
         x = F.dropout(x, p=0.5, training=self.training)
-        x = self.linear(x)
-        return x, embeddings
+        node_x = self.node_classifier(x)
+
+        src, dst = edge_index
+        edge_features = torch.cat(
+            [embeddings[..., src, :], embeddings[..., dst, :]], axis=-1
+        )
+
+        if edge_features.ndim == 2:
+            edge_features = edge_features.unsqueeze(0)
+
+        edge_x = self.edge_classifier(edge_features)
+
+        return node_x, edge_x
