@@ -7,6 +7,7 @@ from torch_geometric.loader import DataLoader
 from grace.base import Annotation
 from torch.utils.tensorboard import SummaryWriter
 
+
 def train_model(
     model: torch.nn.Module,
     dataset: List[torch_geometric.data.Data],
@@ -19,7 +20,7 @@ def train_model(
     log_dir: Optional[str] = None,
 ):
     """Train the pytorch model.
-    
+
     Parameters
     ----------
     model : torch.nn.Module
@@ -64,7 +65,9 @@ def train_model(
         ignore_index=edge_masked_class, reduction="mean"
     )
 
-    def calculate_batch_metrics(data: torch_geometric.data.Data) -> Tuple[torch.Tensor]:
+    def calculate_batch_metrics(
+        data: torch_geometric.data.Data,
+    ) -> Tuple[torch.Tensor]:
         node_x, edge_x = model(data.x, data.edge_index, data.batch)
 
         loss_node = node_criterion(node_x, data.y)
@@ -85,14 +88,16 @@ def train_model(
             "num_nodes": len(node_x),
             "num_edges": torch.numel(data.edge_label),
         }
-    
+
     def process_epoch_metrics(epoch_metrics: Dict[str, torch.Tensor]):
         return {
             "loss": epoch_metrics["loss"],
             "loss_node": epoch_metrics["loss_node"],
             "loss_edge": epoch_metrics["loss_edge"],
-            "acc_node": epoch_metrics["correct_nodes"] / epoch_metrics["num_nodes"],
-            "acc_edge": epoch_metrics["correct_edges"] / epoch_metrics["num_edges"],
+            "acc_node": epoch_metrics["correct_nodes"]
+            / epoch_metrics["num_nodes"],
+            "acc_edge": epoch_metrics["correct_edges"]
+            / epoch_metrics["num_edges"],
         }
 
     def train(loader):
@@ -114,7 +119,7 @@ def train_model(
                 epoch_metrics = metrics
 
         return process_epoch_metrics(epoch_metrics)
-    
+
     def test(loader):
         """Evaluates the GCN on node classification."""
         model.eval()
@@ -137,27 +142,48 @@ def train_model(
         test_metrics = test(test_loader)
         print(
             f"Epoch: {epoch:03d} | Loss: {train_metrics['loss']:.4f} |"
-            f" Node Loss: {train_metrics['loss_node']:.4f} | Edge Loss: {train_metrics['loss_edge']:.4f} |"
+            f" Node Loss: {train_metrics['loss_node']:.4f} |"
+            f" Edge Loss: {train_metrics['loss_edge']:.4f} |"
             f" Acc (Node): {train_metrics['acc_node']:.4f} |"
             f" Acc (Edge): {train_metrics['acc_edge']:.4f} |"
             f" Val Acc (Node): {test_metrics['acc_node']:.4f} |"
             f" Val Acc (Edge): {test_metrics['acc_edge']:.4f}"
         )
 
-        writer.add_scalars('Loss/train', {'total': train_metrics["loss"],
-                                          'node': train_metrics["loss_node"],
-                                          'edge': train_metrics["loss_edge"],}, 
-                                          epoch)
-        writer.add_scalars('Loss/test', {'total': test_metrics["loss"],
-                                          'node': test_metrics["loss_node"],
-                                          'edge': test_metrics["loss_edge"],}, 
-                                          epoch)
-        writer.add_scalars('Accuracy/train', {'node': train_metrics["acc_node"],
-                                            'edge': train_metrics["acc_edge"],}, 
-                                            epoch)
-        writer.add_scalars('Accuracy/test', {'node': test_metrics["acc_node"],
-                                            'edge': test_metrics["acc_edge"],}, 
-                                            epoch)
+        writer.add_scalars(
+            "Loss/train",
+            {
+                "total": train_metrics["loss"],
+                "node": train_metrics["loss_node"],
+                "edge": train_metrics["loss_edge"],
+            },
+            epoch,
+        )
+        writer.add_scalars(
+            "Loss/test",
+            {
+                "total": test_metrics["loss"],
+                "node": test_metrics["loss_node"],
+                "edge": test_metrics["loss_edge"],
+            },
+            epoch,
+        )
+        writer.add_scalars(
+            "Accuracy/train",
+            {
+                "node": train_metrics["acc_node"],
+                "edge": train_metrics["acc_edge"],
+            },
+            epoch,
+        )
+        writer.add_scalars(
+            "Accuracy/test",
+            {
+                "node": test_metrics["acc_node"],
+                "edge": test_metrics["acc_edge"],
+            },
+            epoch,
+        )
 
     writer.flush()
     writer.close()
