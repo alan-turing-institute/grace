@@ -73,7 +73,7 @@ def dataset_from_graph(
             x=torch.Tensor(x),
             edge_index=edge_index,
             edge_attr=torch.Tensor(edge_attr),
-            edge_label=torch.Tensor(edge_label),
+            edge_label=torch.Tensor(edge_label).long(),
             pos=torch.Tensor(pos),
             y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
         )

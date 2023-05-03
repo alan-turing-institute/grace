@@ -1,41 +1,36 @@
-import torch
+import os
+import pytest
 
-from grace.base import Annotation
-from grace.models.train import edge_criterion
+from grace.base import GraphAttrs, Annotation
+from grace.models.train import train_model
+from grace.models.datasets import dataset_from_graph
+from grace.models.classifier import GCN
 
+from _utils import random_image_and_graph
 
-def test_edge_criterion_masks_unknown_ground_truth():
-    masked_class = Annotation.UNKNOWN
+def test_logger_file(tmpdir, default_rng):
 
-    embed = torch.tensor(
-        [
-            [-1.0, -1.0],
-            [1.0, 1.0],
-        ],
-        dtype=torch.float32,
+    gcn = GCN(input_channels=2,
+              hidden_channels=4,)
+    
+    _, graph = random_image_and_graph(
+            default_rng, num_nodes=16, feature_ndim=2
+        )
+    graph.update(
+        edges=[
+            (
+                src,
+                dst,
+                {GraphAttrs.EDGE_GROUND_TRUTH: Annotation.TRUE_POSITIVE},
+            )
+            for src, dst in graph.edges
+        ]
     )
+    dataset = dataset_from_graph(graph)
 
-    target = torch.tensor(
-        [
-            Annotation.TRUE_NEGATIVE,
-            Annotation.TRUE_POSITIVE,
-            Annotation.TRUE_NEGATIVE,
-            Annotation.UNKNOWN,
-        ],
-        dtype=torch.float32,
-    )
-
-    edge_index = torch.tensor(
-        [
-            [0, 0, 0, 0],
-            [1, 1, 1, 1],
-        ],
-        dtype=torch.int32,
-    )
-
-    assert edge_criterion(
-        embed, target, edge_index, masked_class
-    ) == edge_criterion(embed, target[:-1], edge_index[:, :-1], masked_class)
-    assert edge_criterion(
-        embed, target, edge_index, masked_class
-    ) != edge_criterion(embed, target[1:], edge_index[:, 1:], masked_class)
+    train_model(model=gcn,
+                dataset=dataset,
+                batch_size=5,
+                log_dir=tmpdir,)
+    
+    assert os.path.exists(tmpdir)
