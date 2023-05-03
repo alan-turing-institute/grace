@@ -12,33 +12,51 @@ from grace.base import GraphAttrs, Annotation
 from grace.models.datasets import dataset_from_graph
 
 
-@pytest.mark.parametrize("input_channels", [1, 2, 4])
-@pytest.mark.parametrize("hidden_channels", [16, 32, 64])
-@pytest.mark.parametrize("output_classes", [1, 2, 4])
+@pytest.mark.parametrize("input_channels", [1, 2])
+@pytest.mark.parametrize("hidden_channels", [16, 32])
+@pytest.mark.parametrize("node_output_classes", [2, 4])
+@pytest.mark.parametrize("edge_output_classes", [2, 4])
 class TestGCN:
     @pytest.fixture
-    def gcn(self, input_channels, hidden_channels, output_classes):
+    def gcn(
+        self,
+        input_channels,
+        hidden_channels,
+        node_output_classes,
+        edge_output_classes,
+    ):
         return GCN(
             input_channels=input_channels,
             hidden_channels=hidden_channels,
-            output_classes=output_classes,
+            node_output_classes=node_output_classes,
+            edge_output_classes=edge_output_classes,
         )
 
     def test_model_building(
-        self, input_channels, hidden_channels, output_classes, gcn
+        self,
+        input_channels,
+        hidden_channels,
+        node_output_classes,
+        edge_output_classes,
+        gcn,
     ):
         """Test building the model with different dimensions."""
 
         assert gcn.conv1.in_channels == input_channels
-        assert gcn.linear.in_features == hidden_channels
-        assert gcn.linear.out_features == output_classes
+
+        assert gcn.node_classifier.in_features == hidden_channels
+        assert gcn.node_classifier.out_features == node_output_classes
+
+        assert gcn.edge_classifier.in_features == hidden_channels * 2
+        assert gcn.edge_classifier.out_features == edge_output_classes
 
     @pytest.mark.parametrize("num_nodes", [4, 5])
     def test_output_sizes(
         self,
         input_channels,
         hidden_channels,
-        output_classes,
+        node_output_classes,
+        edge_output_classes,
         gcn,
         num_nodes,
         default_rng,
@@ -60,10 +78,11 @@ class TestGCN:
 
         subgraph = nx.ego_graph(graph, 0)
         num_nodes = subgraph.number_of_nodes()
-        x, embedding = gcn(x=data.x, edge_index=data.edge_index)
+        num_edges = subgraph.number_of_edges()
+        node_x, edge_x = gcn(x=data.x, edge_index=data.edge_index)
 
-        assert x.size() == (1, output_classes)
-        assert embedding.size() == (num_nodes, hidden_channels)
+        assert node_x.size() == (1, node_output_classes)
+        assert edge_x.size() == (1, num_edges, edge_output_classes)
 
 
 @pytest.mark.parametrize(
