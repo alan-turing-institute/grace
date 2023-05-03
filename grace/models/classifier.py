@@ -15,10 +15,17 @@ class GCN(torch.nn.Module):
         The dimension of the input; i.e., length of node feature vectors
     embedding_channels : int
         The dimension of the hidden embeddings.
-    output_classes : int
-        The dimension of the output. This is typically the number of classes in
-        the classifcation task.
+    node_output_classes : int
+        The dimension of the node output. This is typically the number of classes in
+        the classification task.
+    edge_output_classes : int
+        The dimension of the edge output.
 
+    Notes
+    -----
+    The edge_classifier layer takes as input the concatenated features of
+    the source and destination nodes of each edge; hence, its input dimension
+    is equal to 2 * the number of features per node.
     """
 
     def __init__(
