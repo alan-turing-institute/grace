@@ -158,7 +158,8 @@ def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
     with patch("numpy.random.default_rng") as mock:
         rng = mock.return_value
         rng.uniform.return_value = 0
-        rng.integers.side_effect = [augment_rotate_coords[n], [1] * 4]
+        rng.integers.return_value = augment_rotate_coords[n]
+        rng.choice.return_value = [1] * 4
         image, graph = random_image_and_graph(rng, image_size=(6, 6))
 
     image = torch.tensor(image.astype("int16"))

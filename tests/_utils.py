@@ -6,6 +6,7 @@ import pandas as pd
 from typing import List, Tuple
 
 from grace.base import GraphAttrs, graph_from_dataframe
+from grace.io.core import Annotation
 
 
 def random_image_and_graph(
@@ -13,15 +14,18 @@ def random_image_and_graph(
     *,
     num_nodes: int = 4,
     image_size: Tuple[int] = (128, 128),
+    feature_ndim: int = 32,
 ) -> Tuple[npt.NDArray, List[nx.Graph]]:
     """Create a random image and graph."""
     image = np.zeros(image_size, dtype=np.uint16)
 
-    feature_ndim = 32
     features = [rng.uniform(size=(feature_ndim,)) for _ in range(num_nodes)]
 
     node_coords = rng.integers(0, image.shape[1], size=(num_nodes, 2))
     node_ground_truth = rng.integers(0, 2, size=(num_nodes,))
+    node_ground_truth = rng.choice(
+        [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE], size=(num_nodes,)
+    )
     df = pd.DataFrame(
         {
             GraphAttrs.NODE_X: node_coords[:, 0],

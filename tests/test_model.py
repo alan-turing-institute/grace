@@ -4,26 +4,66 @@ from grace.models.feature_extractor import FeatureExtractor
 import torch
 import pytest
 
+import networkx as nx
+
 from _utils import random_image_and_graph
 
-from grace.base import GraphAttrs
+from grace.base import GraphAttrs, Annotation
+from grace.models.datasets import dataset_from_graph
 
 
-@pytest.mark.parametrize("input_dims", [1, 2, 4])
-@pytest.mark.parametrize("embedding_dims", [16, 32, 64])
-@pytest.mark.parametrize("output_dims", [1, 2, 4])
-def test_model_building(input_dims, embedding_dims, output_dims):
-    """Test building the model with different dimension."""
+@pytest.mark.parametrize("input_channels", [1, 2, 4])
+@pytest.mark.parametrize("hidden_channels", [16, 32, 64])
+@pytest.mark.parametrize("output_classes", [1, 2, 4])
+class TestGCN:
+    @pytest.fixture
+    def gcn(self, input_channels, hidden_channels, output_classes):
+        return GCN(
+            input_channels=input_channels,
+            hidden_channels=hidden_channels,
+            output_classes=output_classes,
+        )
 
-    model = GCN(
-        input_dims=input_dims,
-        embedding_dims=embedding_dims,
-        output_dims=output_dims,
-    )
+    def test_model_building(
+        self, input_channels, hidden_channels, output_classes, gcn
+    ):
+        """Test building the model with different dimensions."""
 
-    assert model.conv1.in_channels == input_dims
-    assert model.linear.in_features == embedding_dims
-    assert model.linear.out_features == output_dims
+        assert gcn.conv1.in_channels == input_channels
+        assert gcn.linear.in_features == hidden_channels
+        assert gcn.linear.out_features == output_classes
+
+    @pytest.mark.parametrize("num_nodes", [4, 5])
+    def test_output_sizes(
+        self,
+        input_channels,
+        hidden_channels,
+        output_classes,
+        gcn,
+        num_nodes,
+        default_rng,
+    ):
+        _, graph = random_image_and_graph(
+            default_rng, num_nodes=num_nodes, feature_ndim=input_channels
+        )
+        graph.update(
+            edges=[
+                (
+                    src,
+                    dst,
+                    {GraphAttrs.EDGE_GROUND_TRUTH: Annotation.TRUE_POSITIVE},
+                )
+                for src, dst in graph.edges
+            ]
+        )
+        data = dataset_from_graph(graph)[0]
+
+        subgraph = nx.ego_graph(graph, 0)
+        num_nodes = subgraph.number_of_nodes()
+        x, embedding = gcn(x=data.x, edge_index=data.edge_index)
+
+        assert x.size() == (1, output_classes)
+        assert embedding.size() == (num_nodes, hidden_channels)
 
 
 @pytest.mark.parametrize(
