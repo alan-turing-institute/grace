@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Tuple, Optional
 
 import torch
 import torch.nn.functional as F
@@ -11,44 +11,44 @@ class GCN(torch.nn.Module):
 
     Parameters
     ----------
-    input_dims : int
-        The dimensions of the input.
-    embedding_dims : int
-        The dimensions of the hidden embeddings.
-    output_dims : int
-        The dimensions of the output. This is typically the number of classes in
+    input_channels : int
+        The dimension of the input; i.e., length of node feature vectors
+    embedding_channels : int
+        The dimension of the hidden embeddings.
+    output_classes : int
+        The dimension of the output. This is typically the number of classes in
         the classifcation task.
 
     """
 
     def __init__(
         self,
+        input_channels: int,
+        hidden_channels: int,
         *,
-        input_dims: int = 3,
-        embedding_dims: int = 64,
-        output_dims: int = 2,
-    ) -> None:
+        output_classes: int = 2,
+    ):
         super(GCN, self).__init__()
-        # torch.manual_seed(12345)
-        self.conv1 = GCNConv(input_dims, embedding_dims)
-        self.conv2 = GCNConv(embedding_dims, embedding_dims)
-        self.conv3 = GCNConv(embedding_dims, embedding_dims)
-        self.linear = Linear(embedding_dims, output_dims)
+        torch.manual_seed(12345)
+        self.conv1 = GCNConv(input_channels, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        self.linear = Linear(hidden_channels, output_classes)
 
     def forward(
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
         batch: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor]:
         x = self.conv1(x, edge_index)
         x = x.relu()
         x = self.conv2(x, edge_index)
         x = x.relu()
         embeddings = self.conv3(x, edge_index)
-
-        # node/subgraph classification
-        x = global_mean_pool(embeddings, batch)  # [batch_size, embedding_dims]
+        x = global_mean_pool(
+            embeddings, batch
+        )  # [batch_size, hidden_channels]
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.linear(x)
-        return x
+        return x, embeddings
