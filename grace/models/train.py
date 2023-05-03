@@ -4,7 +4,7 @@ import torch
 import torch_geometric
 from torch_geometric.loader import DataLoader
 
-import logging
+from torch.utils.tensorboard import SummaryWriter
 
 def train_model(
     model: torch.nn.Module,
@@ -14,6 +14,8 @@ def train_model(
     batch_size: int = 64,
 ):
     """Train the pytorch model."""
+    writer = SummaryWriter()
+
     train_dataset = dataset[: round(0.7 * len(dataset))]
     test_dataset = dataset[round(0.7 * len(dataset)) :]
 
