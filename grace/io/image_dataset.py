@@ -64,7 +64,8 @@ class ImageGraphDataset(Dataset):
         return image, target
 
 
-def mrc_reader(fn: os.PathLike) -> npt.NDArray:
+def mrc_reader(fn: os.PathLike,
+               **kwargs,) -> npt.NDArray:
     """Reads a .mrc image file
 
     Parameters
@@ -77,6 +78,6 @@ def mrc_reader(fn: os.PathLike) -> npt.NDArray:
     image_data: np.ndarray
         Image array
     """
-    with mrcfile.open(fn, "r") as mrc:
+    with mrcfile.open(fn, "r", **kwargs) as mrc:
         image_data = mrc.data.astype(int)
     return image_data
