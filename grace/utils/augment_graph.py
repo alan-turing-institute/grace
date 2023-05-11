@@ -129,3 +129,22 @@ class RandomEdgeAdditionAndRemoval:
         graph["graph"].remove_edges_from(edges_to_remove)
 
         return x, graph
+
+class RandomXYTranslation:
+    """Randomly shifts the X and Y coordinates of each node.
+
+    Parameters
+    ----------
+    max_shift : float
+        Maximum coordinate shift.
+    """
+
+    def __init__(self,
+                 max_shift: float):
+        self.max_shift = max_shift
+
+    def __call__(
+        self, x: torch.Tensor, graph: Dict[str, Any]
+    ) -> Tuple[torch.Tensor, dict]:
+        
+        
