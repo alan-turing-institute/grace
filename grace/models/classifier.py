@@ -66,9 +66,6 @@ class GCN(torch.nn.Module):
             [embeddings[..., src, :], embeddings[..., dst, :]], axis=-1
         )
 
-        if edge_features.ndim == 2:
-            edge_features = edge_features.unsqueeze(0)
-
         edge_x = self.edge_classifier(edge_features)
 
         return node_x, edge_x

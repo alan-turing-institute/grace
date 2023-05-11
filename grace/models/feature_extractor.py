@@ -67,9 +67,9 @@ class FeatureExtractor(torch.nn.Module):
         Function to normalize the images after the augmentations
         and after the transforms
     ignore_fraction : float
-        Minimum fraction of either the x or y dimension of the patch that 
+        Minimum fraction of either the x or y dimension of the patch that
         is missing due to boundary effects, for the patch to be ignored
-        (i.e., node annotation is set to UNKNOWN) 
+        (i.e., node annotation is set to UNKNOWN)
     """
 
     def __init__(
@@ -80,7 +80,7 @@ class FeatureExtractor(torch.nn.Module):
         transforms: Callable = default_transforms,
         augmentations: Callable = default_augmentations,
         normalize_func: Callable = Normalize(mean=[0.0], std=[1.0]),
-        ignore_fraction: float = 1.,
+        ignore_fraction: float = 1.0,
     ) -> None:
         super(FeatureExtractor, self).__init__()
         self.bbox_size = bbox_size
@@ -119,10 +119,14 @@ class FeatureExtractor(torch.nn.Module):
             y_box = slice(y_low, y_low + self.bbox_size[1])
 
             if (
-                x_low >= image_shape[-1] - self.bbox_size[0] * self.ignore_fraction
-                or x_low + self.bbox_size[0] < self.bbox_size[0] * self.ignore_fraction
-                or y_low >= image_shape[-2] - self.bbox_size[1] * self.ignore_fraction
-                or y_low + self.bbox_size[0] < self.bbox_size[1] * self.ignore_fraction
+                x_low
+                >= image_shape[-1] - self.bbox_size[0] * self.ignore_fraction
+                or x_low + self.bbox_size[0]
+                < self.bbox_size[0] * self.ignore_fraction
+                or y_low
+                >= image_shape[-2] - self.bbox_size[1] * self.ignore_fraction
+                or y_low + self.bbox_size[0]
+                < self.bbox_size[1] * self.ignore_fraction
             ):
                 node_attrs[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.UNKNOWN
                 continue

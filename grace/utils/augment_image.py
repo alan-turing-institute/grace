@@ -117,7 +117,7 @@ def rotate_image_and_graph(
     rotations on (y,x) coordinates, which correspond to clockwise rotations in
     (x,y) coordinates.
     """
-   
+
     if image.ndim < 4:
         image = image[[None] * (4 - len(image.size()))]
 

@@ -82,7 +82,7 @@ class TestGCN:
         node_x, edge_x = gcn(x=data.x, edge_index=data.edge_index)
 
         assert node_x.size() == (1, node_output_classes)
-        assert edge_x.size() == (1, num_edges, edge_output_classes)
+        assert edge_x.size() == (num_edges, edge_output_classes)
 
 
 @pytest.mark.parametrize(
@@ -102,6 +102,8 @@ class TestFeatureExtractor:
                 model=model,
                 transforms=lambda x: x,
                 augmentations=lambda x: x,
+                ignore_fraction=0.0,
+                normalize_func=lambda x: x,
             ),
             "image": torch.tensor(image.astype("float32")),
             "graph": graph,

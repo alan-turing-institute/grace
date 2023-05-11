@@ -90,7 +90,9 @@ class RandomEdgeAdditionAndRemoval:
             )
 
         if annotation_mode == "random":
-            self.assign_annotation = lambda edge, graph: Annotation(rng.choice(Annotation))
+            self.assign_annotation = lambda edge, graph: Annotation(
+                rng.choice(Annotation)
+            )
         elif annotation_mode == "average":
             self.assign_annotation = (
                 lambda edge, graph: find_average_annotation(edge, graph)
