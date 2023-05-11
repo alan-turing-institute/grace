@@ -103,6 +103,9 @@ class RandomEdgeAdditionAndRemoval:
     def __call__(
         self, x: torch.Tensor, graph: Dict[str, Any]
     ) -> Tuple[torch.Tensor, dict]:
+        new_graph = graph["graph"].copy()
+        graph = graph.copy()
+
         edges_list = list(graph["graph"].edges)
         max_node = graph["graph"].number_of_nodes()
         n_add = int(self.p_add * len(edges_list))
@@ -125,10 +128,13 @@ class RandomEdgeAdditionAndRemoval:
             for e in self.rng.integers(0, len(edges_list), (n_remove,))
         ]
 
-        graph["graph"].add_edges_from(edges_to_add)
-        graph["graph"].remove_edges_from(edges_to_remove)
+        new_graph.add_edges_from(edges_to_add)
+        new_graph.remove_edges_from(edges_to_remove)
+
+        graph["graph"] = new_graph
 
         return x, graph
+
 
 class RandomXYTranslation:
     """Randomly shifts the X and Y coordinates of each node.
@@ -139,12 +145,34 @@ class RandomXYTranslation:
         Maximum coordinate shift.
     """
 
-    def __init__(self,
-                 max_shift: float):
+    def __init__(self, max_shift: float):
         self.max_shift = max_shift
 
     def __call__(
         self, x: torch.Tensor, graph: Dict[str, Any]
     ) -> Tuple[torch.Tensor, dict]:
-        
-        
+        new_graph = graph["graph"].copy()
+        graph = graph.copy()
+
+        new_nodes = []
+
+        for node, values in new_graph.nodes(data=True):
+            x, y = values[GraphAttrs.NODE_X], values[GraphAttrs.NODE_Y]
+            shift = np.random.uniform(
+                low=-self.max_shift, high=self.max_shift, size=(2,)
+            )
+
+            new_nodes.append(
+                (
+                    node,
+                    {
+                        GraphAttrs.NODE_X: x + shift[0],
+                        GraphAttrs.NODE_Y: y + shift[1],
+                    },
+                )
+            )
+
+        new_graph.update(nodes=new_nodes)
+        graph["graph"] = new_graph
+
+        return x, graph
