@@ -37,7 +37,6 @@ class GCN(torch.nn.Module):
         edge_output_classes: int = 2,
     ):
         super(GCN, self).__init__()
-        torch.manual_seed(12345)
         self.conv1 = GCNConv(input_channels, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, hidden_channels)
         self.conv3 = GCNConv(hidden_channels, hidden_channels)

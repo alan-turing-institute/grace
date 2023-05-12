@@ -22,7 +22,6 @@ def random_image_and_graph(
     features = [rng.uniform(size=(feature_ndim,)) for _ in range(num_nodes)]
 
     node_coords = rng.integers(0, image.shape[1], size=(num_nodes, 2))
-    node_ground_truth = rng.integers(0, 2, size=(num_nodes,))
     node_ground_truth = rng.choice(
         [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE], size=(num_nodes,)
     )
