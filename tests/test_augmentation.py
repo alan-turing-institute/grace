@@ -11,6 +11,7 @@ from grace.utils.augment_image import RandomEdgeCrop, RandomImageGraphRotate
 from grace.utils.augment_graph import (
     find_average_annotation,
     RandomEdgeAdditionAndRemoval,
+    RandomXYTranslation,
 )
 
 from _utils import random_image_and_graph
@@ -287,3 +288,34 @@ class TestAugmentGraphEdgeAdditionRemoval:
 def test_invalid_annotation_mode_raises_error(mode):
     with pytest.raises(ValueError):
         RandomEdgeAdditionAndRemoval(annotation_mode=mode)
+
+
+def test_xy_translation(default_rng):
+    max_shift = 2
+    num_nodes = 4
+
+    image, graph = random_image_and_graph(default_rng, num_nodes=num_nodes)
+    transform = RandomXYTranslation(max_shift=max_shift)
+    shifts = default_rng.uniform(
+        low=-max_shift, high=max_shift, size=(num_nodes, 2)
+    ).tolist()
+
+    with patch("numpy.random.uniform") as mock:
+        mock.side_effect = shifts
+        _, graph_transformed = transform(image, {"graph": graph})
+
+    coords = np.array(
+        [
+            [value[GraphAttrs.NODE_X], value[GraphAttrs.NODE_Y]]
+            for _, value in graph.nodes(data=True)
+        ]
+    )
+    coords_expected = coords + shifts
+    coords_transformed = np.array(
+        [
+            [value[GraphAttrs.NODE_X], value[GraphAttrs.NODE_Y]]
+            for _, value in graph_transformed["graph"].nodes(data=True)
+        ]
+    )
+
+    assert np.array_equal(coords_expected, coords_transformed)
