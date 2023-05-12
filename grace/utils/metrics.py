@@ -46,14 +46,14 @@ def confusion_matrix_metric(
     edge_pred_labels = edge_pred.argmax(dim=-1)
 
     cm_node = confusion_matrix(
-        node_pred_labels.detach().numpy(),
         node_true.detach().numpy(),
+        node_pred_labels.detach().numpy(),
         labels=np.arange(len(node_classes)),
         normalize="true",
     )
     cm_edge = confusion_matrix(
-        edge_pred_labels.detach().numpy(),
         edge_true.detach().numpy(),
+        edge_pred_labels.detach().numpy(),
         labels=np.arange(len(edge_classes)),
         normalize="true",
     )
@@ -69,8 +69,8 @@ def confusion_matrix_metric(
         columns=edge_classes,
     )
 
-    fig_node = sn.heatmap(df_node, annot=True).get_figure()
-    fig_edge = sn.heatmap(df_edge, annot=True).get_figure()
+    fig_node = sn.heatmap(df_node, annot=True, cmap="Blues").get_figure()
+    fig_edge = sn.heatmap(df_edge, annot=True, cmap="Blues").get_figure()
 
     for fig in (fig_node, fig_edge):
         fig.set_figwidth(figsize[0])

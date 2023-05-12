@@ -163,5 +163,7 @@ def train_model(
                     writer.add_figure(metric_name, metric_out["node"], epoch)
                     writer.add_figure(metric_name, metric_out["edge"], epoch)
 
+        print(print_string)
+
     writer.flush()
     writer.close()
