@@ -4,6 +4,7 @@ import numpy.typing as npt
 import os
 
 import mrcfile
+import warnings
 
 from grace.io import read_graph
 
@@ -19,9 +20,9 @@ class ImageGraphDataset(Dataset):
 
     Parameters
     ----------
-    imagepath: str
+    image_dir: str
         Directory of the image files
-    gracepath: str
+    grace_dir: str
         Directory of the annotation (.grace) files
     image_reader_fn: Callable
         Function to read images from image filenames
@@ -35,14 +36,12 @@ class ImageGraphDataset(Dataset):
         grace_dir: os.PathLike,
         image_reader_fn: Callable,
         *,
-        transform: Callable = lambda x: x,
-        target_transform: Callable = lambda x: x,
+        transform: Callable = lambda x, g: (x, g),
     ) -> None:
         self.image_paths = list(Path(image_dir).iterdir())
         self.grace_paths = list(Path(grace_dir).glob("*.grace"))
         self.image_reader_fn = image_reader_fn
         self.transform = transform
-        self.target_transform = target_transform
 
     def __len__(self) -> int:
         return len(self.grace_paths)
@@ -82,3 +81,19 @@ def mrc_reader(fn: os.PathLike) -> npt.NDArray:
     with mrcfile.open(fn, "r") as mrc:
         image_data = mrc.data.astype(int)
     return image_data
+
+
+def read_mrc(path):
+    """
+    Takes a path and read a mrc file convert the data to np array
+    """
+    warnings.simplefilter(
+        "ignore"
+    )  # to mute some warnings produced when opening the tomos
+    with mrcfile.open(path, mode="r+", permissive=True) as mrc:
+        mrc.update_header_from_data()
+        mrc.header.map = mrcfile.constants.MAP_ID
+        mrc = mrc.data
+    with mrcfile.open(path) as mrc:
+        data = mrc.data.astype(int)
+    return data

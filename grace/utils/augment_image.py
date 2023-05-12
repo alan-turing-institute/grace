@@ -109,6 +109,13 @@ def rotate_image_and_graph(
         Output image; same shape as input image
     target : dict
         Output target dict
+
+    Notes
+    -----
+    This function is intended for coordinates in image space; i.e., coordinates
+    described as (y,x) rather than (x,y). It therefore performs counter-clockwise
+    rotations on (y,x) coordinates, which correspond to clockwise rotations in
+    (x,y) coordinates.
     """
 
     if image.ndim < 4:
@@ -122,7 +129,7 @@ def rotate_image_and_graph(
 
     coords = np.array(
         [
-            (f[GraphAttrs.NODE_X], f[GraphAttrs.NODE_Y])
+            (f[GraphAttrs.NODE_Y], f[GraphAttrs.NODE_X])
             for f in target["graph"].nodes.values()
         ],
         dtype=np.float32,
@@ -132,11 +139,14 @@ def rotate_image_and_graph(
     )
 
     update_coords = {
-        n: {GraphAttrs.NODE_X: coords[0], GraphAttrs.NODE_Y: coords[1]}
+        n: {GraphAttrs.NODE_Y: coords[0], GraphAttrs.NODE_X: coords[1]}
         for n, coords in enumerate(transformed_coords)
     }
 
-    nx.set_node_attributes(target["graph"], update_coords)
+    new_graph = target["graph"].copy()
+    nx.set_node_attributes(new_graph, update_coords)
+    target = target.copy()
+    target["graph"] = new_graph
 
     return image, target
 
