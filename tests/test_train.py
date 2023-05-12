@@ -35,19 +35,6 @@ class TestTraining:
 
         return dataset, model
 
-    def test_logger_file_exists(self, tmpdir, data_and_model):
-        dataset, model = data_and_model
-
-        train_model(
-            model=model,
-            dataset=dataset,
-            batch_size=5,
-            log_dir=tmpdir,
-            epochs=1,
-        )
-
-        assert os.path.exists(tmpdir)
-
     @pytest.mark.parametrize(
         "metrics",
         [
@@ -55,9 +42,7 @@ class TestTraining:
             [Metric.ACCURACY, Metric.CONFUSION_MATRIX],
         ],
     )
-    def test_training_with_metrics_does_not_fail(
-        self, metrics, data_and_model
-    ):
+    def test_logger_file_exists(self, tmpdir, metrics, data_and_model):
         dataset, model = data_and_model
 
         train_model(
@@ -65,5 +50,8 @@ class TestTraining:
             dataset=dataset,
             batch_size=5,
             metrics=metrics,
+            log_dir=tmpdir,
             epochs=1,
         )
+
+        assert os.path.exists(tmpdir)

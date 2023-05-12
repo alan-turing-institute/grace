@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 import enum
 import torch
@@ -10,13 +10,17 @@ import matplotlib.pyplot as plt
 
 from sklearn.metrics import confusion_matrix
 
+
 def get_metric(string):
     return [m for m in Metric if m.string == string][0]
 
-def accuracy_metric(node_pred: torch.Tensor, 
-                    edge_pred: torch.Tensor, 
-                    node_true: torch.Tensor, 
-                    edge_true: torch.Tensor) -> Tuple[float]:
+
+def accuracy_metric(
+    node_pred: torch.Tensor,
+    edge_pred: torch.Tensor,
+    node_true: torch.Tensor,
+    edge_true: torch.Tensor,
+) -> Tuple[float]:
     node_pred_labels = node_pred.argmax(dim=-1)
     edge_pred_labels = edge_pred.argmax(dim=-1)
 
@@ -27,45 +31,53 @@ def accuracy_metric(node_pred: torch.Tensor,
     edge_acc = correct_edges / edge_pred.size(-2)
 
     return float(node_acc), float(edge_acc)
-    
-def confusion_matrix_metric(node_pred: torch.Tensor, 
-                            edge_pred: torch.Tensor, 
-                            node_true: torch.Tensor, 
-                            edge_true: torch.Tensor,
-                            node_classes: List[str] = ['TP', 'TN'],
-                            edge_classes: List[str] = ['TP', 'TN'],
-                            figsize: Tuple[int] = (2,2)) -> Tuple[plt.Figure]:
+
+
+def confusion_matrix_metric(
+    node_pred: torch.Tensor,
+    edge_pred: torch.Tensor,
+    node_true: torch.Tensor,
+    edge_true: torch.Tensor,
+    node_classes: List[str] = ["TP", "TN"],
+    edge_classes: List[str] = ["TP", "TN"],
+    figsize: Tuple[int] = (2, 2),
+) -> Tuple[plt.Figure]:
     node_pred_labels = node_pred.argmax(dim=-1)
     edge_pred_labels = edge_pred.argmax(dim=-1)
 
     cm_node = confusion_matrix(
-        node_pred_labels.detach().numpy(), 
+        node_pred_labels.detach().numpy(),
         node_true.detach().numpy(),
         labels=np.arange(len(node_classes)),
         normalize="true",
     )
     cm_edge = confusion_matrix(
-        edge_pred_labels.detach().numpy(), 
+        edge_pred_labels.detach().numpy(),
         edge_true.detach().numpy(),
         labels=np.arange(len(edge_classes)),
         normalize="true",
     )
 
-    df_node = pd.DataFrame(cm_node, 
-                           index=node_classes,
-                           columns=node_classes,)
-    df_edge = pd.DataFrame(cm_edge, 
-                           index=edge_classes,
-                           columns=edge_classes,)
-    
+    df_node = pd.DataFrame(
+        cm_node,
+        index=node_classes,
+        columns=node_classes,
+    )
+    df_edge = pd.DataFrame(
+        cm_edge,
+        index=edge_classes,
+        columns=edge_classes,
+    )
+
     fig_node = sn.heatmap(df_node, annot=True).get_figure()
     fig_edge = sn.heatmap(df_edge, annot=True).get_figure()
-    
+
     for fig in (fig_node, fig_edge):
         fig.set_figwidth(figsize[0])
         fig.set_figheight(figsize[1])
 
     return fig_node, fig_edge
+
 
 @enum.unique
 class Metric(enum.Enum):
@@ -74,9 +86,10 @@ class Metric(enum.Enum):
     outputs of each function are node_output and edge_output in that order.
     If a third output is produced, it is total_output.
     """
+
     def __init__(self, string, call):
         self.string = string
         self.call = call
-    
-    ACCURACY = 'accuracy', accuracy_metric
-    CONFUSION_MATRIX = 'confusion_matrix', confusion_matrix_metric
+
+    ACCURACY = "accuracy", accuracy_metric
+    CONFUSION_MATRIX = "confusion_matrix", confusion_matrix_metric
