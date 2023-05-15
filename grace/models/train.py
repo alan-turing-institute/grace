@@ -1,10 +1,15 @@
-from typing import List, Dict, Tuple, Optional
+from typing import List, Union, Optional
 
 import torch
 import torch_geometric
+
+import matplotlib.pyplot as plt
+
 from torch_geometric.loader import DataLoader
 
 from grace.base import Annotation
+from grace.utils.metrics import get_metric, Metric
+
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -18,6 +23,7 @@ def train_model(
     node_masked_class: Annotation = Annotation.UNKNOWN,
     edge_masked_class: Annotation = Annotation.UNKNOWN,
     log_dir: Optional[str] = None,
+    metrics: List[Union[str, Metric]] = [],
 ):
     """Train the pytorch model.
 
@@ -27,18 +33,20 @@ def train_model(
         Model to train
     dataset : List[torch_geometric.data.Data]
         Training and validation data
-    epochs: int
+    epochs : int
         Number of epochs to train the model
-    batch_size: int
+    batch_size : int
         Batch size
-    val_fraction: float
+    val_fraction : float
         Fraction of data to be used for validation
-    node_masked_class: Annotation
+    node_masked_class : Annotation
         Target node class for which to set the loss to 0
-    edge_masked_class: Annotation
+    edge_masked_class : Annotation
         Target edge class for which to set the loss to 0
-    log_dir: str or None
+    log_dir : str or None
         Log folder for the current training run
+    metrics : List[str or Metric]
+        Metrics to be evaluated after every training epoch
     """
     writer = SummaryWriter(log_dir)
 
@@ -65,125 +73,97 @@ def train_model(
         ignore_index=edge_masked_class, reduction="mean"
     )
 
-    def calculate_batch_metrics(
-        data: torch_geometric.data.Data,
-    ) -> Tuple[torch.Tensor]:
-        node_x, edge_x = model(data.x, data.edge_index, data.batch)
-
-        loss_node = node_criterion(node_x, data.y)
-        loss_edge = edge_criterion(edge_x, data.edge_label)
-        loss = loss_node + loss_edge
-
-        pred_node = node_x.argmax(dim=-1)
-        pred_edge = edge_x.argmax(dim=-1)
-        correct_nodes = (pred_node == data.y).sum()
-        correct_edges = (pred_edge == data.edge_label).sum()
-
-        return {
-            "loss": loss,
-            "loss_node": loss_node,
-            "loss_edge": loss_edge,
-            "correct_nodes": correct_nodes,
-            "correct_edges": correct_edges,
-            "num_nodes": len(node_x),
-            "num_edges": torch.numel(data.edge_label),
-        }
-
-    def process_epoch_metrics(epoch_metrics: Dict[str, torch.Tensor]):
-        return {
-            "loss": epoch_metrics["loss"],
-            "loss_node": epoch_metrics["loss_node"],
-            "loss_edge": epoch_metrics["loss_edge"],
-            "acc_node": epoch_metrics["correct_nodes"]
-            / epoch_metrics["num_nodes"],
-            "acc_edge": epoch_metrics["correct_edges"]
-            / epoch_metrics["num_edges"],
-        }
-
     def train(loader):
         model.train()
 
-        epoch_metrics = {}
-
         for data in loader:
-            metrics = calculate_batch_metrics(data)
+            node_x, edge_x = model(data.x, data.edge_index, data.batch)
 
-            metrics["loss"].backward()
+            loss_node = node_criterion(node_x, data.y)
+            loss_edge = edge_criterion(edge_x, data.edge_label)
+            loss = loss_node + loss_edge
+
+            loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-
-            if epoch_metrics:
-                for key in epoch_metrics:
-                    epoch_metrics[key] += metrics[key]
-            else:
-                epoch_metrics = metrics
-
-        return process_epoch_metrics(epoch_metrics)
 
     def test(loader):
         """Evaluates the GCN on node classification."""
         model.eval()
 
-        epoch_metrics = {}
+        node_pred = []
+        edge_pred = []
+        node_true = []
+        edge_true = []
 
         for data in loader:
-            metrics = calculate_batch_metrics(data)
+            node_x, edge_x = model(data.x, data.edge_index, data.batch)
 
-            if epoch_metrics:
-                for key in epoch_metrics:
-                    epoch_metrics[key] += metrics[key]
-            else:
-                epoch_metrics = metrics
+            node_pred.extend(node_x)
+            edge_pred.extend(edge_x)
+            node_true.extend(data.y)
+            edge_true.extend(data.edge_label)
 
-        return process_epoch_metrics(epoch_metrics)
+        node_pred = torch.stack(node_pred, axis=0)
+        edge_pred = torch.stack(edge_pred, axis=0)
+        node_true = torch.stack(node_true, axis=0)
+        edge_true = torch.stack(edge_true, axis=0)
 
-    for epoch in range(1, epochs):
-        train_metrics = train(train_loader)
+        loss_node = node_criterion(node_pred, node_true)
+        loss_edge = edge_criterion(edge_pred, edge_true)
+        loss = loss_node + loss_edge
+
+        metric_values = {
+            "loss": (float(loss_node), float(loss_edge), float(loss))
+        }
+
+        for m in metrics:
+            if isinstance(m, str):
+                m = get_metric(m)
+
+            m_node, m_edge = m.call(node_pred, edge_pred, node_true, edge_true)
+
+            metric_values[m.string] = (m_node, m_edge)
+
+        return metric_values
+
+    for epoch in range(1, epochs + 1):
+        train(train_loader)
+        train_metrics = test(train_loader)
         test_metrics = test(test_loader)
-        print(
-            f"Epoch: {epoch:03d} | Loss: {train_metrics['loss']:.4f} |"
-            f" Node Loss: {train_metrics['loss_node']:.4f} |"
-            f" Edge Loss: {train_metrics['loss_edge']:.4f} |"
-            f" Acc (Node): {train_metrics['acc_node']:.4f} |"
-            f" Acc (Edge): {train_metrics['acc_edge']:.4f} |"
-            f" Val Acc (Node): {test_metrics['acc_node']:.4f} |"
-            f" Val Acc (Edge): {test_metrics['acc_edge']:.4f}"
-        )
 
-        writer.add_scalars(
-            "Loss/train",
-            {
-                "total": train_metrics["loss"],
-                "node": train_metrics["loss_node"],
-                "edge": train_metrics["loss_edge"],
-            },
-            epoch,
-        )
-        writer.add_scalars(
-            "Loss/test",
-            {
-                "total": test_metrics["loss"],
-                "node": test_metrics["loss_node"],
-                "edge": test_metrics["loss_edge"],
-            },
-            epoch,
-        )
-        writer.add_scalars(
-            "Accuracy/train",
-            {
-                "node": train_metrics["acc_node"],
-                "edge": train_metrics["acc_edge"],
-            },
-            epoch,
-        )
-        writer.add_scalars(
-            "Accuracy/test",
-            {
-                "node": test_metrics["acc_node"],
-                "edge": test_metrics["acc_edge"],
-            },
-            epoch,
-        )
+        print_string = f"Epoch: {epoch:03d} | "
+
+        for metric in train_metrics:
+            for regime, metric_dict in [
+                ("train", train_metrics),
+                ("test", test_metrics),
+            ]:
+                node_value, edge_value = metric_dict[metric][:2]
+
+                metric_name = f"{metric}/{regime}"
+                metric_out = {
+                    "node": node_value,
+                    "edge": edge_value,
+                }
+
+                if len(metric_dict[metric]) == 3:
+                    metric_out["total"] = metric_dict[metric][2]
+
+                if isinstance(node_value, float):
+                    writer.add_scalars(metric_name, metric_out, epoch)
+                    print_string += (
+                        f"{metric_name} (node): " f"{node_value:.4f} | "
+                    )
+                    print_string += (
+                        f"{metric_name} (edge): " f"{edge_value:.4f} | "
+                    )
+
+                elif isinstance(node_value, plt.Figure):
+                    writer.add_figure(metric_name, metric_out["node"], epoch)
+                    writer.add_figure(metric_name, metric_out["edge"], epoch)
+
+        print(print_string)
 
     writer.flush()
     writer.close()
