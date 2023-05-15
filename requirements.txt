@@ -1,0 +1,17 @@
+cvxopt
+magicgui
+matplotlib
+mrcfile
+networkx
+numpy
+pandas
+pyarrow
+pytest
+qtpy
+scikit_learn
+scipy
+seaborn
+starfile
+torch>=2.0.0
+torch_geometric>=2.3.1
+torchvision>=0.15.1
