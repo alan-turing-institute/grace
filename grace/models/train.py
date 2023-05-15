@@ -151,11 +151,11 @@ def train_model(
                 if isinstance(node_value, float):
                     writer.add_scalars(metric_name, metric_out, epoch)
                     print_string += (
-                        f"{metric_name}/{regime} (node): "
+                        f"{metric_name} (node): "
                         f"{node_value:.4f} | "
                     )
                     print_string += (
-                        f"{metric_name}/{regime} (edge): "
+                        f"{metric_name} (edge): "
                         f"{edge_value:.4f} | "
                     )
 

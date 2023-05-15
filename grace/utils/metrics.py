@@ -40,7 +40,7 @@ def confusion_matrix_metric(
     edge_true: torch.Tensor,
     node_classes: List[str] = ["TP", "TN"],
     edge_classes: List[str] = ["TP", "TN"],
-    figsize: Tuple[int] = (2, 2),
+    figsize: Tuple[int] = (6, 5),
 ) -> Tuple[plt.Figure]:
     node_pred_labels = node_pred.argmax(dim=-1)
     edge_pred_labels = edge_pred.argmax(dim=-1)
@@ -68,9 +68,12 @@ def confusion_matrix_metric(
         index=edge_classes,
         columns=edge_classes,
     )
-
-    fig_node = sn.heatmap(df_node, annot=True, cmap="Blues").get_figure()
-    fig_edge = sn.heatmap(df_edge, annot=True, cmap="Blues").get_figure()
+    
+    sn.set_theme(font="Helvetica", font_scale=2)
+    fig_node = plt.figure(figsize=figsize)
+    sn.heatmap(df_node, annot=True, vmin=0., vmax=1.)
+    fig_edge = plt.figure(figsize=figsize)
+    sn.heatmap(df_edge, annot=True, vmin=0., vmax=1.)
 
     for fig in (fig_node, fig_edge):
         fig.set_figwidth(figsize[0])
