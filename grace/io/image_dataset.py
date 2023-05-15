@@ -38,10 +38,21 @@ class ImageGraphDataset(Dataset):
         *,
         transform: Callable = lambda x, g: (x, g),
     ) -> None:
-        self.image_paths = list(Path(image_dir).iterdir())
-        self.grace_paths = list(Path(grace_dir).glob("*.grace"))
         self.image_reader_fn = image_reader_fn
         self.transform = transform
+
+        image_paths = list(Path(image_dir).iterdir())
+        grace_paths = list(Path(grace_dir).glob("*.grace"))
+        image_names = [p.stem for p in image_paths]
+        grace_names = [p.stem for p in grace_paths]
+        common_names = set(image_names).intersection(set(grace_names))
+
+        self.image_paths = sorted(
+            [p for p in image_paths if p.stem in common_names]
+        )
+        self.grace_paths = sorted(
+            [p for p in grace_paths if p.stem in common_names]
+        )
 
     def __len__(self) -> int:
         return len(self.grace_paths)

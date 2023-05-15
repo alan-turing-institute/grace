@@ -73,3 +73,40 @@ def test_dataset_ignores_subgraph_if_central_node_unknown(
     graph.update(nodes=node_update)
 
     assert len(dataset_from_graph(graph)) == num_nodes_total - num_unknown
+
+
+def test_dataset_only_takes_common_filenames(tmp_path):
+    image_fns = ["b", "a", "aj", "jj"]
+    label_fns = ["jj", "b", "kk"]
+
+    image_fns = [f + ".png" for f in image_fns]
+    label_fns = [f + ".grace" for f in label_fns]
+
+    image_dir = tmp_path / "images"
+    label_dir = tmp_path / "labels"
+
+    image_dir.mkdir()
+    label_dir.mkdir()
+
+    for fn in image_fns:
+        file = image_dir / fn
+        file.touch()
+
+    for fn in label_fns:
+        file = label_dir / fn
+        file.touch()
+
+    dataset = ImageGraphDataset(image_dir, label_dir, mrc_reader)
+
+    expected_image_paths = [
+        tmp_path / "images" / "b.png",
+        tmp_path / "images" / "jj.png",
+    ]
+
+    expected_label_paths = [
+        tmp_path / "labels" / "b.grace",
+        tmp_path / "labels" / "jj.grace",
+    ]
+
+    assert dataset.image_paths == expected_image_paths
+    assert dataset.grace_paths == expected_label_paths
