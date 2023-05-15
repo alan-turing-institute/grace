@@ -113,7 +113,9 @@ def train_model(
         loss_edge = edge_criterion(edge_pred, edge_true)
         loss = loss_node + loss_edge
 
-        metric_values = {"loss": (loss_node, loss_edge, loss)}
+        metric_values = {
+            "loss": (float(loss_node), float(loss_edge), float(loss))
+        }
 
         for m in metrics:
             if isinstance(m, str):
@@ -151,12 +153,10 @@ def train_model(
                 if isinstance(node_value, float):
                     writer.add_scalars(metric_name, metric_out, epoch)
                     print_string += (
-                        f"{metric_name} (node): "
-                        f"{node_value:.4f} | "
+                        f"{metric_name} (node): " f"{node_value:.4f} | "
                     )
                     print_string += (
-                        f"{metric_name} (edge): "
-                        f"{edge_value:.4f} | "
+                        f"{metric_name} (edge): " f"{edge_value:.4f} | "
                     )
 
                 elif isinstance(node_value, plt.Figure):
