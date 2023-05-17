@@ -7,6 +7,7 @@ import yaml
 from pathlib import Path
 from dataclasses import field, dataclass
 
+
 @dataclass
 class Config:
     image_dir: Optional[os.PathLike] = None
@@ -14,24 +15,39 @@ class Config:
     log_dir: Optional[os.PathLike] = None
     run_dir: Optional[os.PathLike] = None
     filetype: str = "mrc"
-    img_graph_augs: List[str] = field(default_factory=lambda: ["random_edge_addition_and_removal", "random_xy_translation"])
-    img_graph_aug_params: List[Dict[str, Any]] = field(default_factory=lambda: [{}, {}])
+    img_graph_augs: List[str] = field(
+        default_factory=lambda: [
+            "random_edge_addition_and_removal",
+            "random_xy_translation",
+        ]
+    )
+    img_graph_aug_params: List[Dict[str, Any]] = field(
+        default_factory=lambda: [{}, {}]
+    )
     extractor_fn: Optional[os.PathLike] = None
-    patch_augs: List[str] = field(default_factory=lambda: ["random_edge_crop", "random_image_graph_rotate"])
-    patch_aug_params: List[Dict[str, Any]] = field(default_factory=lambda: [{}, {}])
+    patch_augs: List[str] = field(
+        default_factory=lambda: [
+            "random_edge_crop",
+            "random_image_graph_rotate",
+        ]
+    )
+    patch_aug_params: List[Dict[str, Any]] = field(
+        default_factory=lambda: [{}, {}]
+    )
     patch_size: Tuple[int] = (224, 224)
-    ignore_fraction: float = 1.
+    ignore_fraction: float = 1.0
     feature_dim: int = 2048
     hidden_channels: int = 32
     num_node_classes: int = 2
     num_edge_classes: int = 2
     epochs: int = 100
-    metrics: List[str] = field(default_factory=lambda: ["accuracy", "confusion_matrix"])
+    metrics: List[str] = field(
+        default_factory=lambda: ["accuracy", "confusion_matrix"]
+    )
 
-def load_config_params(
-        params_file: Union[str, Path]
-    ) -> Config:
-    """Overwrite default config params from a 
+
+def load_config_params(params_file: Union[str, Path]) -> Config:
+    """Overwrite default config params from a
     JSON or YAML file.
 
     Parameters
@@ -52,22 +68,21 @@ def load_config_params(
 
     if not params_file.is_file():
         try:
-            params_file = list(
-                Path(params_file).glob("config_hyperparams.*")
-            )[0]
+            params_file = list(Path(params_file).glob("config_hyperparams.*"))[
+                0
+            ]
         except IndexError:
             raise ValueError("Config file cannot be found in this directory.")
 
     if params_file.suffix == ".json":
         params_dict = json.load(open(params_file))
-    elif params_file.suffix == '.yaml':
+    elif params_file.suffix == ".yaml":
         params_dict = yaml.safe_load(open(params_file))
     else:
         raise ValueError("Params file must be either a .json or .yaml file.")
-    
+
     for attr in config.__dict__:
         if attr in params_dict:
-
             default_value = getattr(config, attr)
             value = params_dict[attr]
 
@@ -87,25 +102,28 @@ def load_config_params(
 
     return config
 
-def write_config_file(config: Config,
-                      filetype: str = "json",) -> None:
+
+def write_config_file(
+    config: Config,
+    filetype: str = "json",
+) -> None:
     """Record hyperparameters of a training run."""
     if filetype not in ["json", "yaml"]:
-        raise ValueError("Config must be saved as either a .json or .yaml file.")
-        
-    '''params = {}
-    
+        raise ValueError(
+            "Config must be saved as either a .json or .yaml file."
+        )
+
+    """params = {}
+
     for attr in config.__dict__:
-        
+
         value = getattr(config, attr)
         if isinstance(value, function):
             value = []
-        
-        params[attr] = str(value)'''
-    
-    params = {
-        attr : str(getattr(config, attr)) for attr in config.__dict__
-    }
+
+        params[attr] = str(value)"""
+
+    params = {attr: str(getattr(config, attr)) for attr in config.__dict__}
 
     if isinstance(config.run_dir, str):
         setattr(config, "run_dir", Path(config.run_dir))
@@ -113,7 +131,6 @@ def write_config_file(config: Config,
     fn = config.run_dir / f"config_hyperparams.{filetype}"
 
     with open(fn, "w") as outfile:
-
         if filetype == "json":
             json.dump(params, outfile)
         else:
