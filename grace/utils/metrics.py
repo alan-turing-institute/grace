@@ -1,6 +1,5 @@
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 
-import enum
 import torch
 
 import numpy as np
@@ -9,10 +8,6 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import confusion_matrix
-
-
-def get_metric(string):
-    return [m for m in Metric if m.string == string][0]
 
 
 def accuracy_metric(
@@ -82,17 +77,11 @@ def confusion_matrix_metric(
     return fig_node, fig_edge
 
 
-@enum.unique
-class Metric(enum.Enum):
-    """Each object here is associated with a string name and a function,
-    which is used to calculate the value of the metric at each call. The
-    outputs of each function are node_output and edge_output in that order.
-    If a third output is produced, it is total_output.
-    """
+METRICS = {
+    "accuracy": accuracy_metric,
+    "confusion_matrix": confusion_matrix_metric,
+}
 
-    def __init__(self, string, call):
-        self.string = string
-        self.call = call
 
-    ACCURACY = "accuracy", accuracy_metric
-    CONFUSION_MATRIX = "confusion_matrix", confusion_matrix_metric
+def get_metric(name: str) -> Callable:
+    return METRICS[name]

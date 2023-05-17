@@ -27,12 +27,6 @@ def resnet() -> torch.nn.Module:
     return extractor
 
 
-default_transforms = Compose(
-    [
-        Resize(size=(224, 224)),
-        Lambda(lambda x: x.expand(1, 3, 224, 224)),
-    ]
-)
 default_augmentations = RandomApply(
     [
         RandomEdgeCrop(max_fraction=0.1),
@@ -77,7 +71,7 @@ class FeatureExtractor(torch.nn.Module):
         model: Callable,
         *,
         bbox_size: Tuple[int] = (224, 224),
-        transforms: Callable = default_transforms,
+        transforms: Callable = None,
         augmentations: Callable = default_augmentations,
         normalize_func: Callable = Normalize(mean=[0.0], std=[1.0]),
         ignore_fraction: float = 1.0,
@@ -89,6 +83,16 @@ class FeatureExtractor(torch.nn.Module):
         self.augmentations = augmentations
         self.normalize_func = normalize_func
         self.ignore_fraction = ignore_fraction
+
+        if transforms is None:
+            self.transforms = Compose(
+                [
+                    Resize(size=bbox_size),
+                    Lambda(
+                        lambda x: x.expand(1, 3, bbox_size[0], bbox_size[1])
+                    ),
+                ]
+            )
 
     def forward(
         self,

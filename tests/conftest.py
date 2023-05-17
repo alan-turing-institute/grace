@@ -54,7 +54,7 @@ def mrc_image_and_annotations_dir(tmp_path_factory, default_rng) -> Path:
         image, graph = random_image_and_graph(default_rng)
 
         image_fn = tmp_data_dir / f"image_{idx}.mrc"
-        grace_fn = tmp_data_dir / f"annotation_{idx}.grace"
+        grace_fn = tmp_data_dir / f"image_{idx}.grace"
         metadata = {"image_filename": image_fn.stem}
 
         with mrcfile.new(image_fn) as mrc:

@@ -1,4 +1,4 @@
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Callable
 
 import torch
 import torch_geometric
@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from torch_geometric.loader import DataLoader
 
 from grace.base import Annotation
-from grace.utils.metrics import get_metric, Metric
+from grace.utils.metrics import get_metric
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -23,7 +23,7 @@ def train_model(
     node_masked_class: Annotation = Annotation.UNKNOWN,
     edge_masked_class: Annotation = Annotation.UNKNOWN,
     log_dir: Optional[str] = None,
-    metrics: List[Union[str, Metric]] = [],
+    metrics: List[Union[str, Callable]] = [],
 ):
     """Train the pytorch model.
 
@@ -45,7 +45,7 @@ def train_model(
         Target edge class for which to set the loss to 0
     log_dir : str or None
         Log folder for the current training run
-    metrics : List[str or Metric]
+    metrics : List[str or Callable]
         Metrics to be evaluated after every training epoch
     """
     writer = SummaryWriter(log_dir)
@@ -119,11 +119,15 @@ def train_model(
 
         for m in metrics:
             if isinstance(m, str):
-                m = get_metric(m)
+                m_call = get_metric(m)
+                m_name = m
+            else:
+                m_call = m
+                m_name = m.__name__
 
-            m_node, m_edge = m.call(node_pred, edge_pred, node_true, edge_true)
+            m_node, m_edge = m_call(node_pred, edge_pred, node_true, edge_true)
 
-            metric_values[m.string] = (m_node, m_edge)
+            metric_values[m_name] = (m_node, m_edge)
 
         return metric_values
 

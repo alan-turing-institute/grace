@@ -2,7 +2,7 @@ import os
 import pytest
 
 from grace.base import GraphAttrs, Annotation
-from grace.utils.metrics import Metric
+from grace.utils.metrics import accuracy_metric, confusion_matrix_metric
 from grace.models.train import train_model
 from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import GCN
@@ -39,7 +39,7 @@ class TestTraining:
         "metrics",
         [
             ["accuracy", "confusion_matrix"],
-            [Metric.ACCURACY, Metric.CONFUSION_MATRIX],
+            [accuracy_metric, confusion_matrix_metric],
         ],
     )
     def test_logger_file_exists(self, tmpdir, metrics, data_and_model):
