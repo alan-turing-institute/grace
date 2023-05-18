@@ -145,11 +145,11 @@ class RandomXYTranslation:
         Maximum coordinate shift.
     """
 
-    def __init__(self, max_shift: float):
+    def __init__(self, max_shift: float = 10):
         self.max_shift = max_shift
 
     def __call__(
-        self, x: torch.Tensor, graph: Dict[str, Any]
+        self, img: torch.Tensor, graph: Dict[str, Any]
     ) -> Tuple[torch.Tensor, dict]:
         new_graph = graph["graph"].copy()
         graph = graph.copy()
@@ -175,4 +175,4 @@ class RandomXYTranslation:
         new_graph.update(nodes=new_nodes)
         graph["graph"] = new_graph
 
-        return x, graph
+        return img, graph

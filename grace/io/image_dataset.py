@@ -2,9 +2,9 @@ from typing import Tuple, Callable
 import numpy.typing as npt
 
 import os
-
+import cv2
+import tifffile
 import mrcfile
-import warnings
 
 from grace.io import read_graph
 
@@ -28,21 +28,30 @@ class ImageGraphDataset(Dataset):
         Function to read images from image filenames
     transform : Callable
         Transformation added to the images and targets
+    image_filetype : str
+        File extension of the image files
     """
 
     def __init__(
         self,
         image_dir: os.PathLike,
         grace_dir: os.PathLike,
-        image_reader_fn: Callable,
         *,
         transform: Callable = lambda x, g: (x, g),
+        image_filetype: str = "mrc",
     ) -> None:
-        self.image_reader_fn = image_reader_fn
+        self.image_reader_fn = FILETYPES[image_filetype]
         self.transform = transform
 
-        image_paths = list(Path(image_dir).iterdir())
+        image_paths = list(Path(image_dir).glob(f"*.{image_filetype}"))
         grace_paths = list(Path(grace_dir).glob("*.grace"))
+
+        if not image_paths:
+            raise ValueError(
+                "No images have been found in image_dir. Are you sure"
+                " you have the right filetype?"
+            )
+
         image_names = [p.stem for p in image_paths]
         grace_names = [p.stem for p in grace_paths]
         common_names = set(image_names).intersection(set(grace_names))
@@ -94,17 +103,40 @@ def mrc_reader(fn: os.PathLike) -> npt.NDArray:
     return image_data
 
 
-def read_mrc(path):
+def tiff_reader(fn: os.PathLike) -> npt.NDArray:
+    """Reads a .tiff image file
+
+    Parameters
+    ----------
+    fn: str
+        Image filename
+
+    Returns
+    -------
+    image_data: np.ndarray
+        Image array
     """
-    Takes a path and read a mrc file convert the data to np array
+    return tifffile.imread(fn).astype(int)
+
+
+def png_reader(fn: os.PathLike) -> npt.NDArray:
+    """Reads a .png image file
+
+    Parameters
+    ----------
+    fn: str
+        Image filename
+
+    Returns
+    -------
+    image_data: np.ndarray
+        Image array
     """
-    warnings.simplefilter(
-        "ignore"
-    )  # to mute some warnings produced when opening the tomos
-    with mrcfile.open(path, mode="r+", permissive=True) as mrc:
-        mrc.update_header_from_data()
-        mrc.header.map = mrcfile.constants.MAP_ID
-        mrc = mrc.data
-    with mrcfile.open(path) as mrc:
-        data = mrc.data.astype(int)
-    return data
+    return cv2.imread(fn, cv2.IMREAD_GREYSCALE)
+
+
+FILETYPES = {
+    "mrc": mrc_reader,
+    "tiff": tiff_reader,
+    "png": png_reader,
+}

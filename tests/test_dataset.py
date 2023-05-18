@@ -4,7 +4,7 @@
 import pytest
 
 from grace.io.core import GraphAttrs, Annotation
-from grace.io.image_dataset import ImageGraphDataset, mrc_reader
+from grace.io.image_dataset import ImageGraphDataset
 from grace.models.datasets import dataset_from_graph
 
 from _utils import random_image_and_graph
@@ -17,7 +17,7 @@ def test_image_graph_dataset(mrc_image_and_annotations_dir):
     dataset = ImageGraphDataset(
         mrc_image_and_annotations_dir,
         mrc_image_and_annotations_dir,
-        mrc_reader,
+        image_filetype="mrc",
     )
 
     # # all currently fail
@@ -96,7 +96,7 @@ def test_dataset_only_takes_common_filenames(tmp_path):
         file = label_dir / fn
         file.touch()
 
-    dataset = ImageGraphDataset(image_dir, label_dir, mrc_reader)
+    dataset = ImageGraphDataset(image_dir, label_dir, image_filetype="png")
 
     expected_image_paths = [
         tmp_path / "images" / "b.png",
