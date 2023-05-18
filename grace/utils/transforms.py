@@ -21,8 +21,8 @@ GRAPH_TRANSFORMS = {
     "random_image_graph_rotate": RandomImageGraphRotate,
 }
 
-class ImageGraphCompose:
 
+class ImageGraphCompose:
     def __init__(self, transforms):
         self.transforms = transforms
 
