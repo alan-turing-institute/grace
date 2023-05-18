@@ -19,20 +19,20 @@ class Config:
         default_factory=lambda: [
             "random_edge_addition_and_removal",
             "random_xy_translation",
+            "random_image_graph_rotate",
         ]
     )
     img_graph_aug_params: List[Dict[str, Any]] = field(
-        default_factory=lambda: [{}, {}]
+        default_factory=lambda: [{}, {}, {}]
     )
     extractor_fn: Optional[os.PathLike] = None
     patch_augs: List[str] = field(
         default_factory=lambda: [
             "random_edge_crop",
-            "random_image_graph_rotate",
         ]
     )
     patch_aug_params: List[Dict[str, Any]] = field(
-        default_factory=lambda: [{}, {}]
+        default_factory=lambda: [{}]
     )
     patch_size: Tuple[int] = (224, 224)
     ignore_fraction: float = 1.0

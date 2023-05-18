@@ -13,13 +13,23 @@ from torchvision.transforms import Compose
 
 PATCH_TRANSFORMS = {
     "random_edge_crop": RandomEdgeCrop,
-    "random_image_graph_rotate": RandomImageGraphRotate,
 }
 
 GRAPH_TRANSFORMS = {
     "random_edge_addition_and_removal": RandomEdgeAdditionAndRemoval,
     "random_xy_translation": RandomXYTranslation,
+    "random_image_graph_rotate": RandomImageGraphRotate,
 }
+
+class ImageGraphCompose:
+
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, img, grph):
+        for t in self.transforms:
+            img, grph = t(img, grph)
+        return img, grph
 
 
 def get_transforms(
@@ -33,14 +43,22 @@ def get_transforms(
         transform_dict = PATCH_TRANSFORMS
         strings = config.patch_augs
         params = config.patch_aug_params
+
+        return Compose(
+            [
+                transform_dict[string](**params[n])
+                for n, string in enumerate(strings)
+            ]
+        )
+
     elif group == "graph":
         transform_dict = GRAPH_TRANSFORMS
         strings = config.img_graph_augs
         params = config.img_graph_aug_params
 
-    return Compose(
-        [
-            transform_dict[string](**params[n])
-            for n, string in enumerate(strings)
-        ]
-    )
+        return ImageGraphCompose(
+            [
+                transform_dict[string](**params[n])
+                for n, string in enumerate(strings)
+            ]
+        )

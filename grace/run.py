@@ -43,13 +43,14 @@ def run(config_file: Union[str, os.PathLike]) -> None:
         ignore_fraction=config.ignore_fraction,
     )
 
-    def transform(x):
-        return feature_extractor(img_graph_augs(x))
+    def transform(img, grph):
+        img_aug, grph_aug = img_graph_augs(img, grph)
+        return feature_extractor(img_aug, grph_aug)
 
     input_data = ImageGraphDataset(
         image_dir=config.image_dir,
         grace_dir=config.grace_dir,
-        filetype=config.filetype,
+        image_filetype=config.filetype,
         transform=transform,
     )
 
