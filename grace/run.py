@@ -15,10 +15,7 @@ from grace.models.classifier import GCN
 from grace.models.feature_extractor import FeatureExtractor
 from grace.utils.transforms import get_transforms
 
-
-@click.command(name="GRACE Trainer")
-@click.option("--config_file", type=click.Path(exists=True))
-def run(config_file: Union[str, os.PathLike]) -> None:
+def run_grace(config_file: Union[str, os.PathLike]) -> None:
     """Runs the GRACE pipeline; going straight from images and .grace annotations
     to a trained node/edge classifier model.
 
@@ -82,6 +79,11 @@ def run(config_file: Union[str, os.PathLike]) -> None:
     torch.save(classifier, model_save_fn)
     write_config_file(config)
 
+
+@click.command(name="GRACE Trainer")
+@click.option("--config_file", type=click.Path(exists=True))
+def run(config_file: Union[str, os.PathLike]) -> None:
+    run_grace(config_file)
 
 if __name__ == "__main__":
     run()
