@@ -45,6 +45,11 @@ class ImageGraphDataset(Dataset):
 
         image_paths = list(Path(image_dir).glob(f"*.{image_filetype}"))
         grace_paths = list(Path(grace_dir).glob("*.grace"))
+
+        if not image_paths:
+            raise ValueError("No images have been found in image_dir. Are you sure"
+                             " you have the right filetype?")
+
         image_names = [p.stem for p in image_paths]
         grace_names = [p.stem for p in grace_paths]
         common_names = set(image_names).intersection(set(grace_names))
