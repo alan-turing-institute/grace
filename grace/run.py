@@ -19,7 +19,7 @@ from grace.utils.transforms import get_transforms
 @click.command(name="GRACE Trainer")
 @click.option("--config_file", type=click.Path(exists=True))
 def run(config_file: Union[str, os.PathLike]) -> None:
-    """Runs the GRACE pipeline; going straight from images and annotations
+    """Runs the GRACE pipeline; going straight from images and .grace annotations
     to a trained node/edge classifier model.
 
     This function sacrifices some flexibility
