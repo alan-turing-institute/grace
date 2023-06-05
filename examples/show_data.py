@@ -9,13 +9,14 @@ from pathlib import Path
 
 
 DATA_PATH = Path(
-    "/Users/csoelistyo/Documents/grace_files/notebook_test/image_files"
+    # "/Users/csoelistyo/Documents/grace_files/notebook_test/image_files"
+    "/Users/kulicna/Library/CloudStorage/OneDrive-TheAlanTuringInstitute/data/test"
 )
-IMAGE_PATH = (
-    DATA_PATH
-    / "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW.mrc"
+IMAGE_FILE = (
+    "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW"
 )
-NODES_PATH = DATA_PATH / "data.h5"
+IMAGE_PATH = DATA_PATH / f"{IMAGE_FILE}.mrc"
+NODES_PATH = DATA_PATH / f"{IMAGE_FILE}.h5"
 
 
 with mrcfile.open(IMAGE_PATH, "r") as mrc:
