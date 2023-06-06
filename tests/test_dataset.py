@@ -3,7 +3,7 @@
 
 import pytest
 
-from grace.io.core import GraphAttrs, Annotation
+from grace.io.core import GraphAttrs, Annotation, mkdir_grace_from_star
 from grace.io.image_dataset import ImageGraphDataset
 from grace.models.datasets import dataset_from_graph
 
@@ -110,3 +110,26 @@ def test_dataset_only_takes_common_filenames(tmp_path):
 
     assert dataset.image_paths == expected_image_paths
     assert dataset.grace_paths == expected_label_paths
+
+
+def test_gracedir_from_stardir(tmp_path):
+    star_fns = ["b", "a", "aj", "jj"]
+
+    star_fns = [f + ".png" for f in star_fns]
+
+    star_dir = tmp_path / "star"
+    star_dir.mkdir()
+
+    for fn in star_fns:
+        file = star_dir / fn
+        file.touch()
+
+    mkdir_grace_from_star(stardir=star_dir)
+
+    expected_grace_paths = [
+        tmp_path / "grace" / "b.grace",
+        tmp_path / "grace" / "jj.grace",
+    ]
+
+    assert expected_grace_paths[0].is_file() is True
+    assert expected_grace_paths[1].is_file() is True

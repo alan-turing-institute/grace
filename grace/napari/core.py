@@ -45,7 +45,7 @@ class GraceManager:
     def __init__(self, viewer: napari.Viewer):
         self.viewer = viewer
         self.graph = None
-
+        self.name = None
         # the currently selected layer in the napari viewer
         self._selected_layer = None
 
@@ -166,7 +166,7 @@ class GraceManager:
         filename, _ = QFileDialog.getSaveFileName(
             widget,
             "Export annotations",
-            "annotations.grace",
+            f"{self.name}.grace",  # make sure the name is initiated
             "GRACE Files(*.grace)",
             options=options,
         )
@@ -195,7 +195,7 @@ class GraceManager:
         if filename:
             filename = Path(filename)
             data = read_graph(filename)
-
+            # save here the name into self.name
             self.create_layers(graph=data.graph, annotation=data.annotation)
 
 
