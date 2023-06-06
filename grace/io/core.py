@@ -200,7 +200,7 @@ def read_graph(filename: os.PathLike) -> GraceFileDataset:
 
 def star_to_graph(filename: os.PathLike) -> nx.Graph:
     """Reads a starfile into a graph."""
-    star_df = starfile.read(filename)
+    star_df = starfile.read(str(filename))
     star_df = star_df.rename(
         columns={"rlnCoordinateX": "x", "rlnCoordinateY": "y"}
     )
@@ -213,7 +213,7 @@ def mkdir_grace_from_star(
 ) -> None:
     """Make and populate a grace directory from a directory of starfiles.
 
-    Inputs:
+    Parameters:
      stardir: path to starfile directory
      gracedir (optional): path to grace directory"""
 
