@@ -64,7 +64,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         edge_output_classes=config.num_edge_classes,
     )
 
-    current_time = datetime.now().strftime("%d-%b-%Y_%H-%M-%S")
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = config.log_dir / current_time
     setattr(config, "run_dir", run_dir)
 
