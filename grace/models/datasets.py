@@ -9,7 +9,10 @@ from grace.base import GraphAttrs, Annotation
 
 
 def dataset_from_graph(
-    graph: nx.Graph, *, n_hop: int = 1
+    graph: nx.Graph,
+    *,
+    n_hop: int = 1,
+    is_constrained: bool = True,
 ) -> List[torch_geometric.data.Data]:
     """Create a pytorch geometric dataset from a give networkx graph.
 
@@ -30,8 +33,10 @@ def dataset_from_graph(
     dataset = []
 
     for node, values in graph.nodes(data=True):
+        # Constraint: exclusion of unknown nodes at the centre of subgraph:
         if values[GraphAttrs.NODE_GROUND_TRUTH] is Annotation.UNKNOWN:
-            continue
+            if is_constrained is True:
+                continue
 
         sub_graph = nx.ego_graph(graph, node, radius=n_hop)
 
@@ -40,8 +45,10 @@ def dataset_from_graph(
             for _, _, edge in sub_graph.edges(data=True)
         ]
 
+        # Constraint: exclusion of all unknown edges forming the subgraph:
         if all([e == Annotation.UNKNOWN for e in edge_label]):
-            continue
+            if is_constrained is True:
+                continue
 
         x = np.stack(
             [
