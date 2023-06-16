@@ -10,17 +10,21 @@ from pathlib import Path
 
 DATA_PATH = Path(
     # "/Users/csoelistyo/Documents/grace_files/notebook_test/image_files"
-    "/Users/kulicna/Library/CloudStorage/OneDrive-TheAlanTuringInstitute/data/test"
+    # "/Users/kulicna/Library/CloudStorage/OneDrive-TheAlanTuringInstitute/data/test"
+    "/Users/kulicna/Desktop/classifier/data_fake"
 )
 IMAGE_FILE = (
-    "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW"
+    # "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW"
+    "MRC_File_001"
 )
 IMAGE_PATH = DATA_PATH / f"{IMAGE_FILE}.mrc"
 NODES_PATH = DATA_PATH / f"{IMAGE_FILE}.h5"
 
 
 with mrcfile.open(IMAGE_PATH, "r") as mrc:
-    image_data = mrc.data.astype(int)
+    image_data = mrc.data.astype(int) # works
+    # image_data = mrc.data
+    
 nodes_data = pd.read_hdf(NODES_PATH)
 points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
 # features = {

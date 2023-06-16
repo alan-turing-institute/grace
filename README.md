@@ -60,8 +60,26 @@ The `grace` workflow consists of the following steps:
 For local development, clone the repo and install in editable mode:
 
 ```sh
+# clone the grace GitHub repository
+
 git clone https://github.com/alan-turing-institute/grace.git
 cd ./grace
+
+# create a conda playground from environment.yml
+conda env create -f environment.yml
+
+# To activate this environment, use
+#
+#     $ conda activate grace-environment
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+conda activate grace-environment
+
+# install grace from local folder (not on pypi yet)
+
 pip install -e ".[dev]"
 ```
 

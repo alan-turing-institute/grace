@@ -39,6 +39,11 @@ def dataset_from_graph(
                 continue
 
         sub_graph = nx.ego_graph(graph, node, radius=n_hop)
+        
+        # SUPER HACKY TO REMOVE CORNER NODES:
+        # for _, node for sub_graph.nodes.data():
+        #     if node[GraphAttrs.NODE_FEATURES] is None: 
+        #         continue
 
         edge_label = [
             edge[GraphAttrs.EDGE_GROUND_TRUTH]
