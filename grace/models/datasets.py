@@ -39,10 +39,10 @@ def dataset_from_graph(
                 continue
 
         sub_graph = nx.ego_graph(graph, node, radius=n_hop)
-        
+
         # SUPER HACKY TO REMOVE CORNER NODES:
         # for _, node for sub_graph.nodes.data():
-        #     if node[GraphAttrs.NODE_FEATURES] is None: 
+        #     if node[GraphAttrs.NODE_FEATURES] is None:
         #         continue
 
         edge_label = [
@@ -54,6 +54,11 @@ def dataset_from_graph(
         if all([e == Annotation.UNKNOWN for e in edge_label]):
             if is_constrained is True:
                 continue
+
+        # Constraint: exclude all 'corner' nodes --- >>> SUPER-HACKY!!! HACK!
+        # if any([n[GraphAttrs.NODE_FEATURES] is None for _, n in sub_graph.nodes(data=True)]):
+        #     if is_constrained is True:
+        #         continue
 
         x = np.stack(
             [

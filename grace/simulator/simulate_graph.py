@@ -10,7 +10,8 @@ import numpy.typing as npt
 from scipy.interpolate import interp1d
 from scipy.spatial import Delaunay
 
-from .base import edges_from_delaunay
+from ..base import edges_from_delaunay, GraphAttrs
+
 
 RNG = np.random.default_rng()
 
@@ -367,3 +368,36 @@ def random_graph_mixed_motifs(
         graph.add_edge(*edge)
 
     return graph
+
+
+def update_graph_with_dummy_predictions(G: nx.Graph) -> None:
+    """Create a random graph with line objects.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph which node & edge predictions are to be updated with synthetic values.
+
+    Returns
+    -------
+    None
+    - modifies the graph in place
+    """
+    nodes = list(G.nodes.data())
+
+    for _, node in nodes:
+        pd = np.random.random() * 0.5
+        if node["label"] > 0:
+            node[GraphAttrs.NODE_PREDICTION] = pd
+        else:
+            node[GraphAttrs.NODE_PREDICTION] = 1 - pd
+
+    for edge in G.edges.data():
+        pd = np.random.random() * 0.1
+        _, e_i = nodes[edge[0]]
+        _, e_j = nodes[edge[1]]
+
+        if e_i["object_idx"] == e_j["object_idx"] and e_i["label"] > 0:
+            edge[2][GraphAttrs.EDGE_PREDICTION] = 1 - pd
+        else:
+            edge[2][GraphAttrs.EDGE_PREDICTION] = pd
