@@ -67,7 +67,7 @@ def cut_graph_using_mask(
     mask : array
         A binary mask to filter points and edges in the graph.
     update_graph : bool, (default: True)
-        Update edge attributes in place.
+        Update node & edge attributes in place.
 
     Returns
     -------
@@ -125,6 +125,30 @@ def cut_graph_using_mask(
             graph.nodes[idx][
                 GraphAttrs.NODE_GROUND_TRUTH
             ] = Annotation.TRUE_POSITIVE
+
+    # HACK: TODO: if the node is outside the object, but connected to an
+    # object with a true negative edge, classify it as a true negative node
+    if update_graph:
+        for edge in graph.edges():
+            source, target = edge
+            edge_label = graph[source][target][GraphAttrs.EDGE_GROUND_TRUTH]
+
+            # for the cut edges, label the 'outside' nodes as true negatives:
+            if edge_label == Annotation.TRUE_NEGATIVE:
+                if (
+                    graph.nodes[source][GraphAttrs.NODE_GROUND_TRUTH]
+                    == Annotation.UNKNOWN
+                ):
+                    graph.nodes[source][
+                        GraphAttrs.NODE_GROUND_TRUTH
+                    ] = Annotation.TRUE_NEGATIVE
+                if (
+                    graph.nodes[target][GraphAttrs.NODE_GROUND_TRUTH]
+                    == Annotation.UNKNOWN
+                ):
+                    graph.nodes[target][
+                        GraphAttrs.NODE_GROUND_TRUTH
+                    ] = Annotation.TRUE_NEGATIVE
 
     return indices, enclosed_edges, cut_edges
 

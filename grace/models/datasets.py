@@ -12,7 +12,7 @@ def dataset_from_graph(
     graph: nx.Graph,
     *,
     n_hop: int = 1,
-    is_constrained: bool = True,
+    in_train_mode: bool = True,
 ) -> List[torch_geometric.data.Data]:
     """Create a pytorch geometric dataset from a give networkx graph.
 
@@ -22,28 +22,35 @@ def dataset_from_graph(
         A networkx graph.
     n_hop : int
         The number of hops from the central node when creating the subgraphs.
+    in_train_mode : bool
+        Traverses & checks sub-graphs to generate training dataset. Default = True
 
     Returns
     -------
     dataset : list
         A list of pytorch geometric data objects representing the extracted
         subgraphs.
+
+    TODO:
+        - currently doesn't work on 'corner' nodes i.e. nodes which have
+        patches cropped at the boundary of the image - need to pad the image beforehand
     """
 
     dataset = []
 
     for node, values in graph.nodes(data=True):
+        # Define a subgraph - n_hop subgraph at train time, whole graph otherwise:
+        if in_train_mode is True:
+            sub_graph = nx.ego_graph(graph, node, radius=n_hop)
+        else:
+            sub_graph = graph
+
         # Constraint: exclusion of unknown nodes at the centre of subgraph:
-        if values[GraphAttrs.NODE_GROUND_TRUTH] is Annotation.UNKNOWN:
-            if is_constrained is True:
+        if in_train_mode is True:
+            if values[GraphAttrs.NODE_GROUND_TRUTH] is Annotation.UNKNOWN:
                 continue
 
-        sub_graph = nx.ego_graph(graph, node, radius=n_hop)
-
-        # SUPER HACKY TO REMOVE CORNER NODES:
-        # for _, node for sub_graph.nodes.data():
-        #     if node[GraphAttrs.NODE_FEATURES] is None:
-        #         continue
+        # sub_graph = nx.ego_graph(graph, node, radius=n_hop)
 
         edge_label = [
             edge[GraphAttrs.EDGE_GROUND_TRUTH]
@@ -51,14 +58,9 @@ def dataset_from_graph(
         ]
 
         # Constraint: exclusion of all unknown edges forming the subgraph:
-        if all([e == Annotation.UNKNOWN for e in edge_label]):
-            if is_constrained is True:
+        if in_train_mode is True:
+            if all([e == Annotation.UNKNOWN for e in edge_label]):
                 continue
-
-        # Constraint: exclude all 'corner' nodes --- >>> SUPER-HACKY!!! HACK!
-        # if any([n[GraphAttrs.NODE_FEATURES] is None for _, n in sub_graph.nodes(data=True)]):
-        #     if is_constrained is True:
-        #         continue
 
         x = np.stack(
             [
@@ -95,6 +97,10 @@ def dataset_from_graph(
             y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
         )
 
-        dataset.append(data)
+        # You only need to traverse the graph once: stop if not in train mode:
+        if in_train_mode is True:
+            dataset.append(data)
+        else:
+            return data
 
     return dataset

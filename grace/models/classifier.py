@@ -57,6 +57,8 @@ class GCN(torch.nn.Module):
         x = global_mean_pool(
             embeddings, batch
         )  # [batch_size, hidden_channels]
+
+        # TODO: add if for train else eval
         x = F.dropout(x, p=0.5, training=self.training)
         node_x = self.node_classifier(x)
 

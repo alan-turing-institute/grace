@@ -54,15 +54,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     dataset = []
 
-    counter = []
     for _, target in input_data:
-        print (target["metadata"]["image_filename"])
-        for _, n in target["graph"].nodes.data():
-            if n['features'] is None:
-                print (n)
-            else:
-                counter.append(n['features'].shape)
-        # print (set([n['features'] for _, n in target["graph"].nodes.data()]))
         dataset.extend(dataset_from_graph(target["graph"]))
 
     classifier = GCN(

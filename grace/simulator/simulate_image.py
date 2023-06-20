@@ -8,7 +8,7 @@ import mrcfile
 from pathlib import Path
 from skimage.util import montage
 
-from grace.base import GraphAttrs
+from grace.base import GraphAttrs, Annotation
 from grace.simulator.simulate_graph import random_graph
 
 
@@ -44,7 +44,9 @@ def synthesize_image_from_graph(
     crop_shape: tuple[int, int],
     mask_shape: tuple[int, int],
 ):
-    """Synthesize a 2D fake image of specified shape with grey patch centres of real nodes (belonging to an object) and black patch centres of fake nodes (random noisy nodes).
+    """Synthesize a 2D fake image of specified shape with grey patch centres
+        of real nodes (belonging to an object) and black patch centres
+        of fake nodes (random noisy nodes).
 
     Parameters
     ----------
@@ -55,9 +57,11 @@ def synthesize_image_from_graph(
     image_shape : tuple[int, int]
         Shape of the image to create, without padding.
     crop_shape : tuple[int, int]
-        Shape of the cropped patches to train on (e.g. (224, 224) - compatible to resnet input).
+        Shape of the cropped patches to train on (e.g. (224, 224)
+        - compatible to resnet input).
     mask_shape : tuple[int, int]
-        Shape of the mask to mark the positive nodes (i.e. parts of an object) from negative nodes (random noise).
+        Shape of the mask to mark the positive nodes (i.e. parts of an object)
+        from negative nodes (random noise).
 
     Returns
     -------
@@ -107,16 +111,17 @@ def synthesize_image_from_graph(
 def montage_from_image(
     G: nx.Graph, image: npt.NDArray, crop_shape: tuple[int, int]
 ) -> None:
-    """Visualise the montages of nodes which belong vs. don't belong to an object.
+    """Visualise the montages of some true negative (0) and true positive (1) nodes.
 
     Parameters
     ----------
     G : nx.Graph
         A (synthetic) networkx graph.
     image : np.array
-        Simulated image.
+        Simulated image corresponding to the graph.
     crop_shape : tuple[int, int]
-        Shape of the cropped patches to train on (e.g. (224, 224) - compatible to resnet input).
+        Shape of the cropped patches to train on
+        (e.g. (224, 224) - compatible to resnet input).
     """
 
     crops = [[], []]
@@ -132,8 +137,10 @@ def montage_from_image(
         )
 
         # Sort crops based on labels:
-        crop = image[st_x:en_x, st_y:en_y]
-        crops[node["label"]].append(crop)
+        crop = image[st_x:en_x, st_y:en_y].numpy()
+        label = node[GraphAttrs.NODE_GROUND_TRUTH]
+        if label < Annotation.UNKNOWN:
+            crops[label].append(crop)
 
     for c, crop_collection in enumerate(crops):
         mont = montage(crop_collection[:49], grid_shape=(7, 7))

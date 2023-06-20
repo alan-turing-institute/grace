@@ -9,13 +9,13 @@ from pathlib import Path
 
 
 DATA_PATH = Path(
-    # "/Users/csoelistyo/Documents/grace_files/notebook_test/image_files"
-    # "/Users/kulicna/Library/CloudStorage/OneDrive-TheAlanTuringInstitute/data/test"
-    "/Users/kulicna/Desktop/classifier/data_fake/train/padded"
+    # "/Users/kulicna/Desktop/classifier/data_fake/train/padded/"
+    "/Users/kulicna/Desktop/classifier/data_fake/infer/padded"
 )
 IMAGE_FILE = (
     # "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW"
-    "MRC_Synthetic_File_009"
+    "MRC_Synthetic_File_000"
+    # "MRC_File_001"
 )
 IMAGE_PATH = DATA_PATH / f"{IMAGE_FILE}.mrc"
 NODES_PATH = DATA_PATH / f"{IMAGE_FILE}.h5"
