@@ -22,8 +22,9 @@ NODES_PATH = DATA_PATH / f"{IMAGE_FILE}.h5"
 
 
 with mrcfile.open(IMAGE_PATH, "r") as mrc:
-    image_data = mrc.data.astype(int)  # works
-    # image_data = mrc.data
+    # image_data = mrc.data.astype(int)  # works
+    image_data = mrc.data
+# print(image_data.dtype, np.unique(image_data))
 
 nodes_data = pd.read_hdf(NODES_PATH)
 points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])

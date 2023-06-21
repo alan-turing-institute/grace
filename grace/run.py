@@ -10,7 +10,7 @@ from datetime import datetime
 from grace.config import write_config_file, load_config_params
 from grace.io.image_dataset import ImageGraphDataset
 from grace.models.train import train_model
-from grace.models.datasets import dataset_from_graph
+from grace.models.datasets import dataset_from_subgraphs
 from grace.models.classifier import GCN
 from grace.models.feature_extractor import FeatureExtractor
 from grace.utils.transforms import get_transforms
@@ -55,7 +55,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     dataset = []
 
     for _, target in input_data:
-        dataset.extend(dataset_from_graph(target["graph"]))
+        dataset.extend(dataset_from_subgraphs(target["graph"]))
 
     classifier = GCN(
         input_channels=config.feature_dim,

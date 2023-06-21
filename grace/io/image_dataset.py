@@ -7,6 +7,7 @@ import tifffile
 import mrcfile
 
 from grace.io import read_graph
+from grace.simulator.simulate_image import montage_from_image
 
 import torch
 from torch.utils.data import Dataset
@@ -73,12 +74,20 @@ class ImageGraphDataset(Dataset):
         image = torch.tensor(
             self.image_reader_fn(img_path), dtype=torch.float32
         )
+
         grace_dataset = read_graph(grace_path)
 
         target = {}
         target["graph"] = grace_dataset.graph
         target["metadata"] = grace_dataset.metadata
         assert img_path.stem == target["metadata"]["image_filename"]
+
+        # Transpose for training?
+        image = image.t()
+        print(grace_dataset.metadata["image_filename"])
+        montage_from_image(
+            G=grace_dataset.graph, image=image, crop_shape=(224, 224)
+        )
 
         image, target = self.transform(image, target)
 
@@ -99,7 +108,8 @@ def mrc_reader(fn: os.PathLike) -> npt.NDArray:
         Image array
     """
     with mrcfile.open(fn, "r") as mrc:
-        image_data = mrc.data.astype(int)
+        # image_data = mrc.data.astype(int)
+        image_data = mrc.data
     return image_data
 
 

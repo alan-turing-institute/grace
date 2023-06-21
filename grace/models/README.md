@@ -2,6 +2,7 @@ To run the model training:
 
 ```
 python3 grace/run.py --config_file="/Users/kulicna/Desktop/classifier/configs/config_hyperparams_submitted.json"
+python grace/run.py --config_file=/Users/kulicna/Desktop/classifier/configs/config_hyperparams_submitted_fake.json
 ```
 
 absolute path to the `config_file` structured as follows:

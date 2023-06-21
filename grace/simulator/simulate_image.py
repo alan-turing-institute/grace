@@ -124,7 +124,10 @@ def montage_from_image(
         (e.g. (224, 224) - compatible to resnet input).
     """
 
+    print(np.unique(image))
+    plt.figure(figsize=(10, 5))
     crops = [[], []]
+
     for _, node in G.nodes.data():
         coords = node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y]
         st_x, en_x = (
@@ -144,10 +147,13 @@ def montage_from_image(
 
     for c, crop_collection in enumerate(crops):
         mont = montage(crop_collection[:49], grid_shape=(7, 7))
+        plt.subplot(1, 2, c + 1)
         plt.imshow(mont, cmap="binary_r")
-        plt.colorbar()
-        plt.title(f"Montage of patches with 'node_label' = {c}")
-        plt.show()
+        plt.colorbar(fraction=0.045)
+        plt.title(f"Montage of patches\nwith 'node_label' = {c}")
+        plt.axis("off")
+    plt.show()
+    plt.close()
 
 
 def save_image_and_graph_combo(

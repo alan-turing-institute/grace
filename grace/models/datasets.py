@@ -8,13 +8,13 @@ import torch_geometric
 from grace.base import GraphAttrs, Annotation
 
 
-def dataset_from_graph(
+def dataset_from_subgraphs(
     graph: nx.Graph,
     *,
     n_hop: int = 1,
     in_train_mode: bool = True,
 ) -> List[torch_geometric.data.Data]:
-    """Create a pytorch geometric dataset from a give networkx graph.
+    """Create a pytorch geometric dataset from a given networkx graph.
 
     Parameters
     ----------
@@ -40,17 +40,12 @@ def dataset_from_graph(
 
     for node, values in graph.nodes(data=True):
         # Define a subgraph - n_hop subgraph at train time, whole graph otherwise:
-        if in_train_mode is True:
-            sub_graph = nx.ego_graph(graph, node, radius=n_hop)
-        else:
-            sub_graph = graph
+        sub_graph = nx.ego_graph(graph, node, radius=n_hop)
 
         # Constraint: exclusion of unknown nodes at the centre of subgraph:
         if in_train_mode is True:
             if values[GraphAttrs.NODE_GROUND_TRUTH] is Annotation.UNKNOWN:
                 continue
-
-        # sub_graph = nx.ego_graph(graph, node, radius=n_hop)
 
         edge_label = [
             edge[GraphAttrs.EDGE_GROUND_TRUTH]
@@ -97,10 +92,60 @@ def dataset_from_graph(
             y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
         )
 
-        # You only need to traverse the graph once: stop if not in train mode:
-        if in_train_mode is True:
-            dataset.append(data)
-        else:
-            return data
+        dataset.append(data)
 
     return dataset
+
+
+def dataset_from_whole_graph(graph: nx.Graph) -> torch_geometric.data.Data:
+    """Create a single pytorch geometric dataset from an entire give networkx graph.
+
+    Parameters
+    ----------
+    graph : graph
+        A networkx graph.
+
+    Returns
+    -------
+    dataset : list
+        A single pytorch geometric data objects representing the extracted graph.
+    """
+
+    edge_label = [
+        edge[GraphAttrs.EDGE_GROUND_TRUTH]
+        for _, _, edge in graph.edges(data=True)
+    ]
+
+    x = np.stack(
+        [node[GraphAttrs.NODE_FEATURES] for _, node in graph.nodes(data=True)],
+        axis=0,
+    )
+
+    pos = np.stack(
+        [
+            (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
+            for _, node in graph.nodes(data=True)
+        ],
+        axis=0,
+    )
+
+    # TODO: edge attributes
+    # central_node = np.array(
+    #     [values[GraphAttrs.NODE_X], values[GraphAttrs.NODE_Y]]
+    # )
+    # edge_attr = pos - central_node
+
+    item = nx.convert_node_labels_to_integers(graph)
+    edges = list(item.edges)
+    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
+
+    data = torch_geometric.data.Data(
+        x=torch.Tensor(x),
+        edge_index=edge_index,
+        # edge_attr=torch.Tensor(edge_attr),
+        edge_label=torch.Tensor(edge_label).long(),
+        pos=torch.Tensor(pos),
+        # y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
+    )
+
+    return data
