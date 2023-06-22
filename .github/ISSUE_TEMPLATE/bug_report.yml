@@ -1,5 +1,5 @@
 name: Bug Report
-description: File a bug report
+description: Report issues installing or running GRACE
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
@@ -7,7 +7,7 @@ body:
     id: describe
     attributes:
       label: Describe the bug
-      description: Please describe the bug, including any error messages. Provide screenshots if available (these can be added as a comment once you submit the issue).
+      description: Please describe the bug, including any error messages. Attach screenshots if available.
   - type: textarea
     id: python_version
     attributes:
