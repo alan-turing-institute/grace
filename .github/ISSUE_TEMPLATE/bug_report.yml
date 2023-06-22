@@ -17,7 +17,7 @@ body:
     id: OS
     attributes:
       label: What OS are you using?
-       description: What OS are you running?
+      description: What OS are you running?
   - type: textarea
     id: comment
     attributes:
