@@ -8,19 +8,16 @@ body:
     attributes:
       label: Describe the bug
       description: Please describe the bug, including any error messages. Provide screenshots if available (these can be added as a comment once you submit the issue).
-    validations:
-      required: true
   - type: textarea
     id: python_version
     attributes:
       label: Python version
       description: What version of Python are you running?
-      required: true
   - type: textarea
     id: OS
     attributes:
       label: What OS are you using?
-      required: true
+       description: What OS are you running?
   - type: textarea
     id: comment
     attributes:
