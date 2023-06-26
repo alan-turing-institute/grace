@@ -1,4 +1,4 @@
-name: Bug Report
+name: Bug report
 description: Report issues installing or running GRACE
 title: "[BUG]: "
 labels: ["bug", "triage"]
