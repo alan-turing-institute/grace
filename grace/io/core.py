@@ -8,8 +8,6 @@ import pyarrow.parquet as pq
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
-import starfile
-import pathlib
 
 from grace.base import Annotation, GraphAttrs, graph_from_dataframe
 from grace.io.schema import NODE_SCHEMA, EDGE_SCHEMA
@@ -196,41 +194,3 @@ def read_graph(filename: os.PathLike) -> GraceFileDataset:
     with GraceFile(filename) as gfile:
         data = gfile.read()
     return data
-
-
-def star_to_graph(filename: os.PathLike) -> nx.Graph:
-    """Reads a starfile into a graph."""
-    star_df = starfile.read(str(filename))
-    star_df = star_df.rename(
-        columns={"rlnCoordinateX": "x", "rlnCoordinateY": "y"}
-    )
-
-    return graph_from_dataframe(star_df)
-
-
-def mkdir_grace_from_star(
-    stardir: os.PathLike, gracedir: os.PathLike = None
-) -> None:
-    """Make and populate a grace directory from a directory of starfiles.
-
-    Parameters:
-     stardir: path to starfile directory
-     gracedir (optional): path to grace directory"""
-
-    # Read all the files in starfile directory
-    p = pathlib.Path(stardir)
-    star_list = [f for f in p.iterdir() if f.is_file()]
-
-    # Create grace directory if none is provided
-    if gracedir is None:
-        pathlib.Path(str(p.parent) + "/grace").mkdir(exist_ok=True)
-        gracedir = pathlib.Path(str(p.parent) + "/grace")
-    # Scrape through the star file directory
-
-    for file in star_list:
-        # Per file, read to dataframe and get graph from star_to_graph
-        temp_graph = star_to_graph(file)
-
-        # Write grace with the new filename (if existing, overwrite)
-        grace_name = str(gracedir) + "/" + file.stem + ".grace"
-        write_graph(grace_name, graph=temp_graph)
