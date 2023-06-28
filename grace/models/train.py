@@ -62,7 +62,7 @@ def train_model(
 
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=0.01,
+        lr=0.001,
         # weight_decay=5e-4),
     )
 
@@ -164,8 +164,12 @@ def train_model(
                     )
 
                 elif isinstance(node_value, plt.Figure):
-                    writer.add_figure(metric_name, metric_out["node"], epoch)
-                    writer.add_figure(metric_name, metric_out["edge"], epoch)
+                    writer.add_figure(
+                        f"{metric_name} (node)", metric_out["node"], epoch
+                    )
+                    writer.add_figure(
+                        f"{metric_name} (edge)", metric_out["edge"], epoch
+                    )
 
         print(print_string)
 

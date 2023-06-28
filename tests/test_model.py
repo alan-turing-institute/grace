@@ -102,7 +102,7 @@ class TestFeatureExtractor:
                 model=model,
                 transforms=lambda x: x,
                 augmentations=lambda x: x,
-                ignore_fraction=0.0,
+                keep_patch_fraction=0.0,
                 normalize_func=lambda x: x,
             ),
             "image": torch.tensor(image.astype("float32")),

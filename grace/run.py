@@ -38,7 +38,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         model=extractor_model,
         augmentations=patch_augs,
         bbox_size=config.patch_size,
-        ignore_fraction=config.ignore_fraction,
+        keep_patch_fraction=config.keep_patch_fraction,
     )
 
     def transform(img, grph):

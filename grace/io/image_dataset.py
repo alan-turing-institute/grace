@@ -85,9 +85,9 @@ class ImageGraphDataset(Dataset):
         # Transpose for training?
         image = image.t()
         print(grace_dataset.metadata["image_filename"])
-        montage_from_image(
-            G=grace_dataset.graph, image=image, crop_shape=(224, 224)
-        )
+        # montage_from_image(
+        #     G=grace_dataset.graph, image=image, crop_shape=(224, 224)
+        # )
 
         image, target = self.transform(image, target)
 

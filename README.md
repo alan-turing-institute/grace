@@ -81,6 +81,9 @@ conda activate grace-environment
 # install grace from local folder (not on pypi yet)
 
 pip install -e ".[dev]"
+
+# install pre-commit separately
+
 ```
 
 ---

@@ -35,6 +35,8 @@ def confusion_matrix_metric(
     edge_true: torch.Tensor,
     node_classes: List[str] = ["TP", "TN"],
     edge_classes: List[str] = ["TP", "TN"],
+    # node_classes: List[str] = ["TP_node", "TN_node"],
+    # edge_classes: List[str] = ["TP_edge", "TN_edge"],
     figsize: Tuple[int] = (6, 5),
 ) -> Tuple[plt.Figure]:
     node_pred_labels = node_pred.argmax(dim=-1)

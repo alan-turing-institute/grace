@@ -124,7 +124,6 @@ def montage_from_image(
         (e.g. (224, 224) - compatible to resnet input).
     """
 
-    print(np.unique(image))
     plt.figure(figsize=(10, 5))
     crops = [[], []]
 
@@ -146,7 +145,12 @@ def montage_from_image(
             crops[label].append(crop)
 
     for c, crop_collection in enumerate(crops):
-        mont = montage(crop_collection[:49], grid_shape=(7, 7))
+        mont = montage(
+            crop_collection[:49],
+            grid_shape=(7, 7),
+            padding_width=10,
+            fill=np.max([np.max(c) for c in crop_collection[0]]),
+        )
         plt.subplot(1, 2, c + 1)
         plt.imshow(mont, cmap="binary_r")
         plt.colorbar(fraction=0.045)
