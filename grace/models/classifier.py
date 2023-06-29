@@ -38,12 +38,14 @@ class GCN(torch.nn.Module):
     ):
         super(GCN, self).__init__()
 
-        hidden_channels_list = [input_channels] + hidden_channels
-        print(hidden_channels_list)
-        self.conv_layer_list = [
-            GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
-            for i in range(len(hidden_channels_list) - 1)
-        ]
+        # hidden_channels_list = [input_channels] + hidden_channels
+        # print(hidden_channels_list)
+
+        hidden_channels_list = [input_channels]
+        # self.conv_layer_list = [
+        #     GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
+        #     for i in range(len(hidden_channels_list) - 1)
+        # ]
         self.node_classifier = Linear(
             hidden_channels_list[-1], node_output_classes
         )
@@ -57,14 +59,15 @@ class GCN(torch.nn.Module):
         edge_index: torch.Tensor,
         batch: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor]:
-        for l in range(len(self.conv_layer_list)):
-            x = self.conv_layer_list[l](x, edge_index)
-            if l < len(self.conv_layer_list) - 1:
-                x = x.relu()
-            else:
-                embeddings = x
+        # for l in range(len(self.conv_layer_list)):
+        #     x = self.conv_layer_list[l](x, edge_index)
+        #     if l < len(self.conv_layer_list) - 1:
+        #         x = x.relu()
+        #     # else:
+        #     #     embeddings = x
 
         # Extract the node embeddings for feature classif:
+        embeddings = x
         x = global_mean_pool(
             embeddings, batch
         )  # [batch_size, hidden_channels]

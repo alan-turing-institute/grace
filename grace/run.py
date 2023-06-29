@@ -5,7 +5,7 @@ import click
 import torch
 
 from datetime import datetime
-
+from tqdm.auto import tqdm
 
 from grace.config import write_config_file, load_config_params
 from grace.io.image_dataset import ImageGraphDataset
@@ -45,12 +45,25 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         img_aug, grph_aug = img_graph_augs(img, grph)
         return feature_extractor(img_aug, grph_aug)
 
+        # EXTRA!
+        # from grace.base import GraphAttrs
+        # for _, node in grph['graph'].nodes(data=True):
+        #     coords = node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y]
+        #     coords = [int(c) for c in coords]
+        #     pixel = img.T[coords[0], coords[1]]
+        #     node[GraphAttrs.NODE_FEATURES] = pixel.repeat(2048)
+        # return img, grph
+
     input_data = ImageGraphDataset(
         image_dir=config.image_dir,
         grace_dir=config.grace_dir,
         image_filetype=config.filetype,
         transform=transform,
     )
+
+    # progress bar:
+    for _, target in tqdm(input_data):
+        print(target["metadata"]["image_filename"])
 
     dataset = []
 

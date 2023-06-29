@@ -74,10 +74,9 @@ python3 grace/run.py --config_file=/Users/kulicna/Desktop/classifier/configs/con
 
 + learning rate
 + dropout probability
-+ classifier.py -> node_output_classes: int = 2 (hard-coded param)
-+ classifier.py -> edge_output_classes: int = 2 (hard-coded param)
-  + this should be updated from the config
++ train to validation ratio
+  + these should be updated from the config  
 + specify which model you want to run: "gcn", "gat", "linear classifier", "central patch pixel"
 + clean the optimiser - make the inference function as `predict`
   + set the model to eval()
-  + set the
+  + set the dropout to 0
