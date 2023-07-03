@@ -19,7 +19,7 @@ def train_model(
     *,
     epochs: int = 100,
     batch_size: int = 64,
-    val_fraction: float = 0.7,
+    train_fraction: float = 0.85,
     node_masked_class: Annotation = Annotation.UNKNOWN,
     edge_masked_class: Annotation = Annotation.UNKNOWN,
     log_dir: Optional[str] = None,
@@ -37,8 +37,8 @@ def train_model(
         Number of epochs to train the model
     batch_size : int
         Batch size
-    val_fraction : float
-        Fraction of data to be used for validation
+    train_fraction : float
+        Fraction of data to be used for training (rest for validation)
     node_masked_class : Annotation
         Target node class for which to set the loss to 0
     edge_masked_class : Annotation
@@ -50,8 +50,8 @@ def train_model(
     """
     writer = SummaryWriter(log_dir)
 
-    train_dataset = dataset[: round(val_fraction * len(dataset))]
-    test_dataset = dataset[round(val_fraction * len(dataset)) :]
+    train_dataset = dataset[: round(train_fraction * len(dataset))]
+    test_dataset = dataset[round(train_fraction * len(dataset)) :]
 
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
@@ -62,7 +62,7 @@ def train_model(
 
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=0.01,
+        lr=0.001,
         # weight_decay=5e-4),
     )
 
@@ -164,8 +164,12 @@ def train_model(
                     )
 
                 elif isinstance(node_value, plt.Figure):
-                    writer.add_figure(metric_name, metric_out["node"], epoch)
-                    writer.add_figure(metric_name, metric_out["edge"], epoch)
+                    writer.add_figure(
+                        f"{metric_name} (node)", metric_out["node"], epoch
+                    )
+                    writer.add_figure(
+                        f"{metric_name} (edge)", metric_out["edge"], epoch
+                    )
 
         print(print_string)
 

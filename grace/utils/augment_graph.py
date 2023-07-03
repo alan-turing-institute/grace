@@ -145,7 +145,7 @@ class RandomXYTranslation:
         Maximum coordinate shift.
     """
 
-    def __init__(self, max_shift: float = 10):
+    def __init__(self, max_shift: float = 10.0):
         self.max_shift = max_shift
 
     def __call__(
