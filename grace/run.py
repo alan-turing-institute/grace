@@ -54,7 +54,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # TQDM progress bar:
     dataset = []
-    for _, target in tqdm(input_data):
+    for _, target in tqdm(
+        input_data, desc="Extracting patch features from training data... "
+    ):
         print(target["metadata"]["image_filename"])
         dataset.extend(dataset_from_subgraphs(target["graph"]))
 

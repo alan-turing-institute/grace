@@ -42,12 +42,12 @@ class TestGCN:
     ):
         """Test building the model with different dimensions."""
 
-        assert gcn.conv1.in_channels == input_channels
+        assert gcn.conv_layer_list[0].in_channels == input_channels
 
-        assert gcn.node_classifier.in_features == hidden_channels
+        assert gcn.node_classifier.in_features == hidden_channels[-1]
         assert gcn.node_classifier.out_features == node_output_classes
 
-        assert gcn.edge_classifier.in_features == hidden_channels * 2
+        assert gcn.edge_classifier.in_features == hidden_channels[-1] * 2
         assert gcn.edge_classifier.out_features == edge_output_classes
 
     @pytest.mark.parametrize("num_nodes", [4, 5])
@@ -102,7 +102,7 @@ class TestFeatureExtractor:
                 model=model,
                 transforms=lambda x: x,
                 augmentations=lambda x: x,
-                ignore_fraction=0.0,
+                keep_patch_fraction=0.0,
                 normalize_func=lambda x: x,
             ),
             "image": torch.tensor(image.astype("float32")),

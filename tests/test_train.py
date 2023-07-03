@@ -15,7 +15,7 @@ class TestTraining:
     def data_and_model(self, default_rng):
         model = GCN(
             input_channels=2,
-            hidden_channels=4,
+            hidden_channels=[16, 4],
         )
 
         _, graph = random_image_and_graph(

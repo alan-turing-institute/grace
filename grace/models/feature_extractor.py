@@ -98,7 +98,7 @@ class FeatureExtractor(torch.nn.Module):
         if transforms is None:
             self.transforms = Compose(
                 [
-                    Resize(size=bbox_size),
+                    Resize(size=bbox_size, antialias=True),
                     Lambda(
                         lambda x: x.expand(1, 3, bbox_size[0], bbox_size[1])
                     ),
