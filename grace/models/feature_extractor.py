@@ -2,7 +2,6 @@ from typing import Any, Dict, Tuple, Callable
 
 import torch
 
-from torchvision.models import resnet152, ResNet152_Weights
 from torchvision.transforms import (
     Resize,
     Lambda,
@@ -16,9 +15,21 @@ from grace.base import GraphAttrs, Annotation
 from grace.utils.augment_image import RandomEdgeCrop
 
 
-def resnet() -> torch.nn.Module:
+def resnet(resnet_type: str = "resnet152") -> torch.nn.Module:
     """Returns the pre-trained resnet152 model."""
-    classifier = resnet152(ResNet152_Weights)
+    if resnet_type == "resnet152":
+        from torchvision.models import resnet152, ResNet152_Weights
+
+        classifier = resnet152(ResNet152_Weights)
+    elif resnet_type == "resnet50":
+        from torchvision.models import resnet50, ResNet50_Weights
+
+        classifier = resnet50(ResNet50_Weights)
+    else:
+        from torchvision.models import resnet18, ResNet18_Weights
+
+        classifier = resnet18(ResNet18_Weights)
+
     modules = list(classifier.children())[:-1]
     extractor = torch.nn.Sequential(*modules)
     for p in extractor.parameters():
