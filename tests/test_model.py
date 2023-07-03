@@ -13,7 +13,7 @@ from grace.models.datasets import dataset_from_subgraphs
 
 
 @pytest.mark.parametrize("input_channels", [1, 2])
-@pytest.mark.parametrize("hidden_channels", [16, 32])
+@pytest.mark.parametrize("hidden_channels", [[16, 4], [32, 8]])
 @pytest.mark.parametrize("node_output_classes", [2, 4])
 @pytest.mark.parametrize("edge_output_classes", [2, 4])
 class TestGCN:
