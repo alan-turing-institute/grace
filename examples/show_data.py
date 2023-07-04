@@ -9,17 +9,21 @@ from pathlib import Path
 
 
 DATA_PATH = Path(
-    "/Users/csoelistyo/Documents/grace_files/notebook_test/image_files"
+    # "/Users/csoelistyo/Documents/grace_files/notebook_test/image_files"
+    "/Users/kulicna/Desktop/classifier/data_fake/infer/padded"
 )
-IMAGE_PATH = (
-    DATA_PATH
-    / "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW.mrc"
+IMAGE_FILE = (
+    # "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW"
+    "MRC_Synthetic_File_000"
 )
-NODES_PATH = DATA_PATH / "data.h5"
+IMAGE_PATH = DATA_PATH / f"{IMAGE_FILE}.mrc"
+NODES_PATH = DATA_PATH / f"{IMAGE_FILE}.h5"
 
 
 with mrcfile.open(IMAGE_PATH, "r") as mrc:
-    image_data = mrc.data.astype(int)
+    # image_data = mrc.data.astype(int)
+    image_data = mrc.data
+
 nodes_data = pd.read_hdf(NODES_PATH)
 points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
 # features = {
