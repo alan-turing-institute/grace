@@ -29,8 +29,9 @@ The `config_file` should be structured as follows:
     "log_dir": "--same--as--above--",
 
     # Feature extractor:
-    "extractor_fn": "/absolute/path/to/your/feature/extractor/resnet152.pt",
-    "feature_dim": "2048", -> if using ResNet 50 / 101 / 152, "512" if using ResNet 18 / 34; = input channels into the classifier
+    "extractor_fn": "/path/to/your/feature/extractor/resnet152.pt",
+    "feature_dim": "2048", -> if using ResNet 50 / 101 / 152,
+                   "512" if using ResNet 18 / 34; = input channels into the classifier
 
     # Patch data specs:
     "patch_size": "(224, 224)", -> size of the patch to crop & feed to feature extractor
@@ -55,6 +56,19 @@ The `config_file` should be structured as follows:
 ```
 
 _Note:_ Write the parameters into a single line, the file will be parsed accordingly.
+
+Downloading the feature extractor:
+
+In case you decide to use a pre-trained image classifier, such as resnet-152, you can use this snippet to import the model, load the default weights & download the model:
+
+```sh
+import torch
+from grace.models.feature_extractor import resnet
+
+resnet_model = resnet(resnet_type="resnet152")
+extractor_fn = "/path/to/your/feature/extractor/resnet152.pt"
+torch.save(resnet_model, extractor_fn)
+```
 
 
 ## Full list of graph / patch augmentations:
