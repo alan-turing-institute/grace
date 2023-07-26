@@ -3,23 +3,26 @@ from typing import List
 import networkx as nx
 import numpy as np
 import torch
-import torch_geometric
 
+from torch_geometric.data import Data
 from grace.base import GraphAttrs, Annotation
 
 
-def dataset_from_subgraphs(
+def dataset_from_graph(
     graph: nx.Graph,
     *,
+    mode: str = "full",
     n_hop: int = 1,
     in_train_mode: bool = True,
-) -> List[torch_geometric.data.Data]:
+) -> List[Data]:
     """Create a pytorch geometric dataset from a given networkx graph.
 
     Parameters
     ----------
     graph : graph
         A networkx graph.
+    mode : str
+        "sub" or "full".
     n_hop : int
         The number of hops from the central node when creating the subgraphs.
     in_train_mode : bool
@@ -27,105 +30,89 @@ def dataset_from_subgraphs(
 
     Returns
     -------
-    dataset : list
-        A list of pytorch geometric data objects representing the extracted
-        subgraphs.
+    dataset : List[Data] or Data
+        A (list of) pytorch geometric data object(s) representing the extracted
+        subgraphs or full graph.
 
     TODO:
         - currently doesn't work on 'corner' nodes i.e. nodes which have
         patches cropped at the boundary of the image - need to pad the image beforehand
     """
 
-    dataset = []
+    assert mode in ["sub", "full"]
 
-    for node, values in graph.nodes(data=True):
-        # Define a subgraph - n_hop subgraph at train time, whole graph otherwise:
-        sub_graph = nx.ego_graph(graph, node, radius=n_hop)
+    if mode == "sub":
+        dataset = []
 
-        # Constraint: exclusion of unknown nodes at the centre of subgraph:
-        if in_train_mode is True:
-            if values[GraphAttrs.NODE_GROUND_TRUTH] is Annotation.UNKNOWN:
+        for node, values in graph.nodes(data=True):
+            if (
+                in_train_mode
+                and values[GraphAttrs.NODE_GROUND_TRUTH] is Annotation.UNKNOWN
+            ):
                 continue
 
+            sub_graph = nx.ego_graph(graph, node, radius=n_hop)
+            edge_label = [
+                edge[GraphAttrs.EDGE_GROUND_TRUTH]
+                for _, _, edge in sub_graph.edges(data=True)
+            ]
+
+            if in_train_mode and all(
+                [e == Annotation.UNKNOWN for e in edge_label]
+            ):
+                continue
+
+            pos = np.stack(
+                [
+                    (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
+                    for _, node in graph.nodes(data=True)
+                ],
+                axis=0,
+            )
+            central_node = np.array(
+                [values[GraphAttrs.NODE_X], values[GraphAttrs.NODE_Y]]
+            )
+            edge_attr = pos - central_node
+
+            data = _info_from_graph(
+                sub_graph,
+                pos=torch.Tensor(pos),
+                edge_attr=torch.Tensor(edge_attr),
+                y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
+            )
+
+            dataset.append(data)
+
+    elif mode == "full":
         edge_label = [
             edge[GraphAttrs.EDGE_GROUND_TRUTH]
-            for _, _, edge in sub_graph.edges(data=True)
+            for _, _, edge in graph.edges(data=True)
         ]
-
-        # Constraint: exclusion of all unknown edges forming the subgraph:
-        if in_train_mode is True:
-            if all([e == Annotation.UNKNOWN for e in edge_label]):
-                continue
-
-        x = np.stack(
-            [
-                node[GraphAttrs.NODE_FEATURES]
-                for _, node in sub_graph.nodes(data=True)
-            ],
-            axis=0,
-        )
 
         pos = np.stack(
             [
                 (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
-                for _, node in sub_graph.nodes(data=True)
+                for _, node in graph.nodes(data=True)
             ],
             axis=0,
         )
-
-        # TODO: edge attributes
-        central_node = np.array(
-            [values[GraphAttrs.NODE_X], values[GraphAttrs.NODE_Y]]
-        )
-        edge_attr = pos - central_node
-
-        item = nx.convert_node_labels_to_integers(sub_graph)
-        edges = list(item.edges)
-        edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
-
-        data = torch_geometric.data.Data(
-            x=torch.Tensor(x),
-            edge_index=edge_index,
-            edge_attr=torch.Tensor(edge_attr),
-            edge_label=torch.Tensor(edge_label).long(),
+        data = _info_from_graph(
+            sub_graph,
             pos=torch.Tensor(pos),
+            edge_attr=torch.Tensor(edge_attr),
             y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
+            edge_label=torch.Tensor(edge_label).long(),
         )
 
-        dataset.append(data)
-
-    return dataset
+        return data
 
 
-def dataset_from_whole_graph(graph: nx.Graph) -> torch_geometric.data.Data:
-    """Create a single pytorch geometric dataset from an entire give networkx graph.
-
-    Parameters
-    ----------
-    graph : graph
-        A networkx graph.
-
-    Returns
-    -------
-    dataset : list
-        A single pytorch geometric data objects representing the extracted graph.
-    """
-
-    edge_label = [
-        edge[GraphAttrs.EDGE_GROUND_TRUTH]
-        for _, _, edge in graph.edges(data=True)
-    ]
-
+def _info_from_graph(
+    graph: nx.Graph,
+    **kwargs,
+) -> Data:
     x = np.stack(
         [node[GraphAttrs.NODE_FEATURES] for _, node in graph.nodes(data=True)],
-        axis=0,
-    )
-
-    pos = np.stack(
-        [
-            (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
-            for _, node in graph.nodes(data=True)
-        ],
         axis=0,
     )
 
@@ -133,11 +120,10 @@ def dataset_from_whole_graph(graph: nx.Graph) -> torch_geometric.data.Data:
     edges = list(item.edges)
     edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
 
-    data = torch_geometric.data.Data(
+    data = Data(
         x=torch.Tensor(x),
         edge_index=edge_index,
-        edge_label=torch.Tensor(edge_label).long(),
-        pos=torch.Tensor(pos),
+        **kwargs,
     )
 
     return data

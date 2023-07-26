@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import List, Tuple, Optional
 
 import torch
 import torch.nn.functional as F
@@ -31,7 +31,7 @@ class GCN(torch.nn.Module):
     def __init__(
         self,
         input_channels: int,
-        hidden_channels: list[int],
+        hidden_channels: List[int],
         *,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
@@ -82,17 +82,3 @@ class GCN(torch.nn.Module):
         edge_x = self.edge_classifier(edge_features)
 
         return node_x, edge_x
-
-    def predict(
-        self,
-        x: torch.Tensor,
-        edge_index: torch.Tensor,
-        batch: Optional[torch.Tensor] = None,
-    ):
-        # predict the labels of the subgraph, no matter the annotations (node, edge)
-        pass
-
-
-class Classifier:
-    def __init__(self, model_type: str = "gcn", layer_list: list[int] = []):
-        pass

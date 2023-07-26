@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 from grace.config import write_config_file, load_config_params
 from grace.io.image_dataset import ImageGraphDataset
 from grace.models.train import train_model
-from grace.models.datasets import dataset_from_subgraphs
+from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import GCN
 from grace.models.feature_extractor import FeatureExtractor
 from grace.utils.transforms import get_transforms
@@ -58,7 +58,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         input_data, desc="Extracting patch features from training data... "
     ):
         print(target["metadata"]["image_filename"])
-        dataset.extend(dataset_from_subgraphs(target["graph"]))
+        dataset.extend(dataset_from_graph(target["graph"], mode="sub"))
 
     classifier = GCN(
         input_channels=config.feature_dim,

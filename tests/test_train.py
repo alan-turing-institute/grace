@@ -4,7 +4,7 @@ import pytest
 from grace.base import GraphAttrs, Annotation
 from grace.utils.metrics import accuracy_metric, confusion_matrix_metric
 from grace.models.train import train_model
-from grace.models.datasets import dataset_from_subgraphs
+from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import GCN
 
 from _utils import random_image_and_graph
@@ -31,7 +31,7 @@ class TestTraining:
                 for src, dst in graph.edges
             ]
         )
-        dataset = dataset_from_subgraphs(graph)
+        dataset = dataset_from_graph(graph, mode="sub")
 
         return dataset, model
 

@@ -9,7 +9,7 @@ import networkx as nx
 from _utils import random_image_and_graph
 
 from grace.base import GraphAttrs, Annotation
-from grace.models.datasets import dataset_from_subgraphs
+from grace.models.datasets import dataset_from_graph
 
 
 @pytest.mark.parametrize("input_channels", [1, 2])
@@ -74,7 +74,7 @@ class TestGCN:
                 for src, dst in graph.edges
             ]
         )
-        data = dataset_from_subgraphs(graph)[0]
+        data = dataset_from_graph(graph, mode="sub")[0]
 
         subgraph = nx.ego_graph(graph, 0)
         num_nodes = subgraph.number_of_nodes()
