@@ -1,9 +1,9 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 import torch
 import torch.nn.functional as F
 from torch.nn import Linear
-from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.nn import GCNConv
 
 
 class GCN(torch.nn.Module):
@@ -33,6 +33,7 @@ class GCN(torch.nn.Module):
         input_channels: int,
         hidden_channels: List[int],
         *,
+        dropout: float = 0.5,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
     ):
@@ -51,12 +52,12 @@ class GCN(torch.nn.Module):
         self.edge_classifier = Linear(
             hidden_channels_list[-1] * 2, edge_output_classes
         )
+        self.dropout = dropout
 
     def forward(
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
-        batch: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor]:
         for layer in range(len(self.conv_layer_list)):
             x = self.conv_layer_list[layer](x, edge_index)
@@ -65,13 +66,7 @@ class GCN(torch.nn.Module):
             else:
                 embeddings = x
 
-        # Extract the node embeddings for feature classif:
-        x = global_mean_pool(
-            embeddings, batch
-        )  # [batch_size, hidden_channels]
-
-        # TODO: set dropout probability as config hyperparam:
-        x = F.dropout(x, p=0.5, training=self.training)
+        x = F.dropout(x, p=self.dropout, training=self.training)
         node_x = self.node_classifier(x)
 
         src, dst = edge_index

@@ -67,11 +67,11 @@ def dataset_from_graph(
 
             data = Data(
                 x=_x(sub_graph),
+                y=_y(sub_graph),
                 pos=pos,
                 edge_attr=edge_attr,
                 edge_index=_edge_index(sub_graph),
                 edge_label=edge_label,
-                y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
             )
 
             dataset.append(data)
@@ -117,6 +117,17 @@ def _x(graph: nx.Graph):
         axis=0,
     )
     return torch.Tensor(x)
+
+
+def _y(graph: nx.Graph):
+    y = np.stack(
+        [
+            node[GraphAttrs.NODE_GROUND_TRUTH]
+            for _, node in graph.nodes(data=True)
+        ],
+        axis=0,
+    )
+    return torch.Tensor(y).long()
 
 
 def _edge_index(graph: nx.Graph):
