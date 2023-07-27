@@ -15,7 +15,7 @@ class TestTraining:
     def data_and_model(self, default_rng):
         model = GCN(
             input_channels=2,
-            hidden_channels=4,
+            hidden_channels=[16, 4],
         )
 
         _, graph = random_image_and_graph(
@@ -31,7 +31,7 @@ class TestTraining:
                 for src, dst in graph.edges
             ]
         )
-        dataset = dataset_from_graph(graph)
+        dataset = dataset_from_graph(graph, mode="sub")
 
         return dataset, model
 

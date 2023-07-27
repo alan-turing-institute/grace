@@ -35,12 +35,12 @@ class Config:
         default_factory=lambda: [{}]
     )
     patch_size: Tuple[int] = (224, 224)
-    ignore_fraction: float = 1.0
+    keep_patch_fraction: float = 1.0
     feature_dim: int = 2048
-    hidden_channels: int = 32
     num_node_classes: int = 2
     num_edge_classes: int = 2
     epochs: int = 100
+    hidden_channels: List[int] = field(default_factory=lambda: [1024, 256, 64])
     metrics: List[str] = field(
         default_factory=lambda: ["accuracy", "confusion_matrix"]
     )

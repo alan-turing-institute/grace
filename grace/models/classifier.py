@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import List, Tuple, Optional
 
 import torch
 import torch.nn.functional as F
@@ -31,17 +31,26 @@ class GCN(torch.nn.Module):
     def __init__(
         self,
         input_channels: int,
-        hidden_channels: int,
+        hidden_channels: List[int],
         *,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
     ):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(input_channels, hidden_channels)
-        self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        self.conv3 = GCNConv(hidden_channels, hidden_channels)
-        self.node_classifier = Linear(hidden_channels, node_output_classes)
-        self.edge_classifier = Linear(hidden_channels * 2, edge_output_classes)
+
+        # Hidden channels start from input features:
+        hidden_channels_list = [input_channels] + hidden_channels
+
+        self.conv_layer_list = [
+            GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
+            for i in range(len(hidden_channels_list) - 1)
+        ]
+        self.node_classifier = Linear(
+            hidden_channels_list[-1], node_output_classes
+        )
+        self.edge_classifier = Linear(
+            hidden_channels_list[-1] * 2, edge_output_classes
+        )
 
     def forward(
         self,
@@ -49,14 +58,19 @@ class GCN(torch.nn.Module):
         edge_index: torch.Tensor,
         batch: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor]:
-        x = self.conv1(x, edge_index)
-        x = x.relu()
-        x = self.conv2(x, edge_index)
-        x = x.relu()
-        embeddings = self.conv3(x, edge_index)
+        for layer in range(len(self.conv_layer_list)):
+            x = self.conv_layer_list[layer](x, edge_index)
+            if layer < len(self.conv_layer_list) - 1:
+                x = x.relu()
+            else:
+                embeddings = x
+
+        # Extract the node embeddings for feature classif:
         x = global_mean_pool(
             embeddings, batch
         )  # [batch_size, hidden_channels]
+
+        # TODO: set dropout probability as config hyperparam:
         x = F.dropout(x, p=0.5, training=self.training)
         node_x = self.node_classifier(x)
 

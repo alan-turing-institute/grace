@@ -43,7 +43,7 @@ def test_dataset_ignores_subgraph_if_all_edges_unknown(default_rng):
     # this action is not currently required since edges are by default UNKNOWN;
     # however it enables testing of this condition should the default label be changed
 
-    assert dataset_from_graph(graph) == []
+    assert dataset_from_graph(graph, mode="sub") == []
 
 
 @pytest.mark.parametrize("num_unknown", [7, 17])
@@ -72,7 +72,10 @@ def test_dataset_ignores_subgraph_if_central_node_unknown(
     ]
     graph.update(nodes=node_update)
 
-    assert len(dataset_from_graph(graph)) == num_nodes_total - num_unknown
+    assert (
+        len(dataset_from_graph(graph, mode="sub"))
+        == num_nodes_total - num_unknown
+    )
 
 
 def test_dataset_only_takes_common_filenames(tmp_path):

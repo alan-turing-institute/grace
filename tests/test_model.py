@@ -13,7 +13,7 @@ from grace.models.datasets import dataset_from_graph
 
 
 @pytest.mark.parametrize("input_channels", [1, 2])
-@pytest.mark.parametrize("hidden_channels", [16, 32])
+@pytest.mark.parametrize("hidden_channels", [[16, 4], [32, 8]])
 @pytest.mark.parametrize("node_output_classes", [2, 4])
 @pytest.mark.parametrize("edge_output_classes", [2, 4])
 class TestGCN:
@@ -42,12 +42,12 @@ class TestGCN:
     ):
         """Test building the model with different dimensions."""
 
-        assert gcn.conv1.in_channels == input_channels
+        assert gcn.conv_layer_list[0].in_channels == input_channels
 
-        assert gcn.node_classifier.in_features == hidden_channels
+        assert gcn.node_classifier.in_features == hidden_channels[-1]
         assert gcn.node_classifier.out_features == node_output_classes
 
-        assert gcn.edge_classifier.in_features == hidden_channels * 2
+        assert gcn.edge_classifier.in_features == hidden_channels[-1] * 2
         assert gcn.edge_classifier.out_features == edge_output_classes
 
     @pytest.mark.parametrize("num_nodes", [4, 5])
@@ -74,7 +74,7 @@ class TestGCN:
                 for src, dst in graph.edges
             ]
         )
-        data = dataset_from_graph(graph)[0]
+        data = dataset_from_graph(graph, mode="sub")[0]
 
         subgraph = nx.ego_graph(graph, 0)
         num_nodes = subgraph.number_of_nodes()
@@ -102,7 +102,7 @@ class TestFeatureExtractor:
                 model=model,
                 transforms=lambda x: x,
                 augmentations=lambda x: x,
-                ignore_fraction=0.0,
+                keep_patch_fraction=0.0,
                 normalize_func=lambda x: x,
             ),
             "image": torch.tensor(image.astype("float32")),

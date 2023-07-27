@@ -1,5 +1,4 @@
-from grace import graph_from_dataframe
-from grace.base import GraphAttrs
+from grace.base import GraphAttrs, graph_from_dataframe
 
 SIMPLE_GRAPH_NUM_EDGES = 3
 REQUIRED_NODE_ATTRIBUTES = set(

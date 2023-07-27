@@ -5,7 +5,7 @@ import click
 import torch
 
 from datetime import datetime
-
+from tqdm.auto import tqdm
 
 from grace.config import write_config_file, load_config_params
 from grace.io.image_dataset import ImageGraphDataset
@@ -38,7 +38,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         model=extractor_model,
         augmentations=patch_augs,
         bbox_size=config.patch_size,
-        ignore_fraction=config.ignore_fraction,
+        keep_patch_fraction=config.keep_patch_fraction,
     )
 
     def transform(img, grph):
@@ -52,10 +52,13 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         transform=transform,
     )
 
+    # TQDM progress bar:
     dataset = []
-
-    for _, target in input_data:
-        dataset.extend(dataset_from_graph(target["graph"]))
+    for _, target in tqdm(
+        input_data, desc="Extracting patch features from training data... "
+    ):
+        print(target["metadata"]["image_filename"])
+        dataset.extend(dataset_from_graph(target["graph"], mode="sub"))
 
     classifier = GCN(
         input_channels=config.feature_dim,
@@ -64,7 +67,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         edge_output_classes=config.num_edge_classes,
     )
 
-    current_time = datetime.now().strftime("%d-%b-%Y_%H-%M-%S")
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = config.log_dir / current_time
     setattr(config, "run_dir", run_dir)
 
