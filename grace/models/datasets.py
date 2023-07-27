@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 import networkx as nx
 import numpy as np
@@ -11,10 +11,10 @@ from grace.base import GraphAttrs, Annotation
 def dataset_from_graph(
     graph: nx.Graph,
     *,
-    mode: str = "full",
+    mode: str = "whole",
     n_hop: int = 1,
     in_train_mode: bool = True,
-) -> List[Data]:
+) -> Union[Data, List[Data]]:
     """Create a pytorch geometric dataset from a given networkx graph.
 
     Parameters
@@ -22,7 +22,7 @@ def dataset_from_graph(
     graph : graph
         A networkx graph.
     mode : str
-        "sub" or "full".
+        "sub" or "whole".
     n_hop : int
         The number of hops from the central node when creating the subgraphs.
     in_train_mode : bool
@@ -39,7 +39,7 @@ def dataset_from_graph(
         patches cropped at the boundary of the image - need to pad the image beforehand
     """
 
-    assert mode in ["sub", "full"]
+    assert mode in ["sub", "whole"]
 
     if mode == "sub":
         dataset = []
@@ -52,78 +52,74 @@ def dataset_from_graph(
                 continue
 
             sub_graph = nx.ego_graph(graph, node, radius=n_hop)
-            edge_label = [
-                edge[GraphAttrs.EDGE_GROUND_TRUTH]
-                for _, _, edge in sub_graph.edges(data=True)
-            ]
+            edge_label = _edge_label(sub_graph)
 
             if in_train_mode and all(
                 [e == Annotation.UNKNOWN for e in edge_label]
             ):
                 continue
 
-            pos = np.stack(
-                [
-                    (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
-                    for _, node in graph.nodes(data=True)
-                ],
-                axis=0,
-            )
+            pos = _pos(sub_graph)
             central_node = np.array(
                 [values[GraphAttrs.NODE_X], values[GraphAttrs.NODE_Y]]
             )
             edge_attr = pos - central_node
 
-            data = _info_from_graph(
-                sub_graph,
-                pos=torch.Tensor(pos),
-                edge_attr=torch.Tensor(edge_attr),
+            data = Data(
+                x=_x(sub_graph),
+                pos=pos,
+                edge_attr=edge_attr,
+                edge_index=_edge_index(sub_graph),
+                edge_label=edge_label,
                 y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
             )
 
             dataset.append(data)
 
-    elif mode == "full":
-        edge_label = [
-            edge[GraphAttrs.EDGE_GROUND_TRUTH]
-            for _, _, edge in graph.edges(data=True)
-        ]
+        return dataset
 
-        pos = np.stack(
-            [
-                (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
-                for _, node in graph.nodes(data=True)
-            ],
-            axis=0,
-        )
-        data = _info_from_graph(
-            sub_graph,
-            pos=torch.Tensor(pos),
-            edge_attr=torch.Tensor(edge_attr),
-            y=torch.as_tensor([values[GraphAttrs.NODE_GROUND_TRUTH]]),
-            edge_label=torch.Tensor(edge_label).long(),
+    elif mode == "whole":
+        edge_label = _edge_label(graph)
+        pos = _pos(graph)
+
+        data = Data(
+            x=_x(sub_graph),
+            pos=pos,
+            edge_index=_edge_index(sub_graph),
+            edge_label=edge_label,
         )
 
         return data
 
 
-def _info_from_graph(
-    graph: nx.Graph,
-    **kwargs,
-) -> Data:
+def _edge_label(graph: nx.Graph):
+    edge_label = [
+        edge[GraphAttrs.EDGE_GROUND_TRUTH]
+        for _, _, edge in graph.edges(data=True)
+    ]
+    return torch.Tensor(edge_label).long()
+
+
+def _pos(graph: nx.Graph):
+    pos = np.stack(
+        [
+            (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
+            for _, node in graph.nodes(data=True)
+        ],
+        axis=0,
+    )
+    return torch.Tensor(pos)
+
+
+def _x(graph: nx.Graph):
     x = np.stack(
         [node[GraphAttrs.NODE_FEATURES] for _, node in graph.nodes(data=True)],
         axis=0,
     )
+    return torch.Tensor(x)
 
+
+def _edge_index(graph: nx.Graph):
     item = nx.convert_node_labels_to_integers(graph)
     edges = list(item.edges)
-    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
-
-    data = Data(
-        x=torch.Tensor(x),
-        edge_index=edge_index,
-        **kwargs,
-    )
-
-    return data
+    return torch.tensor(edges, dtype=torch.long).t().contiguous()
