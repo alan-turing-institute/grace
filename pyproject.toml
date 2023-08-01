@@ -1,3 +1,53 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[options.entry_points]
+napari.manifest = "grace = grace:napari.yaml"
+
+[options.package_data]
+grace = "grace/napari.yaml"
+
+[project]
+name = "grace-ml"
+authors = [
+  {name = "Beatriz Costa Gomes", email = "nottoday@anonymous.ijk"},
+  {name = "Alan R. Lowe", email = "nottoday@anonymous.ijk"}
+]
+description = "GRACE"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["image analysis"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+  "Programming Language :: Python :: 3"
+]
+dependencies = [
+  "numpy>=1.17.3",
+  "networkx>=3.0",
+  "scikit-image>=0.16.2",
+  "scipy>=1.3.1",
+  "pandas>=1.5.0",
+  "pyarrow",
+  "seaborn",
+  "opencv-python"
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+  "cvxopt>=1.3.0",
+  "torch>=1.12.0",
+  "torchvision>=0.14.1",
+  "torch_geometric",
+  "mrcfile",
+  "starfile>=0.4.12",
+  "tensorboard>=2.12.3"
+]
+napari = [
+  "napari>=0.4.18"
+]
+
 [tool.black]
 target-version = ['py38', 'py39', 'py310']
 line-length = 79
@@ -7,3 +57,11 @@ atomic = true
 profile = "black"
 line_length = 79
 skip_gitignore = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["grace*"]
+
+[tool.setuptools_scm]
+local_scheme = "no-local-version"
+write_to = "src/grace/_version.py"

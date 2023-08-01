@@ -133,3 +133,7 @@ dmypy.json
 # VScode and ruff
 .vscode
 .ruff_cache
+
+
+# ignore dynamic version
+_version.py
