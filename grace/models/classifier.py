@@ -13,8 +13,10 @@ class GCN(torch.nn.Module):
     ----------
     input_channels : int
         The dimension of the input; i.e., length of node feature vectors
-    embedding_channels : int
+    hidden_channels : int
         The dimension of the hidden embeddings.
+    dropout: float
+        Dropout to apply to the embeddings.
     node_output_classes : int
         The dimension of the node output. This is typically the number of classes in
         the classification task.
@@ -66,8 +68,10 @@ class GCN(torch.nn.Module):
             else:
                 embeddings = x
 
-        x = F.dropout(x, p=self.dropout, training=self.training)
-        node_x = self.node_classifier(x)
+        embeddings = F.dropout(
+            embeddings, p=self.dropout, training=self.training
+        )
+        node_x = self.node_classifier(embeddings)
 
         src, dst = edge_index
         edge_features = torch.cat(

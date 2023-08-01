@@ -45,7 +45,7 @@ The `grace` workflow consists of the following steps:
 4. Cropping of image patches (at various scales) from each bounding box detected in the image
 5. Latent feature extraction from image patches (_e.g._ pre-trained neural network, such as [_ResNet-152_](https://pytorch.org/vision/main/models/generated/torchvision.models.resnet152.html))
 6. *'Human-in-the-loop'* annotation of the desired pattern in the image data (see the [napari plugin](#development) below)
-7. Classification of each 'nodeness' and 'edgeness' confidence via deep neural network classifiers (_e.g._ using immediate [1-hop neighbourhood](https://arxiv.org/pdf/1907.06051.pdf))
+7. Classification of each 'nodeness' and 'edgeness' confidence via deep neural network classifiers. The neural network can be applied to a full graph, or subgraphs around each node (_e.g._ using immediate [1-hop neighbourhood](https://arxiv.org/pdf/1907.06051.pdf)).
 8. Combinatorial optimisation via integer linear programming (ILP) to connect the candidate object nodes via edges (see the [expected outcomes](#outcomes) below)
 9. Quantitative evaluation of the filament detection performance
 10. Ta-da! 🥳
