@@ -1,6 +1,7 @@
 from grace.models.classifier import GCN
 from grace.models.feature_extractor import FeatureExtractor
 
+import math
 import torch
 import pytest
 
@@ -130,3 +131,46 @@ class TestFeatureExtractor:
             bbox_image = vars["image"][..., y_box, x_box]
 
             assert features == model(bbox_image)
+
+    @pytest.mark.parametrize("keep_patch_fraction", [0.5, 0.6])
+    def test_feature_extractor_rejects_edge_touching_boxes(
+        self, bbox_size, model, vars, keep_patch_fraction
+    ):
+        extractor = vars["extractor"]
+        image = vars["image"]
+        graph = vars["graph"]
+
+        setattr(extractor, "keep_patch_fraction", keep_patch_fraction)
+        graph.add_node(
+            4,
+            **{
+                GraphAttrs.NODE_X: bbox_size[0] * 0.5
+                + math.ceil(
+                    image.size(-1) - bbox_size[0] * keep_patch_fraction * 0.99
+                ),
+                GraphAttrs.NODE_Y: 0,
+                GraphAttrs.NODE_GROUND_TRUTH: Annotation.TRUE_POSITIVE,
+            },
+        )
+        graph.add_node(
+            5,
+            **{
+                GraphAttrs.NODE_X: 0,
+                GraphAttrs.NODE_Y: bbox_size[1] * 0.5
+                + math.floor(-bbox_size[1] * keep_patch_fraction * 1.01),
+                GraphAttrs.NODE_GROUND_TRUTH: Annotation.TRUE_POSITIVE,
+            },
+        )
+
+        _, target_out = extractor(image, {"graph": graph})
+        graph_out = target_out["graph"]
+        print(bbox_size)
+        print(graph_out.nodes(data=True))
+        labels = [
+            node_attr[GraphAttrs.NODE_GROUND_TRUTH]
+            for _, node_attr in graph_out.nodes(data=True)
+        ]
+
+        num_unknown = len([lab for lab in labels if lab == Annotation.UNKNOWN])
+
+        assert num_unknown == 2
