@@ -155,7 +155,12 @@ def train_model(
                     metric_out["total"] = metric_dict[metric][2]
 
                 if isinstance(node_value, float):
-                    writer.add_scalars(metric_name, metric_out, epoch)
+                    writer.add_scalar(
+                        f"{metric_name} (node)", metric_out["node"], epoch
+                    )
+                    writer.add_scalar(
+                        f"{metric_name} (edge)", metric_out["edge"], epoch
+                    )
                     print_string += (
                         f"{metric_name} (node): " f"{node_value:.4f} | "
                     )
