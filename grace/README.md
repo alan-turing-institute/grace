@@ -52,7 +52,10 @@ The `config_file` should be structured as follows:
     "num_edge_classes": "2",
     "hidden_channels": "[512, 128, 32]",
     "metrics": "['accuracy', 'confusion_matrix']",
-}
+    "dropout": "0.5",
+    "batch_size": 64,
+    "learning_rate": "0.001",
+    "tensorboard_update_frequency": 1,
 ```
 
 _Note:_ Write the parameters into a single line, the file will be parsed accordingly.
