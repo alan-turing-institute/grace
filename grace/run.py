@@ -63,6 +63,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     classifier = GCN(
         input_channels=config.feature_dim,
         hidden_channels=config.hidden_channels,
+        dropout=config.dropout,
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
     )
@@ -75,8 +76,11 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         classifier,
         dataset,
         epochs=config.epochs,
+        batch_size=config.batch_size,
+        learning_rate=config.learning_rate,
         log_dir=run_dir,
         metrics=config.metrics,
+        tensorboard_update_frequency=config.tensorboard_update_frequency,
     )
 
     model_save_fn = run_dir / "classifier.pt"

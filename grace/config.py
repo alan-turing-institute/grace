@@ -44,6 +44,10 @@ class Config:
     metrics: List[str] = field(
         default_factory=lambda: ["accuracy", "confusion_matrix"]
     )
+    dropout: float = 0.5
+    batch_size: int = 64
+    learning_rate: float = 0.001
+    tensorboard_update_frequency: int = 1
 
 
 def load_config_params(params_file: Union[str, Path]) -> Config:
@@ -132,6 +136,6 @@ def write_config_file(
 
     with open(fn, "w") as outfile:
         if filetype == "json":
-            json.dump(params, outfile)
+            json.dump(params, outfile, indent=4)
         else:
             yaml.dump(params, outfile)
