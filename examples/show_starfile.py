@@ -11,7 +11,9 @@ from pathlib import Path
 path_input = input("Input data path:")
 
 if len(path_input) < 1:
-    DATA_PATH = Path("/Users/bcostagomes/Documents/2dEM_images/annotation_dataset")
+    DATA_PATH = Path(
+        "/Users/bcostagomes/Documents/2dEM_images/annotation_dataset"
+    )
 else:
     DATA_PATH = Path(path_input)
 
@@ -19,10 +21,10 @@ else:
 IMAGE_PATH = DATA_PATH / "images"
 STAR_PATH = DATA_PATH / "detections"
 
-# Makes the grace files/directory from the starfile folder, for every starfile. 
+# Makes the grace files/directory from the starfile folder, for every starfile.
 starfile.mkdir_grace_from_star(STAR_PATH)
 
-# Gets list of available files in the image
+# Gets list of available files in the image
 name_list = [f for f in IMAGE_PATH.iterdir() if f.is_file()]
 
 
@@ -31,12 +33,9 @@ GRACE_PATH = DATA_PATH / "grace"
 # Runs only the first one
 # TODO: run a batch
 
-FILE_STEM = Path(
-    name_list[0].stem
-)
+FILE_STEM = Path(name_list[0].stem)
 
 print(FILE_STEM)
-
 
 
 IMAGE = IMAGE_PATH / FILE_STEM.with_suffix(".mrc")
@@ -53,8 +52,8 @@ graph = grace_file.graph
 # make points from node attributes
 points = []
 for i in range(0, len(graph.nodes)):
-    x,y = graph.nodes[i]['x'],graph.nodes[i]['y']
-    points.append([y,x])
+    x, y = graph.nodes[i]["x"], graph.nodes[i]["y"]
+    points.append([y, x])
 
 
 features = None
@@ -84,4 +83,3 @@ if __name__ == "__main__":
     # The napari event loop needs to be run under here to allow the window
     # to be spawned from a Python script
     napari.run()
-
