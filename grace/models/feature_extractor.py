@@ -148,7 +148,6 @@ class FeatureExtractor(torch.nn.Module):
                 < self.bbox_size[1] * self.keep_patch_fraction
             ):
                 node_attrs[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.UNKNOWN
-                continue
 
             bbox_image = image[..., y_box, x_box]
 
