@@ -1,9 +1,7 @@
 import napari
 
 import mrcfile
-import numpy as np
 
-from grace.base import GraphAttrs
 from grace.io import starfile, core
 from pathlib import Path
 
