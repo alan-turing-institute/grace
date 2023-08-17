@@ -68,6 +68,7 @@ cd ./grace
 # create a conda playground from environment.yaml
 conda env create -f environment.yaml
 
+
 # To activate this environment, use
 #
 #     $ conda activate grace-environment
@@ -92,6 +93,24 @@ pre-commit install
 
 ```
 
+For the annotation, use the following lines to load and activate that correct environment:
+
+```sh
+# create the playground from environment_annotation.yml
+conda env create -f environment_annotation.yaml
+
+# To activate this environment, use
+#
+#     $ conda activate grace-annotation
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+conda activate grace-annotation
+
+```
+
 ---
 
 
@@ -99,7 +118,7 @@ pre-commit install
 
 Our repository contains a graphical user interface (GUI) which allows the user to manually annotate the regions of interests (motifs) in their cryo-EM data.
 
-To test the annotator, make sure you've [installed](#installation) the repository & navigate to:
+To test the annotator, make sure you've [installed](#installation) the repository using the annotation environment & navigate to:
 
 ```sh
 python examples/show_data.py
