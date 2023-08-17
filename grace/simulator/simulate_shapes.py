@@ -10,7 +10,7 @@ import numpy.typing as npt
 from scipy.interpolate import interp1d
 from scipy.spatial import Delaunay
 
-from .base import edges_from_delaunay
+from ..base import edges_from_delaunay
 
 RNG = np.random.default_rng()
 
