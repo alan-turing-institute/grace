@@ -10,8 +10,8 @@ from pathlib import Path
 
 DATA_PATH = Path(
     # "/Users/csoelistyo/Documents/grace_files/notebook_test/image_files"
-    "/Users/kulicna/Desktop/classifier/data_fake/infer/padded"
-    # "/Users/kulicna/Desktop/classifier/data_new"
+    # "/Users/kulicna/Desktop/classifier/data_fake/infer/padded"
+    "/Users/kulicna/Desktop/dataset/data_squares_simple"
 )
 IMAGE_FILE = (
     # "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW"
