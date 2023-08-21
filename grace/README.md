@@ -101,8 +101,6 @@ python3 grace/run.py --config_file=/Users/kulicna/Desktop/classifier/configs/con
 
 # Candidates for hyperparameters:
 
-+ learning rate
-+ dropout probability
 + train to validation ratio
   + these should be updated from the config  
 + specify which model you want to run: "gcn", "gat", "linear classifier", "tsne", "central patch pixel"
