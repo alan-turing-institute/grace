@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     # Create a dataset:
     synthetic_image_dataset(
-        folder_path=f"/Users/kulicna/Desktop/dataset/shape_{DRAWING}",
+        folder_path=f"./dataset/shape_{DRAWING}",
         num_images=NUM_IMAGES,
         drawing_type=DRAWING,
         object_motif=MOTIF,
