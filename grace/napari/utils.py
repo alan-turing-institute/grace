@@ -94,6 +94,7 @@ def cut_graph_using_mask(
 
         for edge in adjacent_edges:
             source, target = edge
+            # print (idx, adjacent_edges, edge, source, target)
             source_coords = points_int[source, :]
             target_coords = points_int[target, :]
 
@@ -102,7 +103,7 @@ def cut_graph_using_mask(
                 source_coords, target_coords, mask
             )
 
-            # update the graph in-place
+            # update the graph edge GT labels in-place
             if update_graph:
                 annotation = (
                     Annotation.TRUE_POSITIVE
@@ -113,6 +114,18 @@ def cut_graph_using_mask(
                     GraphAttrs.EDGE_GROUND_TRUTH
                 ] = annotation
 
+            # update the graph node GT labels in-place
+            if update_graph:
+                for nd in edge:
+                    if nd in indices:
+                        graph.nodes[nd][
+                            GraphAttrs.NODE_GROUND_TRUTH
+                        ] = Annotation.TRUE_POSITIVE
+                    else:
+                        graph.nodes[nd][
+                            GraphAttrs.NODE_GROUND_TRUTH
+                        ] = Annotation.TRUE_NEGATIVE
+
             # get the index of the edge, and store that
             edge_idx = list(graph.edges()).index(tuple(sorted(edge)))
             if edge_contained:
@@ -120,11 +133,35 @@ def cut_graph_using_mask(
             else:
                 cut_edges.add(edge_idx)
 
-        # if the node is inside the object, classify it as a true positive
-        if update_graph:
-            graph.nodes[idx][
-                GraphAttrs.NODE_GROUND_TRUTH
-            ] = Annotation.TRUE_POSITIVE
+    #     # if the node is inside the object, classify it as a true positive
+    #     if update_graph:
+    #         graph.nodes[idx][
+    #             GraphAttrs.NODE_GROUND_TRUTH
+    #         ] = Annotation.TRUE_POSITIVE
+
+    # # HACK: TODO: if the node is outside the object, but connected to an
+    # # object with a true negative edge, classify it as a true negative node
+    # if update_graph:
+    #     for edge in graph.edges():
+    #         source, target = edge
+    #         edge_label = graph[source][target][GraphAttrs.EDGE_GROUND_TRUTH]
+
+    #         # for the cut edges, label the 'outside' nodes as true negatives:
+    #         if edge_label == Annotation.TRUE_NEGATIVE:
+    #             if (
+    #                 graph.nodes[source][GraphAttrs.NODE_GROUND_TRUTH]
+    #                 == Annotation.UNKNOWN
+    #             ):
+    #                 graph.nodes[source][
+    #                     GraphAttrs.NODE_GROUND_TRUTH
+    #                 ] = Annotation.TRUE_NEGATIVE
+    #             if (
+    #                 graph.nodes[target][GraphAttrs.NODE_GROUND_TRUTH]
+    #                 == Annotation.UNKNOWN
+    #             ):
+    #                 graph.nodes[target][
+    #                     GraphAttrs.NODE_GROUND_TRUTH
+    #                 ] = Annotation.TRUE_NEGATIVE
 
     return indices, enclosed_edges, cut_edges
 
