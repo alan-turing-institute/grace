@@ -1,14 +1,12 @@
 import pandas as pd
 import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
 import numpy.typing as npt
 
 import mrcfile
 from pathlib import Path
-from skimage.util import montage
 
-from grace.base import GraphAttrs, Annotation
+from grace.base import GraphAttrs
 
 
 def create_canvas_image(
@@ -52,8 +50,11 @@ def _insert_fading_square_into_patch(
     central_pixel_value: int | float,
     background_pixel_value: int | float,
 ) -> npt.NDArray:
-    """TODO: Fill in."""
+    """Inserts a fading shape at the centre coordinate.
+    Creates a gradient of values from the central pixel to the boundary (background).
+    Blends the modified patch by averaging with the original crop."""
 
+    # Identify the image shape
     patch_size = original_patch.shape[0]
     square_size = patch_size // 2
 
@@ -83,7 +84,9 @@ def _insert_fading_circle_into_patch(
     central_pixel_value: int | float,
     background_pixel_value: int | float,
 ) -> npt.NDArray:
-    """TODO: Fill in."""
+    """Inserts a fading shape at the centre coordinate.
+    Creates a gradient of values from the central pixel to the boundary (background).
+    Blends the modified patch by averaging with the original crop."""
 
     # Create a grid of coordinates
     patch_size = min(original_patch.shape)
@@ -124,25 +127,28 @@ def synthesize_image_from_graph(
         of real nodes (belonging to an object) and black patch centres
         of fake nodes (random noisy nodes).
 
-    Parameters -> TODO: Fix!!!
+    Parameters
     ----------
     G : nx.Graph
         A (synthetic) networkx graph.
-    image_value : float
-        Value of the blank image pixels (e.g. 255).
+    drawing_type : str
+        Type of the geometric object to draw under the node.
+        Choose between "circle(s)", "square(s)" or "star(s)".
+    background_pixel_value : int | float
+        Value of the canvas image (background).
     image_shape : tuple[int, int]
-        Shape of the image to create, without padding.
-    crop_shape : tuple[int, int]
-        Shape of the cropped patches to train on (e.g. (224, 224)
-        - compatible to resnet input).
-    mask_shape : tuple[int, int]
-        Shape of the mask to mark the positive nodes (i.e. parts of an object)
-        from negative nodes (random noise).
+        Shape of the canvas image (background).
+    patch_shape : tuple[int, int]
+        Shape of the patch drawing under each node.
+    image_padding : tuple[int, int]
+        Padding of the image around the corners. Defaults to None.
 
     Returns
     -------
     image : npt.NDArray
         Simulated image.
+    G : nx.Graph
+        A (synthetic) networkx graph.
     """
     # Make the shape a plural form:
     drawing_type = (
@@ -210,61 +216,11 @@ def synthesize_image_from_graph(
     return canvas_image, G
 
 
-def montage_from_image(
-    G: nx.Graph, image: npt.NDArray, crop_shape: tuple[int, int]
-) -> None:
-    """Visualise the montages of some true negative (0) and true positive (1) nodes.
-
-    Parameters
-    ----------
-    G : nx.Graph
-        A (synthetic) networkx graph.
-    image : np.array
-        Simulated image corresponding to the graph.
-    crop_shape : tuple[int, int]
-        Shape of the cropped patches to train on
-        (e.g. (224, 224) - compatible to resnet input).
-    """
-
-    plt.figure(figsize=(10, 5))
-    crops = [[], []]
-
-    for _, node in G.nodes.data():
-        coords = node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y]
-        st_x, en_x = (
-            int(coords[0]) - crop_shape[0] // 2,
-            int(coords[0]) + crop_shape[0] // 2,
-        )
-        st_y, en_y = (
-            int(coords[1]) - crop_shape[1] // 2,
-            int(coords[1]) + crop_shape[1] // 2,
-        )
-
-        # Sort crops based on labels:
-        crop = image[st_x:en_x, st_y:en_y].numpy()
-        label = node[GraphAttrs.NODE_GROUND_TRUTH]
-        if label < Annotation.UNKNOWN:
-            crops[label].append(crop)
-
-    for c, crop_collection in enumerate(crops):
-        mont = montage(
-            crop_collection[:49],
-            grid_shape=(7, 7),
-            padding_width=10,
-            fill=np.max([np.max(c) for c in crop_collection[0]]),
-        )
-        plt.subplot(1, 2, c + 1)
-        plt.imshow(mont, cmap="binary_r")
-        plt.colorbar(fraction=0.045)
-        plt.title(f"Montage of patches\nwith 'node_label' = {c}")
-        plt.axis("off")
-    plt.show()
-    plt.close()
-
-
 def save_image_and_graph_combo(
     G: nx.Graph, image: np.ndarray, folder_path: str, file_name: str
 ) -> None:
+    """Saves the image (as .mrc) and list of its node coordinates (as .h5)
+    into two accompanying files into the same folder."""
     # Create the path:
     Path(folder_path).mkdir(parents=True, exist_ok=True)
 

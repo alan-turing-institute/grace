@@ -12,7 +12,12 @@ from pathlib import Path
 # Use identical naming convention for files & specify whole path to mrc file:
 # e.g. /Users/kulicna/Desktop/dataset/shape_squares/MRC_Synthetic_File_000.mrc
 
-IMAGE_PATH = Path(input("Enter absolute path to your file: "))
+IMAGE_PATH = Path(
+    input(
+        "Enter absolute path to your file "
+        "(e.g. /Users/path/to/your/data/image.mrc, omit ''): "
+    )
+)
 NODES_PATH = Path(str(IMAGE_PATH).replace(".mrc", ".h5"))
 
 
