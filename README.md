@@ -57,7 +57,13 @@ The `grace` workflow consists of the following steps:
 
 `grace` has been tested with Python 3.8+ on OS X.
 
-For local development, clone the repo and install in editable mode:
+For local development, clone the repo and install in editable mode following these guidelines:
+
+*Note:* Choose which conda environment you'd like to use:
+* If you need to annotate your data (images) in *napari*, we recommend the `grace-env-with-napari` -> `environment-with-napari.yaml`
+* If you rely on previously annotated data and do not require *napari*, we recommend the `grace-env-napari-free` -> `environment-napari-free.yaml`
+
+Specify your preference & follow the steps below:
 
 ```sh
 # clone the grace GitHub repository
@@ -65,19 +71,20 @@ For local development, clone the repo and install in editable mode:
 git clone https://github.com/alan-turing-institute/grace.git
 cd ./grace
 
-# create a conda playground from environment.yaml
-conda env create -f environment.yaml
-
+# create a conda playground from the respective environment.yaml
+conda env create -f YOUR-CHOSEN-ENVIRONMENT.yaml
 
 # To activate this environment, use
 #
-#     $ conda activate grace-environment
+#     $ conda activate grace-env-with-napari
+#     OR
+#     $ conda activate grace-env-napari-free
 #
 # To deactivate an active environment, use
 #
 #     $ conda deactivate
 
-conda activate grace-environment
+conda activate grace-env-OF-YOUR-CHOICE
 
 # install grace from local folder (not on pypi yet)
 
@@ -92,26 +99,9 @@ conda install -c conda-forge pre_commit
 pre-commit install
 
 ```
-
-The above environment allows GRACE to be run on previously annotated images (saved on .grace format). If, however, annotation is needed, use the following lines to load and activate the correct environment, which will install further packages (such as napari):
-
-```sh
-# create the playground from environment_annotation.yml
-conda env create -f environment_annotation.yaml
-
-# To activate this environment, use
-#
-#     $ conda activate grace-annotation
-#
-# To deactivate an active environment, use
-#
-#     $ conda deactivate
-
-conda activate grace-annotation
-
-```
-
 ---
+
+If you currently do not have any data to test / implement GRACE on, have a look at the option of **simulating a synthetic dataset** as described in [this](./grace/simulator/README.md) README. An assessible link to some pre-annotated simulated images is coming soon! 🚧
 
 
 ## Annotator GUI
