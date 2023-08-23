@@ -311,7 +311,6 @@ dependencies:
       - fonttools==4.40.0
       - google-auth==2.21.0
       - google-auth-oauthlib==1.0.0
-      - grace==0.0.1
       - grpcio==1.56.0
       - iniconfig==2.0.0
       - lazy-loader==0.3
@@ -338,4 +337,3 @@ dependencies:
       - torchvision==0.15.2
       - urllib3==1.26.16
       - werkzeug==2.3.6
-prefix: /Users/bcostagomes/anaconda3/envs/test_grace

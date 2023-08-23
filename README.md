@@ -93,7 +93,7 @@ pre-commit install
 
 ```
 
-For the annotation, use the following lines to load and activate that correct environment:
+The above environment allows GRACE to be run on previously annotated images (saved on .grace format). If, however, annotation is needed, use the following lines to load and activate the correct environment, which will install further packages (such as napari):
 
 ```sh
 # create the playground from environment_annotation.yml
