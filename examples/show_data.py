@@ -8,16 +8,17 @@ from grace.base import GraphAttrs
 from pathlib import Path
 
 
-DATA_PATH = Path(
-    # "/Users/csoelistyo/Documents/grace_files/notebook_test/image_files"
-    "/Users/kulicna/Desktop/classifier/data_fake/infer/padded"
+# Expects the image data & H5 node positions in the same folder.
+# Use identical naming convention for files & specify whole path to mrc file:
+# e.g. /Users/kulicna/Desktop/dataset/shape_squares/MRC_Synthetic_File_000.mrc
+
+IMAGE_PATH = Path(
+    input(
+        "Enter absolute path to your file "
+        "(e.g. /Users/path/to/your/data/image.mrc, omit ''): "
+    )
 )
-IMAGE_FILE = (
-    # "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW"
-    "MRC_Synthetic_File_000"
-)
-IMAGE_PATH = DATA_PATH / f"{IMAGE_FILE}.mrc"
-NODES_PATH = DATA_PATH / f"{IMAGE_FILE}.h5"
+NODES_PATH = Path(str(IMAGE_PATH).replace(".mrc", ".h5"))
 
 
 with mrcfile.open(IMAGE_PATH, "r") as mrc:
@@ -31,12 +32,14 @@ points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
 #     [np.squeeze(f.numpy()) for f in nodes_data.loc[:, "features"]]
 # }
 features = None
-
+mn, mx = np.min(image_data), np.max(image_data)
 
 data_name = f"{IMAGE_PATH.stem}"
 
 viewer = napari.Viewer()
-img_layer = viewer.add_image(image_data, name=data_name)
+img_layer = viewer.add_image(
+    image_data, name=data_name, contrast_limits=(mn, mx)
+)
 pts_layer = viewer.add_points(
     points, features=features, size=32, name=f"nodes_{data_name}"
 )
