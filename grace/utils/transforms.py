@@ -1,6 +1,6 @@
 from typing import List, Callable
 
-from grace.config import Config
+from grace.training.config import Config
 from grace.utils.augment_graph import (
     RandomEdgeAdditionAndRemoval,
     RandomXYTranslation,
