@@ -8,8 +8,9 @@ from grace.simulator.simulate_image import (
 def synthetic_image_dataset(
     folder_path: str,
     num_images: int = 10,
-    square_type: str = "simple",
+    drawing_type: str = "square",
     object_motif: str = "lines",
+    image_padding: tuple[int, int] = None,
 ) -> None:
     """TODO: Fill in."""
 
@@ -26,10 +27,11 @@ def synthetic_image_dataset(
         # Synthesize a corresponding image:
         image, G = synthesize_image_from_graph(
             G,
-            square_type=square_type,
+            drawing_type=drawing_type,
             background_pixel_value=VALUE,
             image_shape=(SCALE, SCALE),
             patch_shape=(PATCH_SIZE, PATCH_SIZE),
+            image_padding=image_padding,
         )
 
         # Save the image & node coordinates:
@@ -40,13 +42,17 @@ def synthetic_image_dataset(
 if __name__ == "__main__":
     VALUE = 0.5
     SCALE = 3500
+    NUM_IMAGES = 10
     PATCH_SIZE = 224
-    SQUARE = "fading"
+    MOTIF = "lines"
+    DRAWING = "stars"
+    PADDING = (112, 112)
 
     # Create a dataset:
     synthetic_image_dataset(
-        folder_path=f"/Users/kulicna/Desktop/dataset/data_squares_{SQUARE}",
-        num_images=10,
-        square_type=SQUARE,
-        object_motif="lines",
+        folder_path=f"./dataset/shape_{DRAWING}",
+        num_images=NUM_IMAGES,
+        drawing_type=DRAWING,
+        object_motif=MOTIF,
+        image_padding=PADDING,
     )
