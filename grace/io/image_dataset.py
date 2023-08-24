@@ -104,15 +104,10 @@ def generate_ground_truth_graph(annotated_graph: nx.Graph):
         Ground truth graph without any additional properties.
         TODO: Ground truth graph with all maintained properties.
     """
-    # Blank canvas graph:
-    # GT_graph = nx.Graph()
+    # Copy graph information:
     GT_graph = annotated_graph.copy()
 
-    # Add all nodes & all edges:
-    # GT_graph.add_nodes_from(annotated_graph.nodes(data=True))
-    # GT_graph.add_edges_from(annotated_graph.edges(data=True))
-
-    # Shorlist only annotated edges:
+    # Shorlist edges to delete from GT, maintaining the edge properties:
     edges_to_remove = []
     for src, dst, edge in annotated_graph.edges(data=True):
         edge_neg = (
@@ -122,8 +117,7 @@ def generate_ground_truth_graph(annotated_graph: nx.Graph):
         if edge_neg or edge_unk:
             edges_to_remove.append((src, dst))
 
-    # Add the shorlisted edges:
-    # GT_graph.add_edges_from(annotated_real_edges)
+    # Delete the shorlisted edges:
     GT_graph.remove_edges_from(edges_to_remove)
 
     return GT_graph
