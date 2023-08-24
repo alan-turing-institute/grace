@@ -1,10 +1,10 @@
 import napari
 
-import mrcfile
 import numpy as np
 import starfile
 
 from grace.base import GraphAttrs
+from grace.io.image_dataset import mrc_reader
 from pathlib import Path
 
 
@@ -20,11 +20,7 @@ IMAGE_PATH = Path(
 )
 C_BOX_PATH = Path(str(IMAGE_PATH).replace(".mrc", ".cbox"))
 
-
-with mrcfile.open(IMAGE_PATH, "r") as mrc:
-    # image_data = mrc.data.astype(int)
-    image_data = mrc.data
-
+image_data = mrc_reader(IMAGE_PATH)
 cbox_df = starfile.read(C_BOX_PATH)["cryolo"]
 
 points = np.stack(
