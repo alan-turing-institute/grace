@@ -22,8 +22,8 @@ C_BOX_PATH = Path(str(IMAGE_PATH).replace(".mrc", ".cbox"))
 
 
 with mrcfile.open(IMAGE_PATH, "r") as mrc:
-    image_data = mrc.data.astype(int)
-
+    # image_data = mrc.data.astype(int)
+    image_data = mrc.data
 
 cbox_df = starfile.read(C_BOX_PATH)["cryolo"]
 

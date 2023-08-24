@@ -13,6 +13,10 @@ from torch.utils.data import Dataset
 
 from pathlib import Path
 
+import networkx as nx
+
+from grace.base import GraphAttrs, Annotation
+
 
 class ImageGraphDataset(Dataset):
     """Creating a Torch dataset from an image directory and
@@ -78,11 +82,45 @@ class ImageGraphDataset(Dataset):
         target = {}
         target["graph"] = grace_dataset.graph
         target["metadata"] = grace_dataset.metadata
+        target["annotation"] = grace_dataset.annotation
         assert img_path.stem == target["metadata"]["image_filename"]
 
         image, target = self.transform(image, target)
 
         return image, target
+
+
+def generate_ground_truth_graph(annotated_graph: nx.Graph):
+    """Generate a ground truth graph from the graph annotation.
+
+    Parameters
+    ----------
+    annotated_graphn: nx.Graph
+        Annotated graph with GraphAttrs node & edge properties.
+
+    Returns
+    -------
+    GT_graph: nx.Graph
+        Ground truth graph without any additional properties.
+        TODO: Ground truth graph with all maintained properties.
+    """
+    # Blank canvas graph:
+    GT_graph = nx.Graph()
+
+    # Add all nodes:
+    GT_graph.add_nodes_from(annotated_graph.nodes(data=True))
+    # GT_graph.add_edges_from(annotated_graph.edges(data=True))
+
+    # Shorlist only annotated edges:
+    annotated_real_edges = []
+    for src, dst, edge in annotated_graph.edges(data=True):
+        if edge[GraphAttrs.EDGE_GROUND_TRUTH] == Annotation.TRUE_POSITIVE:
+            annotated_real_edges.append((src, dst))
+
+    # Add the shorlisted edges:
+    GT_graph.add_edges_from(annotated_real_edges)
+
+    return GT_graph
 
 
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:
@@ -99,7 +137,8 @@ def mrc_reader(fn: os.PathLike) -> npt.NDArray:
         Image array
     """
     with mrcfile.open(fn, "r") as mrc:
-        image_data = mrc.data.astype(int)
+        # image_data = mrc.data.astype(int)
+        image_data = mrc.data
     return image_data
 
 
@@ -116,7 +155,8 @@ def tiff_reader(fn: os.PathLike) -> npt.NDArray:
     image_data: np.ndarray
         Image array
     """
-    return tifffile.imread(fn).astype(int)
+    # return tifffile.imread(fn).astype(int)
+    return tifffile.imread(fn)
 
 
 def png_reader(fn: os.PathLike) -> npt.NDArray:
