@@ -11,11 +11,13 @@ import numpy.typing as npt
 from skimage.util import montage
 
 
-def plot_simple_graph(G: nx.Graph, title: str = "") -> None:
+def plot_simple_graph(
+    G: nx.Graph, title: str = "", figsize: tuple[int, int] = (16, 16)
+) -> None:
     """Plots a simple graph with black nodes and edges."""
 
     # Fancy annotation plot
-    _, ax = plt.subplots(figsize=(16, 16))
+    _, ax = plt.subplots(figsize=figsize)
 
     # node positions
     pos = {
@@ -38,14 +40,16 @@ def plot_simple_graph(G: nx.Graph, title: str = "") -> None:
     plt.show()
 
 
-def plot_connected_components(G: nx.Graph, title: str = "") -> None:
+def plot_connected_components(
+    G: nx.Graph, title: str = "", figsize: tuple[int, int] = (16, 16)
+) -> None:
     """Colour-codes the connected components (individual objects)
     & plots them onto a simple graph with black nodes & edges.
     Connected component (subgraph) must contain at least one edge.
     """
 
     # Fancy annotation plot
-    _, ax = plt.subplots(figsize=(16, 16))
+    _, ax = plt.subplots(figsize=figsize)
 
     # node positions
     pos = {

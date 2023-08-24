@@ -371,7 +371,11 @@ def random_graph_mixed_motifs(
     return graph
 
 
-def update_graph_with_dummy_predictions(G: nx.Graph) -> None:
+def update_graph_with_dummy_predictions(
+    G: nx.Graph,
+    node_confidence: float = 0.5,
+    edge_confidence: float = 0.1,
+) -> None:
     """Create a random graph with line objects.
 
     Parameters
@@ -387,14 +391,14 @@ def update_graph_with_dummy_predictions(G: nx.Graph) -> None:
     nodes = list(G.nodes.data())
 
     for _, node in nodes:
-        pd = np.random.random() * 0.5
+        pd = np.random.random() * node_confidence
         if node["label"] > 0:
             node[GraphAttrs.NODE_PREDICTION] = pd
         else:
             node[GraphAttrs.NODE_PREDICTION] = 1 - pd
 
     for edge in G.edges.data():
-        pd = np.random.random() * 0.1
+        pd = np.random.random() * edge_confidence
         _, e_i = nodes[edge[0]]
         _, e_j = nodes[edge[1]]
 
@@ -402,3 +406,37 @@ def update_graph_with_dummy_predictions(G: nx.Graph) -> None:
             edge[2][GraphAttrs.EDGE_PREDICTION] = 1 - pd
         else:
             edge[2][GraphAttrs.EDGE_PREDICTION] = pd
+
+
+def imply_annotations_from_dummy_predictions(G: nx.Graph) -> None:
+    """TODO: Fill in. HACK: This code doesn't account for UNKNOWN annotations."""
+
+    for _, node in G.nodes(data=True):
+        if node[GraphAttrs.NODE_PREDICTION] >= 0.5:
+            node[GraphAttrs.NODE_GROUND_TRUTH] = 1
+        else:
+            node[GraphAttrs.NODE_GROUND_TRUTH] = 0
+
+    for _, _, edge in G.edges(data=True):
+        if edge[GraphAttrs.EDGE_PREDICTION] >= 0.5:
+            edge[GraphAttrs.EDGE_GROUND_TRUTH] = 1
+        else:
+            edge[GraphAttrs.EDGE_GROUND_TRUTH] = 0
+
+
+def imply_dummy_predictions_from_annotations(G: nx.Graph) -> None:
+    """TODO: Fill in. HACK: This code doesn't account for UNKNOWN annotations."""
+
+    for _, node in G.nodes(data=True):
+        pd = np.random.random() * 0.5
+        if node[GraphAttrs.NODE_GROUND_TRUTH] == 1:
+            node[GraphAttrs.NODE_PREDICTION] = 1 - pd
+        else:
+            node[GraphAttrs.NODE_PREDICTION] = pd
+
+    for _, _, edge in G.edges(data=True):
+        pd = np.random.random() * 0.1
+        if node[GraphAttrs.EDGE_GROUND_TRUTH] == 1:
+            node[GraphAttrs.EDGE_PREDICTION] = 1 - pd
+        else:
+            node[GraphAttrs.EDGE_PREDICTION] = pd
