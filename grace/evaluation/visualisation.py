@@ -12,7 +12,7 @@ from skimage.util import montage
 
 
 def plot_simple_graph(G: nx.Graph, title: str = "") -> None:
-    """TODO: Fill in."""
+    """Plots a simple graph with black nodes and edges."""
 
     # Fancy annotation plot
     _, ax = plt.subplots(figsize=(16, 16))
@@ -39,7 +39,10 @@ def plot_simple_graph(G: nx.Graph, title: str = "") -> None:
 
 
 def plot_connected_components(G: nx.Graph, title: str = "") -> None:
-    """TODO: Fill in."""
+    """Colour-codes the connected components (individual objects)
+    & plots them onto a simple graph with black nodes & edges.
+    Connected component (subgraph) must contain at least one edge.
+    """
 
     # Fancy annotation plot
     _, ax = plt.subplots(figsize=(16, 16))
@@ -72,8 +75,30 @@ def plot_connected_components(G: nx.Graph, title: str = "") -> None:
     plt.show()
 
 
-def display_image_and_grace_annotation(image: npt.NDArray, target: dict[str]):
-    """TODO: Fill in."""
+def display_image_and_grace_annotation(
+    image: npt.NDArray, target: dict[str]
+) -> None:
+    """Overlays the annotation image (binary mask) with annotated graph,
+        colour-coding the true positive (TP), true negative (TN), and
+        unannotated elements of the graph (nodes & edges).
+
+    Parameters
+    ----------
+    image : npt.NDArray
+        Raw image array
+    target : dict[str]
+        Dictionary containing keys:
+            'graph' : nx.Graph
+                annotated graph with node & edge attributes
+            'annotation' : npt.NDArray
+                binary annotated image mask
+            'metadata' : str
+                'image_filename', etc.
+
+    Notes
+    -----
+    TODO: Complicated & duplex function, could break into two functions.
+    """
 
     annotation = target["annotation"]
     assert image.shape == annotation.shape
@@ -139,7 +164,22 @@ def read_patch_stack_by_label(
     image: npt.NDArray,
     crop_shape: tuple[int, int] = (224, 224),
 ) -> list[npt.NDArray]:
-    """TODO: Fill in."""
+    """Reads the image & crops patches of specified at node locations.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        The annotated graph.
+    image : npt.NDArray
+        Raw image array.
+    crop_shape : tuple[int, int]
+        Shape of the patches. Defaults to (224, 224).
+
+    Returns
+    -------
+    crops : list[npt.NDArray]
+        List of image stacks, divided by annotation class.
+    """
 
     classes = np.unique([e.value for e in Annotation])
     crops = [[] for _ in range(len(classes))]
@@ -165,19 +205,14 @@ def read_patch_stack_by_label(
 
 
 def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
-    """Visualise the montages of some true negative (0) and true positive (1) nodes.
+    """Visualise the few random patches per class as a montage.
 
-    Parameters -> TODO: Fix!!!
+    Parameters
     ----------
-    G : nx.Graph
-        A (synthetic) networkx graph.
-    image : np.array
-        Simulated image corresponding to the graph.
-    crop_shape : tuple[int, int]
-        Shape of the cropped patches to train on
-        (e.g. (224, 224) - compatible to resnet input).
-    """
+    crops : list[npt.NDArray]
+        List of image stacks, divided by annotation class.
 
+    """
     # Value extrema on all crops:
     mn = np.min([np.min(c) for c in crops])
     mx = np.max([np.max(c) for c in crops])
@@ -203,19 +238,14 @@ def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
 
 
 def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
-    """Visualise the montages of some true negative (0) and true positive (1) nodes.
+    """Visualise the average patch from stack per each class.
 
-    Parameters -> TODO: Fix!!!
+    Parameters
     ----------
-    G : nx.Graph
-        A (synthetic) networkx graph.
-    image : np.array
-        Simulated image corresponding to the graph.
-    crop_shape : tuple[int, int]
-        Shape of the cropped patches to train on
-        (e.g. (224, 224) - compatible to resnet input).
-    """
+    crops : list[npt.NDArray]
+        List of image stacks, divided by annotation class.
 
+    """
     plt.figure(figsize=(15, 5))
     for c, crop_collection in enumerate(crops):
         stack = np.mean(crop_collection, axis=0)
