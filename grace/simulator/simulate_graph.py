@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-from typing import List
-
 import dataclasses
 import networkx as nx
 import numpy as np
@@ -10,7 +6,7 @@ import numpy.typing as npt
 from scipy.interpolate import interp1d
 from scipy.spatial import Delaunay
 
-from ..base import edges_from_delaunay, GraphAttrs
+from grace.base import edges_from_delaunay
 
 
 RNG = np.random.default_rng()
@@ -35,13 +31,14 @@ class DetectionNode:
     label: int
     object_idx: int = 0
 
-    def asdict(self) -> DetectionNode:
+    # def asdict(self) -> DetectionNode:
+    def asdict(self) -> dict:
         return dataclasses.asdict(self)
 
 
 def _line_motif(
     src: DetectionNode, dst: DetectionNode, *, density: float
-) -> List[DetectionNode]:
+) -> list[DetectionNode]:
     length = np.sqrt((dst.x - src.x) ** 2 + (dst.y - src.y) ** 2)
     n_points = int(length / density)
 
@@ -64,7 +61,7 @@ def _curve_motif(
     dst: DetectionNode,
     *,
     density: float = 0.02,
-) -> List[DetectionNode]:
+) -> list[DetectionNode]:
     # length = np.sqrt((dst.x - src.x) ** 2 + (dst.y - src.y) ** 2)
     curvature = RNG.uniform(1, 10)
     curvature = curvature if RNG.integers(0, 2) < 0.5 else -curvature
@@ -109,7 +106,7 @@ def _spiral_motif(
     dst: DetectionNode = None,
     *,
     density: float = 0.02,
-) -> List[DetectionNode]:
+) -> list[DetectionNode]:
     curvature = RNG.uniform(5, 10)
     radius = 1 / curvature
     num_turns = np.abs(curvature / 3)
@@ -138,7 +135,7 @@ def _circle_motif(
     dst: DetectionNode = None,
     *,
     density: float,
-) -> List[DetectionNode]:
+) -> list[DetectionNode]:
     radius = RNG.uniform(0.05, 0.5)
     n_points = int((1 / density) / 4)
 
@@ -369,78 +366,3 @@ def random_graph_mixed_motifs(
         graph.add_edge(*edge)
 
     return graph
-
-
-def update_graph_with_dummy_predictions(
-    G: nx.Graph,
-    node_confidence: float = 0.5,
-    edge_confidence: float = 0.1,
-) -> None:
-    """Create a random graph with line objects.
-
-    Parameters
-    ----------
-    G : nx.Graph
-        The graph which node & edge predictions are to be updated with synthetic values.
-
-    Returns
-    -------
-    None
-    - modifies the graph in place
-    """
-    nodes = list(G.nodes.data())
-
-    for _, node in nodes:
-        pd = np.random.random() * node_confidence
-        if node["label"] > 0:
-            node[GraphAttrs.NODE_PREDICTION] = pd
-        else:
-            node[GraphAttrs.NODE_PREDICTION] = 1 - pd
-
-    for edge in G.edges.data():
-        pd = np.random.random() * edge_confidence
-        _, e_i = nodes[edge[0]]
-        _, e_j = nodes[edge[1]]
-
-        if e_i["object_idx"] == e_j["object_idx"] and e_i["label"] > 0:
-            edge[2][GraphAttrs.EDGE_PREDICTION] = 1 - pd
-        else:
-            edge[2][GraphAttrs.EDGE_PREDICTION] = pd
-
-
-def imply_annotations_from_dummy_predictions(G: nx.Graph) -> None:
-    """TODO: Fill in. HACK: This code doesn't account for UNKNOWN annotations."""
-
-    for _, node in G.nodes(data=True):
-        if node[GraphAttrs.NODE_PREDICTION] >= 0.5:
-            node[GraphAttrs.NODE_GROUND_TRUTH] = 1
-        else:
-            node[GraphAttrs.NODE_GROUND_TRUTH] = 0
-
-    for _, _, edge in G.edges(data=True):
-        if edge[GraphAttrs.EDGE_PREDICTION] >= 0.5:
-            edge[GraphAttrs.EDGE_GROUND_TRUTH] = 1
-        else:
-            edge[GraphAttrs.EDGE_GROUND_TRUTH] = 0
-
-
-def imply_dummy_predictions_from_annotations(G: nx.Graph) -> None:
-    """TODO: Fill in.
-    HACK: This code doesn't account for UNKNOWN annotations.
-    TODO: This code doesn't distinguish individual objects.
-          Account for an object_index where possible!
-    """
-
-    for _, node in G.nodes(data=True):
-        pd = np.random.random() * 0.5
-        if node[GraphAttrs.NODE_GROUND_TRUTH] == 1:
-            node[GraphAttrs.NODE_PREDICTION] = 1 - pd
-        else:
-            node[GraphAttrs.NODE_PREDICTION] = pd
-
-    for _, _, edge in G.edges(data=True):
-        pd = np.random.random() * 0.1
-        if node[GraphAttrs.EDGE_GROUND_TRUTH] == 1:
-            node[GraphAttrs.EDGE_PREDICTION] = 1 - pd
-        else:
-            node[GraphAttrs.EDGE_PREDICTION] = pd

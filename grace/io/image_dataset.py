@@ -1,4 +1,4 @@
-from typing import Tuple, Callable
+from typing import Callable
 import numpy.typing as npt
 
 import os
@@ -12,10 +12,6 @@ import torch
 from torch.utils.data import Dataset
 
 from pathlib import Path
-
-import networkx as nx
-
-from grace.base import GraphAttrs, Annotation
 
 
 class ImageGraphDataset(Dataset):
@@ -70,7 +66,7 @@ class ImageGraphDataset(Dataset):
     def __len__(self) -> int:
         return len(self.grace_paths)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, dict]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, dict]:
         img_path = self.image_paths[idx]
         grace_path = self.grace_paths[idx]
 
@@ -88,39 +84,6 @@ class ImageGraphDataset(Dataset):
         image, target = self.transform(image, target)
 
         return image, target
-
-
-def generate_ground_truth_graph(annotated_graph: nx.Graph):
-    """Generate a ground truth graph from the graph annotation.
-
-    Parameters
-    ----------
-    annotated_graphn: nx.Graph
-        Annotated graph with GraphAttrs node & edge properties.
-
-    Returns
-    -------
-    GT_graph: nx.Graph
-        Ground truth graph without any additional properties.
-        TODO: Ground truth graph with all maintained properties.
-    """
-    # Copy graph information:
-    GT_graph = annotated_graph.copy()
-
-    # Shorlist edges to delete from GT, maintaining the edge properties:
-    edges_to_remove = []
-    for src, dst, edge in annotated_graph.edges(data=True):
-        edge_neg = (
-            edge[GraphAttrs.EDGE_GROUND_TRUTH] == Annotation.TRUE_NEGATIVE
-        )
-        edge_unk = edge[GraphAttrs.EDGE_GROUND_TRUTH] == Annotation.UNKNOWN
-        if edge_neg or edge_unk:
-            edges_to_remove.append((src, dst))
-
-    # Delete the shorlisted edges:
-    GT_graph.remove_edges_from(edges_to_remove)
-
-    return GT_graph
 
 
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:
