@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 
-from grace.base import GraphAttrs
+from grace.base import GraphAttrs, Annotation
 
 
 def add_and_remove_random_edges(
@@ -101,31 +101,13 @@ def update_graph_with_dummy_predictions(
             edge[2][GraphAttrs.EDGE_PREDICTION] = pd
 
 
-def generate_ground_truth_graph(random_graph: nx.Graph):
-    """Generate a ground truth graph from the graph annotation.
-
-    Parameters
-    ----------
-    random_graph: nx.Graph
-        Annotated graph with all objects assigned an identity
-        Each node must contain an ['object_idx'] key, Error otherwise.
-
-    Returns
-    -------
-    GT_graph: nx.Graph
-        Ground truth graph with all maintained properties.
-    """
-    # Make sure all objects are labelled according to object identity:
-    nodes = list(random_graph.nodes.data())
-    obj_identity = ["object_idx" in node for _, node in nodes]
-    assert all(obj_identity)
-
-    # Copy graph information:
-    GT_graph = random_graph.copy()
+def remove_edges_from_ObjectIndex(GT_graph: nx.Graph) -> None:
+    """Modifies graph in-place."""
+    nodes = list(GT_graph.nodes.data())
 
     # Shorlist edges to delete from GT, maintaining the edge properties:
     edges_to_remove = []
-    for src, dst in random_graph.edges(data=False):
+    for src, dst in GT_graph.edges(data=False):
         _, node_st = nodes[src]
         _, node_en = nodes[dst]
 
@@ -140,42 +122,92 @@ def generate_ground_truth_graph(random_graph: nx.Graph):
     # Delete the shorlisted edges:
     GT_graph.remove_edges_from(edges_to_remove)
 
+
+def remove_edges_from_GraphAttrs(GT_graph: nx.Graph) -> None:
+    """Modifies graph in-place."""
+
+    # Shorlist edges to delete from GT, maintaining the edge properties:
+    edges_to_remove = []
+    for src, dst, edge in GT_graph.edges(data=True):
+        # If edges are not labelled as TP, remove them:
+        if edge[GraphAttrs.EDGE_GROUND_TRUTH] != Annotation.TRUE_POSITIVE:
+            edges_to_remove.append((src, dst))
+
+    # Delete the shorlisted edges:
+    GT_graph.remove_edges_from(edges_to_remove)
+
+
+def generate_ground_truth_graph(graph: nx.Graph):
+    """Generate a ground truth graph from the graph annotation.
+
+    Parameters
+    ----------
+    random_graph: nx.Graph
+        Annotated graph with all objects assigned an identity
+        Each node must contain an ['object_idx'] key, Error otherwise.
+
+    Returns
+    -------
+    GT_graph: nx.Graph
+        Ground truth graph with all maintained properties.
+    """
+    # Copy graph information:
+    GT_graph = graph.copy()
+
+    # List all nodes & their attributes:
+    nodes = list(graph.nodes.data())
+    _, single_node = nodes[0]
+
+    # Make sure all objects are somehow labelled:
+
+    # according to object identity:
+    if "object_idx" in single_node:
+        remove_edges_from_ObjectIndex(GT_graph)
+
+        # according to GraphAttrs from annotation:
+    elif GraphAttrs.NODE_GROUND_TRUTH in single_node:
+        remove_edges_from_GraphAttrs(GT_graph)
+
+        # if not, you cannot continue...
+    else:
+        raise KeyError("There is no ground truth information")
+
     return GT_graph
 
 
-# def imply_annotations_from_dummy_predictions(G: nx.Graph) -> None:
-#     """TODO: Fill in. HACK: This code doesn't account for UNKNOWN annotations."""
+def assume_annotations_from_dummy_predictions(G: nx.Graph) -> None:
+    """TODO: Fill in. HACK: This code doesn't account for UNKNOWN annotations."""
 
-#     for _, node in G.nodes(data=True):
-#         if node[GraphAttrs.NODE_PREDICTION] >= 0.5:
-#             node[GraphAttrs.NODE_GROUND_TRUTH] = 1
-#         else:
-#             node[GraphAttrs.NODE_GROUND_TRUTH] = 0
+    for _, node in G.nodes(data=True):
+        if node[GraphAttrs.NODE_PREDICTION] >= 0.5:
+            node[GraphAttrs.NODE_GROUND_TRUTH] = 1
+        else:
+            node[GraphAttrs.NODE_GROUND_TRUTH] = 0
 
-#     for _, _, edge in G.edges(data=True):
-#         if edge[GraphAttrs.EDGE_PREDICTION] >= 0.5:
-#             edge[GraphAttrs.EDGE_GROUND_TRUTH] = 1
-#         else:
-#             edge[GraphAttrs.EDGE_GROUND_TRUTH] = 0
+    for _, _, edge in G.edges(data=True):
+        if edge[GraphAttrs.EDGE_PREDICTION] >= 0.5:
+            edge[GraphAttrs.EDGE_GROUND_TRUTH] = 1
+        else:
+            edge[GraphAttrs.EDGE_GROUND_TRUTH] = 0
 
 
-# def imply_dummy_predictions_from_annotations(G: nx.Graph) -> None:
-#     """TODO: Fill in.
-#     HACK: This code doesn't account for UNKNOWN annotations.
-#     TODO: This code doesn't distinguish individual objects.
-#           Account for an object_index where possible!
-#     """
+def assume_dummy_predictions_from_annotations(G: nx.Graph) -> None:
+    """TODO: Fill in.
+    HACK: This code doesn't account for UNKNOWN annotations.
+    TODO: This code doesn't distinguish individual objects.
+          Account for an object_index where possible!
+    """
 
-#     for _, node in G.nodes(data=True):
-#         pd = np.random.random() * 0.5
-#         if node[GraphAttrs.NODE_GROUND_TRUTH] == 1:
-#             node[GraphAttrs.NODE_PREDICTION] = 1 - pd
-#         else:
-#             node[GraphAttrs.NODE_PREDICTION] = pd
+    for _, node in G.nodes(data=True):
+        pd = np.random.random() * 0.5
+        if node[GraphAttrs.NODE_GROUND_TRUTH] == 1:
+            node[GraphAttrs.NODE_PREDICTION] = 1 - pd
+        else:
+            node[GraphAttrs.NODE_PREDICTION] = pd
 
-#     for _, _, edge in G.edges(data=True):
-#         pd = np.random.random() * 0.1
-#         if node[GraphAttrs.EDGE_GROUND_TRUTH] == 1:
-#             node[GraphAttrs.EDGE_PREDICTION] = 1 - pd
-#         else:
-#             node[GraphAttrs.EDGE_PREDICTION] = pd
+    for _, _, edge in G.edges(data=True):
+        pd = np.random.random() * 0.1
+        if edge[GraphAttrs.EDGE_GROUND_TRUTH] == 1:
+            edge[GraphAttrs.EDGE_PREDICTION] = 1 - pd
+        else:
+            edge[GraphAttrs.EDGE_PREDICTION] = pd
