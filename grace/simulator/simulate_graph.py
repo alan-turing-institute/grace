@@ -425,7 +425,11 @@ def imply_annotations_from_dummy_predictions(G: nx.Graph) -> None:
 
 
 def imply_dummy_predictions_from_annotations(G: nx.Graph) -> None:
-    """TODO: Fill in. HACK: This code doesn't account for UNKNOWN annotations."""
+    """TODO: Fill in.
+    HACK: This code doesn't account for UNKNOWN annotations.
+    TODO: This code doesn't distinguish individual objects.
+          Account for an object_index where possible!
+    """
 
     for _, node in G.nodes(data=True):
         pd = np.random.random() * 0.5

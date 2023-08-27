@@ -28,6 +28,7 @@ def _list_real_connected_components(graph: nx.Graph) -> list[set[int]]:
     connected_comps = nx.connected_components(graph)
     con_comp_sets = []
     for comp in connected_comps:
+        # Ignore 1-node components:
         if len(comp) <= 1:
             continue
         con_comp_sets.append(comp)
