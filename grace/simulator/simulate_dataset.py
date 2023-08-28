@@ -21,7 +21,7 @@ def synthetic_image_dataset(
             n_chaff=100,
             scale=SCALE,
             density=0.025,
-            motif=object_motif,
+            motifs=object_motif,
         )
 
         # Synthesize a corresponding image:

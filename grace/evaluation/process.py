@@ -91,7 +91,6 @@ def generate_ground_truth_graph(graph: nx.Graph):
     ----------
     random_graph: nx.Graph
         Annotated graph with all objects assigned an identity
-        Each node must contain an ['object_idx'] key, Error otherwise.
 
     Returns
     -------

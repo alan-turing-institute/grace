@@ -224,14 +224,14 @@ def plot_iou_histogram(
         color="cyan",
         linestyle="dashed",
         linewidth=2,
-        label="IoU semantic",
+        label=f"IoU semantic: {iou_semantic:.4f}",
     )
     plt.axvline(
         x=mn,
         color="purple",
         linestyle="dashed",
         linewidth=2,
-        label="IoU instance | mean",
+        label=f"IoU instance {mn:.4f}",
     )
     plt.axvline(x=mn - std, color="purple", linestyle="dashed", linewidth=1)
     plt.axvline(x=mn + std, color="purple", linestyle="dashed", linewidth=1)

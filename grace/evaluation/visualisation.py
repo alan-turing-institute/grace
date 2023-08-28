@@ -12,12 +12,15 @@ from skimage.util import montage
 
 
 def plot_simple_graph(
-    G: nx.Graph, title: str = "", figsize: tuple[int, int] = (16, 16)
+    # G: nx.Graph, title: str = "", figsize: tuple[int, int] = (16, 16),
+    G: nx.Graph,
+    title: str = "",
+    ax=None,
 ) -> None:
     """Plots a simple graph with black nodes and edges."""
 
     # Fancy annotation plot
-    _, ax = plt.subplots(figsize=figsize)
+    # _, ax = plt.subplots(figsize=figsize)
 
     # node positions
     pos = {
@@ -37,11 +40,15 @@ def plot_simple_graph(
     )
 
     ax.set_title(f"{title}")
-    plt.show()
+    # plt.show()
+    return ax
 
 
 def plot_connected_components(
-    G: nx.Graph, title: str = "", figsize: tuple[int, int] = (16, 16)
+    # G: nx.Graph, title: str = "", figsize: tuple[int, int] = (16, 16)
+    G: nx.Graph,
+    title: str = "",
+    ax=None,
 ) -> None:
     """Colour-codes the connected components (individual objects)
     & plots them onto a simple graph with black nodes & edges.
@@ -49,7 +56,7 @@ def plot_connected_components(
     """
 
     # Fancy annotation plot
-    _, ax = plt.subplots(figsize=figsize)
+    # _, ax = plt.subplots(figsize=figsize)
 
     # node positions
     pos = {
@@ -73,10 +80,13 @@ def plot_connected_components(
         c_idx = np.array(plt.cm.tab20((index % 20) / 20)).reshape(1, -1)
         sg = G.subgraph(sg).copy()
 
-        nx.draw_networkx(sg, pos=pos, edge_color=c_idx, node_color=c_idx)
+        nx.draw_networkx(
+            sg, ax=ax, pos=pos, edge_color=c_idx, node_color=c_idx
+        )
 
     ax.set_title(f"{title}")
-    plt.show()
+    # plt.show()
+    return ax
 
 
 def display_image_and_grace_annotation(
