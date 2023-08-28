@@ -51,19 +51,38 @@ The semantic IoU is set to assume that all objects which are real are of the **s
 
 Here, all objects are **considered independently**, unless touching (as described above). Currently, this is the most accurate metric to determine the performance of our GRACE methodology.
 
----
-[WIP] 🚧
----
 
-### METHOD LIMITATIONS:
+## Mean Squared Displacement (MSD)
 
-GRACE is limited at various steps:
-* relies on previous detections -> if an object is not detected(as in, is presented as a candidate node), it has no chance to appear in the final solution. This means:
-  * we supply sparse but highly accurate detections must capture all objects (_e.g._ cryolo confidence threshold = 0.7)
-  * we decrease the detection confidence threshold in belief that noisy detections will be filtered out by the classifier / optimiser (_e.g._ cryolo confidence threshold = 0.0)
-  * we include all possible detections from the detection algorithm PLUS add some randomly picked positions just to make sure, making the same assumption as in the step before
-* to avoid the limitation where we rely on an auxiliary particle picker, we could, in theory, sample a lot of random patches & let the pipeline just filter the clean / real nodes & links between them. This is a very romantic idea and I'm skeptical in claiming that this pipeline will "just figure itself out". But we don't know until we try...
-* our napari-based annotator GUI only provides an option to annotate objects _semantically_, _i.e._ with a single-valued brush, producing a binary mask. This could/should be addressed in later developments.
+### 🚧 [WIP] Currently not implemented 🚧
+
+IoU and MSD are two different metrics used for evaluating object detection tasks. IoU is generally considered a **better metric for object detection** than MSD for several reasons:
+
+* *Relevance to Overlapping Objects:* IoU is specifically designed to measure the overlap between the predicted bounding box and the ground truth bounding box of an object. This is highly relevant in object detection tasks, where the goal is to accurately localize objects within an image.
+
+* *Alignment with Detection Objective:* Object detection aims to determine the accurate spatial extent of objects in an image. IoU directly quantifies the overlap between the predicted and ground truth bounding boxes, which aligns well with the objective of correctly identifying objects and their positions.
+
+* Thresholding and Threshold Independence:* IoU is often used as a threshold-based metric to determine whether a prediction is a true positive, false positive, or false negative. It offers a clear threshold for deciding whether a detection is successful or not. MSD does not have a natural thresholding mechanism and may not be as intuitive for setting detection thresholds.
+
+* *Detection Score:* IoU can be used to compute detection scores such as precision, recall, and F1-score. These scores provide insights into the trade-off between false positives and false negatives, which is essential for evaluating the performance of object detectors.
+
+* *Localization Accuracy:* Object detection not only requires accurate object presence detection but also precise localization. IoU directly measures the quality of localization by considering the overlap area between the predicted and ground truth bounding boxes.
+
+* *Standard Evaluation Metric:* IoU is a widely used and standard evaluation metric in the field of object detection. Many benchmark datasets and competitions use IoU-based metrics to rank and compare different object detection methods.
+
+On the other hand, MSD is generally used in different contexts, such as tracking or analyzing movement patterns. It measures the mean squared distance between predicted and ground truth object positions, which might not be as directly relevant to the main objective of object detection. While both metrics have their merits, IoU is more aligned with the specific requirements and goals of object detection tasks.
 
 
-*Note to self:* We need to provide a (graphical) glossary / appendix where we describe the methodology / name the terms. Detection, object, graph, connection, instance, segment etc.
+## [WIP] 🚧 Multiclass metric evaluation
+
+Our napari-based annotator GUI provides an option to annotate objects _instantenously_, _i.e._ with a unique value brush per object. This is in contrast to labelling objects _semantically_, _i.e._ with a single-valued brush, producing a binary mask.
+
+
+Multiclass image annotation in *napari* |
+:-------------------------------------: |
+![Alt text](../../assets/anno_multiclass.png) |
+
+
+However, our current GRACE implementation only allows differentiation between **objects belonging to a single type**. This could/should be addressed in later developments.
+
+___
