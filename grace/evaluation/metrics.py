@@ -13,6 +13,13 @@ from sklearn.metrics import (
 
 from grace.base import GraphAttrs
 
+from grace.evaluation.annotate import (
+    _find_connected_objects,
+    visualise_semantic_iou_map,
+    semantic_iou_from_masks,
+    instance_iou_from_masks,
+)
+
 COLOR_LIST = ["limegreen", "gold", "dodgerblue"]
 TITLE_LIST = [
     "perfect match",
@@ -62,7 +69,10 @@ def _generate_label_vector(input_data_set: set, component_pool_set: set):
     return y_labels
 
 
-def _find_matching_pairs(list_of_sets1, list_of_sets2):
+def _find_matching_pairs(
+    list_of_sets1: list[set[int]] | list[set[tuple[int]]],
+    list_of_sets2: list[set[int]] | list[set[tuple[int]]],
+) -> list[set[int]] | list[set[tuple[int]]]:
     matching_pairs = []
     for set1 in list_of_sets1:
         for set2 in list_of_sets2:
@@ -71,7 +81,7 @@ def _find_matching_pairs(list_of_sets1, list_of_sets2):
     return matching_pairs
 
 
-def locate_rectangle_points(object_node_set: set, G: nx.Graph):
+def locate_rectangle_nodes(object_node_set: set[int], G: nx.Graph):
     nodes = G.nodes(data=True)
     x_coords, y_coords = [], []
 
@@ -85,18 +95,42 @@ def locate_rectangle_points(object_node_set: set, G: nx.Graph):
     return (x_mn, y_mn), x_mx - x_mn, y_mx - y_mn  # anchor, height, width
 
 
-def extract_rectangle_info(matching_pairs: list[set[int]], G: nx.Graph):
+def locate_rectangle_points(
+    object_node_coords_set: set[tuple[int]], G: nx.Graph = None
+) -> tuple[tuple[float], float, float]:
+    x_coords, y_coords = [], []
+
+    for coo_pair in object_node_coords_set:
+        x_coords.append(coo_pair[0])
+        y_coords.append(coo_pair[1])
+
+    x_mn, x_mx = np.min(x_coords), np.max(x_coords)
+    y_mn, y_mx = np.min(y_coords), np.max(y_coords)
+
+    return (x_mn, y_mn), x_mx - x_mn, y_mx - y_mn  # anchor, height, width
+
+
+def extract_rectangle_info(
+    matching_pairs: list[set[int]] | list[set[tuple[int]]], G: nx.Graph = None
+) -> list[tuple[tuple[float], float, float]]:
+    # Nominate which function to use:
+    if G is None:
+        locate_function = locate_rectangle_points
+    else:
+        locate_function = locate_rectangle_nodes
+
+    # Extract rectangle plotting data:
     rectangles = []
     for pair in matching_pairs:
         # Check if objects are equal:
         if pair[0] == pair[1]:
-            anchor, height, width = locate_rectangle_points(pair[0], G)
+            anchor, height, width = locate_function(pair[0], G)
             rectangles.append((anchor, height, width, COLOR_LIST[0]))
 
         else:
             # Under/over-detected objects - unwrap both + assign correct color:
             for o, _ in enumerate(pair):
-                anchor, height, width = locate_rectangle_points(pair[o], G)
+                anchor, height, width = locate_function(pair[o], G)
                 rectangles.append((anchor, height, width, COLOR_LIST[o + 1]))
 
     return rectangles
@@ -226,12 +260,17 @@ def visualise_object_bounding_boxes_on_graph(
     G: nx.Graph,
     rectangles: list[tuple[float]],
     legend_handle: dict[str, str],
+    annotation: npt.NDArray = None,
     figsize: tuple[int] = (10, 10),
 ) -> None:
     """TODO: Fill in."""
 
     # Create figure and axes
     _, ax = plt.subplots(figsize=figsize)
+
+    # Plot the faded annotation under the graph
+    if annotation is not None:
+        ax.imshow(annotation, alpha=0.5, cmap="gray", interpolation="none")
 
     # Display the graph node positions
     pos = {
@@ -260,6 +299,7 @@ def visualise_object_bounding_boxes_on_graph(
         ax.add_patch(rect)
         _legend_without_duplicate_labels(ax)
 
+    ax.set_axis_on()
     ax.set_title("IoU metric illustration on per-object level")
     plt.show()
 
@@ -311,8 +351,13 @@ def combine_multiline_strings(
     return combined_string
 
 
-def compute_metrics(G: nx.Graph, pred_graph: nx.Graph, true_graph: nx.Graph):
+def compute_exact_metrics(
+    G: nx.Graph,
+    pred_graph: nx.Graph,
+    true_graph: nx.Graph,
+) -> None:
     """TODO: Fill in!
+    TODO: Refactor into an object with methods!
 
     Parameters
     ----------
@@ -433,3 +478,56 @@ def compute_metrics(G: nx.Graph, pred_graph: nx.Graph, true_graph: nx.Graph):
     # Locate rectangle coords for every individual object:
     rectangles = extract_rectangle_info(matching_pairs=matching_pairs, G=G)
     visualise_object_bounding_boxes_on_graph(G, rectangles, LEGEND_HANDLE)
+
+
+def compute_approx_metrics(
+    G: nx.Graph,
+    hand_annotated_mask: npt.NDArray,
+    auto_annotated_mask: npt.NDArray,
+) -> None:
+    """TODO: Fill in.
+    TODO: Create a wrapper for the metrics as above.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        Original graph with all nodes and possible edges (as triangulated)
+
+    """
+
+    pixel_accuracy, object_accuracy = semantic_iou_from_masks(
+        hand_annotated_mask, auto_annotated_mask
+    )
+    iou_per_object = instance_iou_from_masks(
+        hand_annotated_mask, auto_annotated_mask
+    )
+
+    # TODO: Print numerical values:
+    table_dict = {
+        "Pixel Accuracy": pixel_accuracy,
+        "Semantic IoU": object_accuracy,
+        "Instance IoU [mean]": np.mean(iou_per_object),
+        "Instance IoU [std]": np.std(iou_per_object),
+    }
+    # Format & print the table:
+    formatted_table = format_object_detection_metrics(
+        table_dict, title="Intersection over Union"
+    )
+    print(formatted_table)
+
+    # Plot numerical values:
+    plot_iou_histogram(iou_per_object, object_accuracy)
+
+    # Visualise semantic IoU:
+    visualise_semantic_iou_map(hand_annotated_mask, auto_annotated_mask)
+
+    # Plot bbox overlap on mask:
+    connected_objects_hand_anno = _find_connected_objects(hand_annotated_mask)
+    connected_objects_auto_anno = _find_connected_objects(auto_annotated_mask)
+    matching_pairs = _find_matching_pairs(
+        connected_objects_hand_anno, connected_objects_auto_anno
+    )
+    rectangles = extract_rectangle_info(matching_pairs=matching_pairs)
+    visualise_object_bounding_boxes_on_graph(
+        G, rectangles, LEGEND_HANDLE, hand_annotated_mask
+    )
