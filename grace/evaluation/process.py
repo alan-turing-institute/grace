@@ -160,10 +160,13 @@ def assume_dummy_predictions_from_annotations(G: nx.Graph) -> None:
 
 
 def add_and_remove_random_edges(
-    G: nx.Graph, num_edges_to_add: int, num_edges_to_remove: int
+    GT_graph: nx.Graph,
+    Delaunay_graph: nx.Graph,
+    num_edges_to_add: int,
+    num_edges_to_remove: int,
 ) -> nx.Graph:
     """Adds random edges and removes random edges from the given graph.
-
+    TODO: Edit!!!
     Parameters
     ----------
     graph : nx.Graph
@@ -178,11 +181,16 @@ def add_and_remove_random_edges(
         nx.Graph: The graph with added and removed random edges.
     """
     # Create a copy, not to modify the original graph in-place:
-    modified_graph = G.copy()
+    modified_graph = GT_graph.copy()
 
     if num_edges_to_add >= 1:
-        modified_graph = _add_random_edges(modified_graph, num_edges_to_add)
+        all_edges = set(Delaunay_graph.edges(data=False))
+        GT_edges = set(GT_graph.edges(data=False))
+        possible_edges = list(all_edges - GT_edges)
 
+        modified_graph = _add_random_edges(
+            modified_graph, num_edges_to_add, possible_edges
+        )
     if num_edges_to_remove >= 1:
         modified_graph = _remove_random_edges(
             modified_graph, num_edges_to_remove
@@ -191,22 +199,28 @@ def add_and_remove_random_edges(
     return modified_graph
 
 
-def _add_random_edges(G: nx.Graph, num_edges_to_add: int) -> nx.Graph:
-    nodes = list(G.nodes())
-    node_pairs = np.random.choice(
-        nodes, size=(num_edges_to_add, 2), replace=True
+def _add_random_edges(
+    G: nx.Graph, num_edges_to_add: int, possible_edges: list[tuple[int, int]]
+) -> nx.Graph:
+    edges_to_add = np.random.choice(
+        range(len(possible_edges)), size=num_edges_to_add, replace=False
     )
-
-    for node1, node2 in node_pairs:
-        if not G.has_edge(node1, node2) and node1 != node2:
-            G.add_edge(node1, node2)
+    edges_to_add = [possible_edges[e] for e in edges_to_add]
+    for node1, node2 in edges_to_add:
+        # if not G.has_edge(node1, node2):
+        G.add_edge(node1, node2)
+        # HACK: Check if this makes sense!
+        G[node1][node2][
+            GraphAttrs.EDGE_GROUND_TRUTH
+        ] = Annotation.TRUE_POSITIVE
     return G
 
 
 def _remove_random_edges(G: nx.Graph, num_edges_to_remove: int) -> nx.Graph:
-    edges = list(G.edges())
+    edges = list(G.edges(data=False))
     edges_to_remove = np.random.choice(
-        edges, size=num_edges_to_remove, replace=False
+        range(len(edges)), size=num_edges_to_remove, replace=False
     )
+    edges_to_remove = [edges[e] for e in edges_to_remove]
     G.remove_edges_from(edges_to_remove)
     return G
