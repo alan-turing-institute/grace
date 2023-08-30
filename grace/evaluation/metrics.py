@@ -23,21 +23,32 @@ from grace.evaluation.utils import (
 
 
 class ExactMetricsComputer(object):
-    """TODO: Fill in!
+    """Metrics wrapper to calculate & visualise GRACE pipeline performance.
+        EXACT metrics compare two graphs with identical nodes positions
+        which differ only by presence / absence of edges, defining objects.
 
     Parameters
     ----------
     G : nx.Graph
         Original graph with all nodes and possible edges (as triangulated)
-    pred_graph : nx.Graph
-        Predicted graph after the ILP optimisation step.
-    true_graph : nx.Graph
-        Ground truth graph deducted from napari annotation.
+    pred_optimised_graph : nx.Graph
+        Predicted graph with individual objects after the optimisation step.
+    true_annotated_graph : nx.Graph
+        Ground truth graph with individual objects from napari annotation.
 
-    Returns
+    Methods
     -------
-    ...
+    metrics(print_results: bool = False)
+        - Computes numerical metrics, returned as dict[str, float]
+          For nodes: accuracy, precision, recall, f1-score
+          For edges: accuracy, precision, recall, f1-score
+          IoU semantic, instance [mean ± st.dev], list of object IoU scores
+        - Optionally prints metrics in a formatted table. Defaults to False.
 
+    visualise()
+        - Visualises per-node & per-edge raw & normalised confusion matrix.
+        - Visualises IoU metrics histogram per individual object score.
+        - Visualises IoU object overlap with GT as bbox on top of the graph.
     """
 
     def __init__(
@@ -173,7 +184,7 @@ class ExactMetricsComputer(object):
 
         plt.show()
 
-    def metrics(self) -> dict[str, float]:
+    def metrics(self, print_results: bool = False) -> dict[str, float]:
         results_dict = {}
 
         # Object detection (nodes & edges)
@@ -188,8 +199,9 @@ class ExactMetricsComputer(object):
                 f"F1-Score ({element_type})": prf1[2],
             }
             # Format & print the table:
-            formatted_table = format_object_detection_metrics(table, title)
-            print(formatted_table)
+            if print_results is True:
+                formatted_table = format_object_detection_metrics(table, title)
+                print(formatted_table)
 
             # Append the whole instance IoU list to the dict:
             results_dict.update(table)
@@ -204,8 +216,9 @@ class ExactMetricsComputer(object):
             "Instance IoU [std]": np.std(iou_per_object),
         }
         # Format & print the table:
-        formatted_table = format_object_detection_metrics(table, title)
-        print(formatted_table)
+        if print_results is True:
+            formatted_table = format_object_detection_metrics(table, title)
+            print(formatted_table)
 
         # Append the whole instance IoU list to the dict:
         results_dict.update(table)
@@ -233,11 +246,30 @@ class ExactMetricsComputer(object):
 
 
 class ApproxMetricsComputer(object):
-    """TODO: Fill in.
+    """Metrics wrapper to calculate & visualise GRACE pipeline performance.
+        APPROX metrics compare two annotation masks & ovelapping objects.
 
     Parameters
     ----------
+    G : nx.Graph
+        Original graph with all nodes and possible edges (as triangulated)
+    pred_auto_annotated_mask : npt.NDArray
+        Predicted, automatically drown annotation mask from optimised graph;
+        check out `draw_annotation_mask_from_ground_truth_graph` function
+    true_hand_annotated_mask : npt.NDArray
+        Ground truth annotation mask with annotated objects, e.g. from napari
 
+    Methods
+    -------
+    metrics(print_results: bool = False)
+        - Computes numerical metrics, returned as dict[str, float]
+          IoU semantic, instance [mean ± st.dev], list of object IoU scores
+        - Optionally prints metrics in a formatted table. Defaults to False.
+
+    visualise()
+        - Visualises IoU metrics histogram per individual object score.
+        - Visualises colour-coded annotation overlap for visual inspection.
+        - Visualises IoU object overlap with GT as bbox on top of the graph.
     """
 
     def __init__(
@@ -248,8 +280,8 @@ class ApproxMetricsComputer(object):
     ) -> None:
         # Instantiate metrics attributes:
         self.graph = G
-        self.hand_anno = true_hand_annotated_mask
         self.auto_anno = pred_auto_annotated_mask
+        self.hand_anno = true_hand_annotated_mask
 
     def _calculate_pixel_accuracy(self):
         agreement_mask = self.hand_anno == self.auto_anno
@@ -293,7 +325,7 @@ class ApproxMetricsComputer(object):
 
         return iou_list
 
-    def metrics(self) -> dict[str, float]:
+    def metrics(self, print_results: bool = False) -> dict[str, float]:
         # Calculate IoUs:
         pixel_accuracy, object_accuracy = self.semantic_iou_from_masks()
         iou_per_object = self.instance_iou_from_masks()
@@ -307,8 +339,9 @@ class ApproxMetricsComputer(object):
             "Instance IoU [std]": np.std(iou_per_object),
         }
         # Format & print the table:
-        formatted_table = format_object_detection_metrics(table, title)
-        print(formatted_table)
+        if print_results is True:
+            formatted_table = format_object_detection_metrics(table, title)
+            print(formatted_table)
 
         # Append the whole instance IoU list to the dict:
         table["Instance IoU [list]"] = iou_per_object
