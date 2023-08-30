@@ -67,7 +67,7 @@ def cut_graph_using_mask(
     mask : array
         A binary mask to filter points and edges in the graph.
     update_graph : bool, (default: True)
-        Update edge attributes in place.
+        Update node & edge attributes in place.
 
     Returns
     -------
