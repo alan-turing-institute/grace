@@ -39,4 +39,19 @@ def random_image_and_graph(
 
     image[tuple(node_coords[:, 1]), tuple(node_coords[:, 0])] = 1
     graph = graph_from_dataframe(df, triangulate=True)
+
+    graph.update(
+            edges=[
+                (
+                    src,
+                    dst,
+                    {GraphAttrs.EDGE_GROUND_TRUTH: rng.choice(
+                        [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE], 
+                    )
+                    },
+                )
+                for src, dst in graph.edges
+            ]
+        )
+
     return image, graph

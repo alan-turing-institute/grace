@@ -71,7 +71,7 @@ class ImageGraphDataset(Dataset):
         grace_path = self.grace_paths[idx]
 
         image = torch.tensor(
-            self.image_reader_fn(img_path), dtype=torch.float32
+            self.image_reader_fn(img_path).astype('float32')
         )
         grace_dataset = read_graph(grace_path)
 
