@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-from typing import List
-
 import dataclasses
 import networkx as nx
 import numpy as np
@@ -10,7 +6,7 @@ import numpy.typing as npt
 from scipy.interpolate import interp1d
 from scipy.spatial import Delaunay
 
-from ..base import edges_from_delaunay, GraphAttrs
+from grace.base import edges_from_delaunay
 
 
 RNG = np.random.default_rng()
@@ -35,13 +31,14 @@ class DetectionNode:
     label: int
     object_idx: int = 0
 
-    def asdict(self) -> DetectionNode:
+    # def asdict(self) -> DetectionNode:
+    def asdict(self) -> dict:
         return dataclasses.asdict(self)
 
 
 def _line_motif(
     src: DetectionNode, dst: DetectionNode, *, density: float
-) -> List[DetectionNode]:
+) -> list[DetectionNode]:
     length = np.sqrt((dst.x - src.x) ** 2 + (dst.y - src.y) ** 2)
     n_points = int(length / density)
 
@@ -64,7 +61,7 @@ def _curve_motif(
     dst: DetectionNode,
     *,
     density: float = 0.02,
-) -> List[DetectionNode]:
+) -> list[DetectionNode]:
     # length = np.sqrt((dst.x - src.x) ** 2 + (dst.y - src.y) ** 2)
     curvature = RNG.uniform(1, 10)
     curvature = curvature if RNG.integers(0, 2) < 0.5 else -curvature
@@ -109,7 +106,7 @@ def _spiral_motif(
     dst: DetectionNode = None,
     *,
     density: float = 0.02,
-) -> List[DetectionNode]:
+) -> list[DetectionNode]:
     curvature = RNG.uniform(5, 10)
     radius = 1 / curvature
     num_turns = np.abs(curvature / 3)
@@ -138,7 +135,7 @@ def _circle_motif(
     dst: DetectionNode = None,
     *,
     density: float,
-) -> List[DetectionNode]:
+) -> list[DetectionNode]:
     radius = RNG.uniform(0.05, 0.5)
     n_points = int((1 / density) / 4)
 
@@ -175,14 +172,14 @@ def random_graph(
     n_features: int = 3,
     scale: float = 1.0,
     density: float = 0.02,
-    motif: str = "lines",
+    motifs: str | list[str] = "lines",
 ) -> nx.Graph:
-    """Create a random graph with line objects.
+    """Create a random graph with motif objects.
 
     Parameters
     ----------
     n_motifs : int
-        The number of random lines to add.
+        The number of each motif to add from 'motifs'.
     n_chaff : int
         The number of false positive detections.
     n_features : int
@@ -192,67 +189,67 @@ def random_graph(
         the range of (0.0, 1.0), i.e. a scaling factor of 1.0
     density : float
         The density of detections when forming a motif.
-    motif: str
-        The type of object to draw. Defaults to "lines"
+    motifs: str | list[str]
+        The type of object(s) to draw. Defaults to "lines"
 
     Returns
     -------
     graph : graph
         A networkx graph.
     """
-    chaff = [
+    # Check which motifs to draw:
+    assert isinstance(motifs, str) or isinstance(motifs, list)
+
+    if isinstance(motifs, str):
+        motifs = [
+            motifs,
+        ]
+
+    for m in range(len(motifs)):
+        if not motifs[m].endswith("s"):
+            motifs[m] += "s"
+
+    # Sample some noisy nodes across the graph (GT label = 0):
+    chaff_nodes = [
         _random_node(
             RNG.uniform(0.0, 1.0, size=(n_features,)), label=0, scale=scale
         )
         for _ in range(n_chaff)
     ]
 
-    # Identify which motif to draw:
-    motif_type = f"{motif}s" if not motif.endswith("s") else motif
-
-    motifs = []
-    ground_truth = []
-
-    for n in range(n_motifs):
-        src = _random_node(np.ones((n_features,)), label=1, scale=scale)
-
-        if motif_type == "lines":
-            # Straight line:
+    # Iterate through motifs to draw (GT label = 0):
+    motif_nodes = []
+    for motif in motifs:
+        for n in range(n_motifs):
+            src = _random_node(np.ones((n_features,)), label=1, scale=scale)
             dst = _random_node(np.ones((n_features,)), label=1, scale=scale)
-            motif = _line_motif(src, dst, density=density * scale)
 
-        elif motif_type == "curves":
-            # Curved line:
-            dst = _random_node(np.ones((n_features,)), label=1, scale=scale)
-            motif = _curve_motif(src, dst, density=density * scale)
+            if motif == "lines":  # straight line:
+                motif_obj = _line_motif(src, dst, density=density * scale)
 
-        elif motif_type == "spirals":
-            # Spiral curve:
-            # curvature = RNG.uniform(1, 10)
-            # if RNG.integers(0, 2) < 0.5 else -RNG.uniform(1, 10)
-            motif = _spiral_motif(src=src, density=scale * density)
+            elif motif == "curves":  # curved line:
+                motif_obj = _curve_motif(src, dst, density=density * scale)
 
-        elif motif_type == "circles":
-            # 2D circle:
-            # curvature = RNG.uniform(1, 3)
-            motif = _circle_motif(src=src, density=scale * density)
+            elif motif == "spirals":  # spiral curve:
+                motif_obj = _spiral_motif(src=src, density=scale * density)
 
-        else:
-            raise ValueError(
-                f"Invalid 'motif_type' string specified: '{motif}'"
-            )
+            elif motif == "circles":  # 2D circle:
+                motif_obj = _circle_motif(src=src, density=scale * density)
 
-        for node in motif:
-            node.object_idx = n + 1
+            else:
+                raise ValueError(f"Invalid 'motif' string: '{motif}'")
 
-        motifs += motif
-        ground_truth.append(motif)
+            # Assign object identity index to the nodes of the new motif:
+            for node in motif_obj:
+                node.object_idx = n + 1
+            motif_nodes += motif_obj
 
-    all_nodes = chaff + motifs
-
+    # Combine noisy (TN) and real (TP) nodes & triangulate:
+    all_nodes = chaff_nodes + motif_nodes
     points = np.asarray([[node.x, node.y] for node in all_nodes])
     tri = Delaunay(points)
 
+    # Store the node & edge information in graph structure:
     graph = nx.Graph()
 
     for idx, node in enumerate(all_nodes):
@@ -263,142 +260,3 @@ def random_graph(
         graph.add_edge(*edge)
 
     return graph
-
-
-def random_graph_mixed_motifs(
-    *,
-    n_motifs: int = 3,
-    n_chaff: int = 100,
-    n_features: int = 3,
-    scale: float = 1.0,
-    density: float = 0.02,
-    motifs: list = ["line", "curve", "spiral", "circle"],
-) -> nx.Graph:
-    """Create a random graph with line objects.
-
-    Parameters
-    ----------
-    n_motifs : int
-        The number of random lines to add.
-    n_chaff : int
-        The number of false positive detections.
-    n_features : int
-        The number of feature for each detection.
-    scale : float
-        A scaling factor. The default detections are generated in a 2D box in
-        the range of (0.0, 1.0), i.e. a scaling factor of 1.0
-    density : float
-        The density of detections when forming a motif.
-    motifs: list[str]
-        All types of object motifs to draw. Defaults to cover all options.
-
-    Returns
-    -------
-    graph : graph
-        A networkx graph.
-    """
-    chaff = [
-        _random_node(
-            RNG.uniform(0.0, 1.0, size=(n_features,)), label=0, scale=scale
-        )
-        for _ in range(n_chaff)
-    ]
-
-    # Identify which motif to draw:
-    motifs = []
-    ground_truth = []
-
-    for n in range(n_motifs):
-        # Straight line:
-        src = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        dst = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        motif = _line_motif(src, dst, density=density * scale)
-
-        for node in motif:
-            node.object_idx = n + 1
-
-        motifs += motif
-        ground_truth.append(motif)
-
-        # Curved line:
-        src = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        dst = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        motif = _curve_motif(src, dst, density=density * scale)
-
-        for node in motif:
-            node.object_idx = n + 1
-
-        motifs += motif
-        ground_truth.append(motif)
-
-        # Spiral curve:
-        src = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        dst = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        motif = _spiral_motif(src=src, density=scale * density)
-
-        for node in motif:
-            node.object_idx = n + 1
-
-        motifs += motif
-        ground_truth.append(motif)
-
-        # 2D circle:
-        src = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        dst = _random_node(np.ones((n_features,)), label=1, scale=scale)
-        motif = _circle_motif(src=src, density=scale * density)
-
-        for node in motif:
-            node.object_idx = n + 1
-
-        motifs += motif
-        ground_truth.append(motif)
-
-    # Done drawing:
-    all_nodes = chaff + motifs
-
-    points = np.asarray([[node.x, node.y] for node in all_nodes])
-    tri = Delaunay(points)
-
-    graph = nx.Graph()
-
-    for idx, node in enumerate(all_nodes):
-        graph.add_node(idx, **node.asdict())
-
-    edges = edges_from_delaunay(tri)
-    for edge in edges:
-        graph.add_edge(*edge)
-
-    return graph
-
-
-def update_graph_with_dummy_predictions(G: nx.Graph) -> None:
-    """Create a random graph with line objects.
-
-    Parameters
-    ----------
-    G : nx.Graph
-        The graph which node & edge predictions are to be updated with synthetic values.
-
-    Returns
-    -------
-    None
-    - modifies the graph in place
-    """
-    nodes = list(G.nodes.data())
-
-    for _, node in nodes:
-        pd = np.random.random() * 0.5
-        if node["label"] > 0:
-            node[GraphAttrs.NODE_PREDICTION] = pd
-        else:
-            node[GraphAttrs.NODE_PREDICTION] = 1 - pd
-
-    for edge in G.edges.data():
-        pd = np.random.random() * 0.1
-        _, e_i = nodes[edge[0]]
-        _, e_j = nodes[edge[1]]
-
-        if e_i["object_idx"] == e_j["object_idx"] and e_i["label"] > 0:
-            edge[2][GraphAttrs.EDGE_PREDICTION] = 1 - pd
-        else:
-            edge[2][GraphAttrs.EDGE_PREDICTION] = pd

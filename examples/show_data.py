@@ -1,10 +1,10 @@
 import napari
 
-import mrcfile
 import pandas as pd
 import numpy as np
 
 from grace.base import GraphAttrs
+from grace.io.image_dataset import mrc_reader
 from pathlib import Path
 
 
@@ -20,21 +20,18 @@ IMAGE_PATH = Path(
 )
 NODES_PATH = Path(str(IMAGE_PATH).replace(".mrc", ".h5"))
 
-
-with mrcfile.open(IMAGE_PATH, "r") as mrc:
-    # image_data = mrc.data.astype(int)
-    image_data = mrc.data
-
+image_data = mrc_reader(IMAGE_PATH)
 nodes_data = pd.read_hdf(NODES_PATH)
+
 points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
 # features = {
 #     GraphAttrs.NODE_FEATURES:
 #     [np.squeeze(f.numpy()) for f in nodes_data.loc[:, "features"]]
 # }
 features = None
-mn, mx = np.min(image_data), np.max(image_data)
-
 data_name = f"{IMAGE_PATH.stem}"
+
+mn, mx = np.min(image_data), np.max(image_data)
 
 viewer = napari.Viewer()
 img_layer = viewer.add_image(
