@@ -20,10 +20,12 @@ def train_model(
     epochs: int = 100,
     batch_size: int = 64,
     train_fraction: float = 0.85,
+    learning_rate: float = 0.001,
     node_masked_class: Annotation = Annotation.UNKNOWN,
     edge_masked_class: Annotation = Annotation.UNKNOWN,
     log_dir: Optional[str] = None,
     metrics: List[Union[str, Callable]] = [],
+    tensorboard_update_frequency: int = 1,
 ):
     """Train the pytorch model.
 
@@ -39,6 +41,8 @@ def train_model(
         Batch size
     train_fraction : float
         Fraction of data to be used for training (rest for validation)
+    learning_rate : float
+        Learning rate to use during training
     node_masked_class : Annotation
         Target node class for which to set the loss to 0
     edge_masked_class : Annotation
@@ -47,6 +51,8 @@ def train_model(
         Log folder for the current training run
     metrics : List[str or Callable]
         Metrics to be evaluated after every training epoch
+    tensorboard_update_frequency : int
+        Frequency (in epochs) at which to update tensorboard
     """
     writer = SummaryWriter(log_dir)
 
@@ -62,7 +68,7 @@ def train_model(
 
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=0.001,
+        lr=learning_rate,
         # weight_decay=5e-4),
     )
 
@@ -155,12 +161,6 @@ def train_model(
                     metric_out["total"] = metric_dict[metric][2]
 
                 if isinstance(node_value, float):
-                    writer.add_scalar(
-                        f"{metric_name} (node)", metric_out["node"], epoch
-                    )
-                    writer.add_scalar(
-                        f"{metric_name} (edge)", metric_out["edge"], epoch
-                    )
                     print_string += (
                         f"{metric_name} (node): " f"{node_value:.4f} | "
                     )
@@ -168,13 +168,17 @@ def train_model(
                         f"{metric_name} (edge): " f"{edge_value:.4f} | "
                     )
 
+                    if epoch % tensorboard_update_frequency == 0:
+                        writer.add_scalars(metric_name, metric_out, epoch)
+
                 elif isinstance(node_value, plt.Figure):
-                    writer.add_figure(
-                        f"{metric_name} (node)", metric_out["node"], epoch
-                    )
-                    writer.add_figure(
-                        f"{metric_name} (edge)", metric_out["edge"], epoch
-                    )
+                    if epoch % tensorboard_update_frequency == 0:
+                        writer.add_figure(
+                            f"{metric_name} (node)", metric_out["node"], epoch
+                        )
+                        writer.add_figure(
+                            f"{metric_name} (edge)", metric_out["edge"], epoch
+                        )
 
         print(print_string)
 

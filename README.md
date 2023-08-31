@@ -57,7 +57,13 @@ The `grace` workflow consists of the following steps:
 
 `grace` has been tested with Python 3.8+ on OS X.
 
-For local development, clone the repo and install in editable mode:
+For local development, clone the repo and install in editable mode following these guidelines:
+
+*Note:* Choose which conda environment you'd like to use:
+* If you need to annotate your data (images) in *napari*, we recommend the `grace-env-with-napari` -> `environment-with-napari.yaml`
+* If you rely on previously annotated data and do not require *napari*, we recommend the `grace-env-napari-free` -> `environment-napari-free.yaml`
+
+Specify your preference & follow the steps below:
 
 ```sh
 # clone the grace GitHub repository
@@ -65,18 +71,20 @@ For local development, clone the repo and install in editable mode:
 git clone https://github.com/alan-turing-institute/grace.git
 cd ./grace
 
-# create a conda playground from environment.yaml
-conda env create -f environment.yaml
+# create a conda playground from the respective environment.yaml
+conda env create -f YOUR-CHOSEN-ENVIRONMENT.yaml
 
 # To activate this environment, use
 #
-#     $ conda activate grace-environment
+#     $ conda activate grace-env-with-napari
+#     OR
+#     $ conda activate grace-env-napari-free
 #
 # To deactivate an active environment, use
 #
 #     $ conda deactivate
 
-conda activate grace-environment
+conda activate grace-env-OF-YOUR-CHOICE
 
 # install grace from local folder (not on pypi yet)
 
@@ -91,15 +99,16 @@ conda install -c conda-forge pre_commit
 pre-commit install
 
 ```
-
 ---
+
+If you currently do not have any data to test / implement GRACE on, have a look at the option of **simulating a synthetic dataset** as described in [this](./grace/simulator/README.md) README. An accessible link to some pre-annotated simulated images is coming soon! 🚧
 
 
 ## Annotator GUI
 
 Our repository contains a graphical user interface (GUI) which allows the user to manually annotate the regions of interests (motifs) in their cryo-EM data.
 
-To test the annotator, make sure you've [installed](#installation) the repository & navigate to:
+To test the annotator, make sure you've [installed](#installation) the repository using the annotation environment & navigate to:
 
 ```sh
 python examples/show_data.py

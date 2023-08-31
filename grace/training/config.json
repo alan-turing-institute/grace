@@ -1,0 +1,23 @@
+{
+    "image_dir": "/path/to/your/images",
+    "grace_dir": "/path/to/your/annotations",
+    "log_dir": "/path/to/your/classifier/runs",
+    "run_dir": "/path/to/your/classifier/runs",
+    "extractor_fn": "/path/to/your/extractor/resnet152.pt",
+    "feature_dim": "2048",
+    "patch_size": "(224, 224)",
+    "keep_patch_fraction": "1.0",
+    "img_graph_augs": "[]",
+    "img_graph_aug_params": "[]",
+    "patch_augs": "[]",
+    "patch_aug_params": "[]",
+    "hidden_channels": "[512, 128, 32]",
+    "num_node_classes": "2",
+    "num_edge_classes": "2",
+    "epochs": "10",
+    "metrics": "['accuracy', 'confusion_matrix']",
+    "dropout": "0.5",
+    "batch_size": "64",
+    "learning_rate": "0.001",
+    "tensorboard_update_frequency": "1"
+}

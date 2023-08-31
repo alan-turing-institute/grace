@@ -1,4 +1,4 @@
-from grace.config import Config, write_config_file, load_config_params
+from grace.training.config import Config, write_config_file, load_config_params
 
 
 def test_write_config_file(tmp_path):

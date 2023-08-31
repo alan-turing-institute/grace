@@ -18,7 +18,7 @@ This README.md contains instructions on how to write a config file to train a cl
 
 The following classifier is based on [graph convolutional network](https://arxiv.org/abs/1609.02907 "GCN seminal paper") architecture. To run the model training, you need to create a configuration (config) file where hyperparameters of the GCN model (or, potentially, other classifiers) and many other specs are specified:
 
-The `config_file` should be structured as follows:
+The `config_file` should be structured as specified in the `config.json` file, or as follows:
 
 ```
 {
@@ -52,12 +52,13 @@ The `config_file` should be structured as follows:
     "num_edge_classes": "2",
     "hidden_channels": "[512, 128, 32]",
     "metrics": "['accuracy', 'confusion_matrix']",
-}
+    "dropout": "0.5",
+    "batch_size": 64,
+    "learning_rate": "0.001",
+    "tensorboard_update_frequency": 1,
 ```
 
-_Note:_ Write the parameters into a single line, the file will be parsed accordingly.
-
-Downloading the feature extractor:
+### Downloading the feature extractor:
 
 In case you decide to use a pre-trained image classifier, such as resnet-152, you can use this snippet to import the model, load the default weights & download the model:
 
@@ -88,18 +89,11 @@ torch.save(resnet_model, extractor_fn)
 To run the model, you need to start the `run.py` script from the grace directory in the terminal. Prompt the script to locate the config file using the command line argument `config_file`:
 
 ```
-python3 grace/run.py --config_file="/absolute/path/to/the/config/file/config.json"
-```
-_e.g._
-```
-python3 grace/run.py --config_file=/Users/kulicna/Desktop/classifier/configs/config.json
+python3 grace/training/run.py --config_file="/absolute/path/to/the/config/file/config.json"
 ```
 
+### [WIP] 🚧 Candidates for hyperparameters:
 
-# Candidates for hyperparameters:
-
-+ learning rate
-+ dropout probability
 + train to validation ratio
   + these should be updated from the config  
 + specify which model you want to run: "gcn", "gat", "linear classifier", "tsne", "central patch pixel"

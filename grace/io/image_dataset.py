@@ -1,4 +1,4 @@
-from typing import Tuple, Callable
+from typing import Callable
 import numpy.typing as npt
 
 import os
@@ -66,7 +66,7 @@ class ImageGraphDataset(Dataset):
     def __len__(self) -> int:
         return len(self.grace_paths)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, dict]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, dict]:
         img_path = self.image_paths[idx]
         grace_path = self.grace_paths[idx]
 
@@ -78,6 +78,7 @@ class ImageGraphDataset(Dataset):
         target = {}
         target["graph"] = grace_dataset.graph
         target["metadata"] = grace_dataset.metadata
+        target["annotation"] = grace_dataset.annotation
         assert img_path.stem == target["metadata"]["image_filename"]
 
         image, target = self.transform(image, target)
@@ -99,7 +100,8 @@ def mrc_reader(fn: os.PathLike) -> npt.NDArray:
         Image array
     """
     with mrcfile.open(fn, "r") as mrc:
-        image_data = mrc.data.astype(int)
+        # image_data = mrc.data.astype(int)
+        image_data = mrc.data
     return image_data
 
 
@@ -116,7 +118,8 @@ def tiff_reader(fn: os.PathLike) -> npt.NDArray:
     image_data: np.ndarray
         Image array
     """
-    return tifffile.imread(fn).astype(int)
+    # return tifffile.imread(fn).astype(int)
+    return tifffile.imread(fn)
 
 
 def png_reader(fn: os.PathLike) -> npt.NDArray:

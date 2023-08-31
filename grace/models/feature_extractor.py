@@ -11,6 +11,8 @@ from torchvision.transforms import (
     RandomAffine,
 )
 
+import torch.nn.functional as F
+
 from grace.base import GraphAttrs, Annotation
 from grace.utils.augment_image import RandomEdgeCrop
 
@@ -73,8 +75,8 @@ class FeatureExtractor(torch.nn.Module):
         and after the transforms
     keep_patch_fraction : float
         Minimum fraction of either the x or y dimension of the patch that
-        is missing due to boundary effects, for the patch to be ignored
-        (i.e., node annotation is set to UNKNOWN)
+        is missing due to boundary effects, for the patch to be kept
+        (i.e., node annotation is not set to UNKNOWN)
     """
 
     def __init__(
@@ -135,20 +137,41 @@ class FeatureExtractor(torch.nn.Module):
 
             if (
                 x_low
-                >= image_shape[-1]
+                > image_shape[-1]
                 - self.bbox_size[0] * self.keep_patch_fraction
                 or x_low + self.bbox_size[0]
                 < self.bbox_size[0] * self.keep_patch_fraction
                 or y_low
-                >= image_shape[-2]
+                > image_shape[-2]
                 - self.bbox_size[1] * self.keep_patch_fraction
                 or y_low + self.bbox_size[0]
                 < self.bbox_size[1] * self.keep_patch_fraction
             ):
                 node_attrs[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.UNKNOWN
-                continue
 
             bbox_image = image[..., y_box, x_box]
+
+            x_pad_width = self.bbox_size[0] - bbox_image.size(-1)
+            y_pad_width = self.bbox_size[1] - bbox_image.size(-2)
+
+            if x_pad_width > 0:
+                if x_low < 0:
+                    x_pad = (x_pad_width, 0)
+                else:
+                    x_pad = (0, x_pad_width)
+            else:
+                x_pad = (0, 0)
+            if y_pad_width > 0:
+                if y_low < 0:
+                    y_pad = (y_pad_width, 0)
+                else:
+                    y_pad = (0, y_pad_width)
+            else:
+                y_pad = (0, 0)
+
+            padding = x_pad + y_pad
+            bbox_image = F.pad(bbox_image, padding, "constant", 0)
+
             bbox_image = self.transforms(bbox_image)
             bbox_image = self.normalize_func(bbox_image)
 

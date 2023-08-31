@@ -1,25 +1,27 @@
 import napari
 
-import mrcfile
 import numpy as np
 import starfile
 
 from grace.base import GraphAttrs
+from grace.io.image_dataset import mrc_reader
 from pathlib import Path
 
-DATA_PATH = Path("/Users/arl/Documents/Turing/Data/Bea/")
-FILE_STEM = Path(
-    "FoilHole_24680421_Data_24671727_24671728_20181024_2216-78563_noDW"
+
+# Expects the image data & H5 node positions in the same folder.
+# Use identical naming convention for files & specify whole path to mrc file:
+# e.g. /Users/kulicna/Desktop/dataset/shape_squares/MRC_Synthetic_File_000.mrc
+
+IMAGE_PATH = Path(
+    input(
+        "Enter absolute path to your file "
+        "(e.g. /Users/path/to/your/data/image.mrc, omit ''): "
+    )
 )
-IMAGE_PATH = DATA_PATH / FILE_STEM.with_suffix(".mrc")
-CBOX_PATH = DATA_PATH / FILE_STEM.with_suffix(".cbox")
+C_BOX_PATH = Path(str(IMAGE_PATH).replace(".mrc", ".cbox"))
 
-
-with mrcfile.open(IMAGE_PATH, "r") as mrc:
-    image_data = mrc.data.astype(int)
-
-
-cbox_df = starfile.read(CBOX_PATH)["cryolo"]
+image_data = mrc_reader(IMAGE_PATH)
+cbox_df = starfile.read(C_BOX_PATH)["cryolo"]
 
 points = np.stack(
     [

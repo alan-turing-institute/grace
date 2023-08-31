@@ -102,7 +102,7 @@ def cut_graph_using_mask(
                 source_coords, target_coords, mask
             )
 
-            # update the graph in-place
+            # update the graph edge GT labels in-place
             if update_graph:
                 annotation = (
                     Annotation.TRUE_POSITIVE
@@ -113,18 +113,24 @@ def cut_graph_using_mask(
                     GraphAttrs.EDGE_GROUND_TRUTH
                 ] = annotation
 
+            # update the graph node GT labels in-place
+            if update_graph:
+                for nd in edge:
+                    if nd in indices:
+                        graph.nodes[nd][
+                            GraphAttrs.NODE_GROUND_TRUTH
+                        ] = Annotation.TRUE_POSITIVE
+                    else:
+                        graph.nodes[nd][
+                            GraphAttrs.NODE_GROUND_TRUTH
+                        ] = Annotation.TRUE_NEGATIVE
+
             # get the index of the edge, and store that
             edge_idx = list(graph.edges()).index(tuple(sorted(edge)))
             if edge_contained:
                 enclosed_edges.add(edge_idx)
             else:
                 cut_edges.add(edge_idx)
-
-        # if the node is inside the object, classify it as a true positive
-        if update_graph:
-            graph.nodes[idx][
-                GraphAttrs.NODE_GROUND_TRUTH
-            ] = Annotation.TRUE_POSITIVE
 
     return indices, enclosed_edges, cut_edges
 
