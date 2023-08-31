@@ -1,4 +1,4 @@
-name: grace-annotation
+name: grace-env-with-napari
 channels:
   - conda-forge
   - defaults

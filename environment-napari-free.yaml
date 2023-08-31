@@ -1,4 +1,4 @@
-name: grace_env
+name: grace-env-napari-free
 channels:
   - conda-forge
   - defaults
