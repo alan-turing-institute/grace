@@ -101,7 +101,7 @@ pre-commit install
 ```
 ---
 
-If you currently do not have any data to test / implement GRACE on, have a look at the option of **simulating a synthetic dataset** as described in [this](./grace/simulator/README.md) README. An assessible link to some pre-annotated simulated images is coming soon! 🚧
+If you currently do not have any data to test / implement GRACE on, have a look at the option of **simulating a synthetic dataset** as described in [this](./grace/simulator/README.md) README. An accessible link to some pre-annotated simulated images is coming soon! 🚧
 
 
 ## Annotator GUI
