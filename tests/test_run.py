@@ -1,17 +1,10 @@
-import pytest
-
-import mrcfile
-import os
-import json
 import torch
-import numpy as np
 
-from grace.io.core import GraceFile, GraceFileDataset
 from grace.training.run import run_grace
 from grace.training.config import Config, write_config_file
 
-def test_run_grace(mrc_image_and_annotations_dir, simple_extractor):
 
+def test_run_grace(mrc_image_and_annotations_dir, simple_extractor):
     tmp_data_dir = mrc_image_and_annotations_dir
 
     # temp extractor
@@ -26,7 +19,7 @@ def test_run_grace(mrc_image_and_annotations_dir, simple_extractor):
         extractor_fn=extractor_fn,
         epochs=3,
         batch_size=1,
-        patch_size=(1,1),
+        patch_size=(1, 1),
         feature_dim=2,
     )
     write_config_file(config, filetype="json")

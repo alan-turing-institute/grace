@@ -41,17 +41,18 @@ def random_image_and_graph(
     graph = graph_from_dataframe(df, triangulate=True)
 
     graph.update(
-            edges=[
-                (
-                    src,
-                    dst,
-                    {GraphAttrs.EDGE_GROUND_TRUTH: rng.choice(
-                        [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE], 
+        edges=[
+            (
+                src,
+                dst,
+                {
+                    GraphAttrs.EDGE_GROUND_TRUTH: rng.choice(
+                        [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE],
                     )
-                    },
-                )
-                for src, dst in graph.edges
-            ]
-        )
+                },
+            )
+            for src, dst in graph.edges
+        ]
+    )
 
     return image, graph
