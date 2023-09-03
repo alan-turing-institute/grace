@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 import torch
 import torch.nn.functional as F
 from torch.nn import Linear
@@ -33,9 +31,9 @@ class GCN(torch.nn.Module):
     def __init__(
         self,
         input_channels: int,
-        hidden_channels: List[int],
+        hidden_channels: list[int],
         *,
-        dropout: float = 0.5,
+        dropout: float = 0.0,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
     ):
@@ -44,10 +42,12 @@ class GCN(torch.nn.Module):
         # Hidden channels start from input features:
         hidden_channels_list = [input_channels] + hidden_channels
 
-        self.conv_layer_list = [
-            GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
-            for i in range(len(hidden_channels_list) - 1)
-        ]
+        # Define the list of graph convolutional layers:
+        self.conv_layer_list = []
+        # self.conv_layer_list = [
+        #     GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
+        #     for i in range(len(hidden_channels_list) - 1)
+        # ]
         self.node_classifier = Linear(
             hidden_channels_list[-1], node_output_classes
         )
@@ -60,24 +60,90 @@ class GCN(torch.nn.Module):
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
-    ) -> Tuple[torch.Tensor]:
-        for layer in range(len(self.conv_layer_list)):
-            x = self.conv_layer_list[layer](x, edge_index)
-            if layer < len(self.conv_layer_list) - 1:
-                x = x.relu()
-            else:
-                embeddings = x
+    ) -> tuple[torch.Tensor]:
+        """Perform training on input data.
 
-        embeddings = F.dropout(
-            embeddings, p=self.dropout, training=self.training
-        )
-        node_x = self.node_classifier(embeddings)
+        Parameters
+        ----------
+        x : torch.Tensor
+            Node features.
+        edge_index : torch.Tensor
+            Edge indices.
 
+        Returns
+        -------
+        node_embeddings : torch.Tensor
+            Learnt features of each node after graph convolutions.
+        edge_embeddings : torch.Tensor
+            Concatenated embeddings of two nodes forming and edge.
+        node_x : torch.Tensor
+            Logit predictions of each node class.
+        edge_x : torch.Tensor
+            Logit predictions of each edge class.
+        """
+        # Ensure the model is in evaluation mode
+        self.train()
+
+        # Run through a series of graph convolutional layers:
+        # for layer in range(len(self.conv_layer_list)):
+        #     x = self.conv_layer_list[layer](x, edge_index)
+        #     if layer < len(self.conv_layer_list) - 1:
+        #         x = x.relu()
+        #     else:
+        #         node_embeddings = x
+        node_embeddings = x
+
+        # Implement dropout at set probability:
+        # node_embeddings = F.dropout(
+        #     node_embeddings, p=self.dropout, training=self.training
+        # )
+
+        node_x = self.node_classifier(node_embeddings)
+
+        # Get the node embeddings contributing to each edge:
         src, dst = edge_index
-        edge_features = torch.cat(
-            [embeddings[..., src, :], embeddings[..., dst, :]], axis=-1
+        edge_embeddings = torch.cat(
+            [node_embeddings[..., src, :], node_embeddings[..., dst, :]],
+            axis=-1,
         )
 
-        edge_x = self.edge_classifier(edge_features)
+        # Classify the edges through a linear layer:
+        edge_x = self.edge_classifier(edge_embeddings)
 
-        return node_x, edge_x
+        return node_embeddings, edge_embeddings, node_x, edge_x
+
+    def predict(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor,
+    ) -> tuple[torch.Tensor]:
+        """Perform inference on input data.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Node features.
+        edge_index : torch.Tensor
+            Edge indices.
+
+        Returns
+        -------
+        node_embeddings : torch.Tensor
+            Learnt features of each node after graph convolutions.
+        edge_embeddings : torch.Tensor
+            Concatenated embeddings of two nodes forming and edge.
+        node_x : torch.Tensor
+            Logit predictions of each node class.
+        edge_x : torch.Tensor
+            Logit predictions of each edge class.
+        """
+
+        # Ensure the model is in evaluation mode
+        self.eval()
+
+        # Forward pass through the model
+        with torch.no_grad():
+            node_emb, edge_emb, node_x, edge_x = self(x, edge_index)
+            # predicted_classes = torch.argmax(node_x, dim=-1)
+
+        return node_emb, edge_emb, node_x, edge_x
