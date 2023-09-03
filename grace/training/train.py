@@ -183,7 +183,12 @@ def train_model(
                     )
 
                     if epoch % tensorboard_update_frequency == 0:
-                        writer.add_scalars(metric_name, metric_out, epoch)
+                        writer.add_scalar(
+                            f"{metric_name} (node)", metric_out["node"], epoch
+                        )
+                        writer.add_scalar(
+                            f"{metric_name} (edge)", metric_out["edge"], epoch
+                        )
 
                 elif isinstance(node_value, plt.Figure):
                     if epoch % tensorboard_update_frequency == 0:
