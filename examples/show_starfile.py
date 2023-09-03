@@ -31,9 +31,9 @@ GRACE_PATH = DATA_PATH / "grace"
 # Runs only the first one
 # TODO: run a batch
 
-FILE_STEM = Path(name_list[0].stem)
+FILE_STEM = Path(name_list[1].stem)
 
-print("Loading image: " + FILE_STEM)
+print("Loading image: " + str(FILE_STEM))
 
 
 IMAGE = IMAGE_PATH / FILE_STEM.with_suffix(".mrc")
