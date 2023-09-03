@@ -181,19 +181,19 @@ class FeatureExtractor(torch.nn.Module):
             # bbox_image = self.normalize_func(bbox_image)
 
             # Extract the features from ResNet-152 model:
-            # features = self.model(bbox_image)
-            # node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
+            features = self.model(bbox_image)
+            node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
 
             # HACK:
             # Average the 4x4 central pixel values of each node patch:
-            image_mean = torch.mean(bbox_image[0, 0, 110:114, 110:114])
-            num_repeats = 4
+            # image_mean = torch.mean(bbox_image[0, 0, 110:114, 110:114])
+            # num_repeats = 4
 
-            # Create the tensor
-            features = torch.full(
-                (num_repeats,), fill_value=image_mean, dtype=torch.float32
-            )
-            node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
+            # # Create the tensor
+            # features = torch.full(
+            #     (num_repeats,), fill_value=image_mean, dtype=torch.float32
+            # )
+            # node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
 
         image = image.reshape(image_shape)
         return image, graph

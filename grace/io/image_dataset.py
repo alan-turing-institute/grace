@@ -85,6 +85,8 @@ class ImageGraphDataset(Dataset):
         grace_dataset = read_graph(grace_path)
         graph = grace_dataset.graph
 
+        # Relabel Annotation.UNKNOWN if needed:
+        # TODO: make more elegant, print 'current' vs. 'post-processed'
         if self.keep_unknown_labels is False:
             relabel_unknown_labels(G=graph, print_stats=True)
 
@@ -113,11 +115,12 @@ def relabel_unknown_labels(G: nx.Graph, print_stats: bool = True):
             node[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
         node_counter_en[node[GraphAttrs.NODE_GROUND_TRUTH]] += 1
 
-    node_perc = [n / np.sum(node_counter_en) for n in node_counter_en]
-    print(
-        f"Node count | before = {node_counter_st} "
-        f"| after = {node_counter_en} | {node_perc} %"
-    )
+    if print_stats is True:
+        node_perc = [n / np.sum(node_counter_en) for n in node_counter_en]
+        print(
+            f"Node count | before relabelling = {node_counter_st} "
+            f"| after relabelling = {node_counter_en} | {node_perc} %"
+        )
 
     edge_counter_st = [0] * len(Annotation)
     edge_counter_en = [0] * len(Annotation)
@@ -128,11 +131,12 @@ def relabel_unknown_labels(G: nx.Graph, print_stats: bool = True):
             edge[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
         edge_counter_en[edge[GraphAttrs.EDGE_GROUND_TRUTH]] += 1
 
-    edge_perc = [e / np.sum(edge_counter_en) for e in edge_counter_en]
-    print(
-        f"Edge count | before = {edge_counter_st} "
-        f"| after = {edge_counter_en} | {edge_perc} %"
-    )
+    if print_stats is True:
+        edge_perc = [e / np.sum(edge_counter_en) for e in edge_counter_en]
+        print(
+            f"Edge count | before relabelling = {edge_counter_st} "
+            f"| after relabelling = {edge_counter_en} | {edge_perc} %"
+        )
 
 
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:

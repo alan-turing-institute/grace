@@ -87,13 +87,13 @@ class GCN(torch.nn.Module):
         self.train()
 
         # Run through a series of graph convolutional layers:
-        for layer in range(len(self.conv_layer_list)):
-            x = self.conv_layer_list[layer](x, edge_index)
-            if layer < len(self.conv_layer_list) - 1:
-                x = x.relu()
-            else:
-                node_embeddings = x
-        # node_embeddings = x
+        # for layer in range(len(self.conv_layer_list)):
+        #     x = self.conv_layer_list[layer](x, edge_index)
+        #     if layer < len(self.conv_layer_list) - 1:
+        #         x = x.relu()
+        #     else:
+        #         node_embeddings = x
+        node_embeddings = x
 
         # Implement dropout at set probability:
         node_embeddings = F.dropout(
