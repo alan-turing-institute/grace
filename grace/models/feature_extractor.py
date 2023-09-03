@@ -195,6 +195,5 @@ class FeatureExtractor(torch.nn.Module):
             )
             node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
 
-
         image = image.reshape(image_shape)
         return image, graph

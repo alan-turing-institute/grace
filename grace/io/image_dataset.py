@@ -111,7 +111,6 @@ class ImageGraphDataset(Dataset):
             [e / np.sum(edge_counter_en) for e in edge_counter_en],
         )
 
-
         target = {}
         target["graph"] = grace_dataset.graph
         target["metadata"] = grace_dataset.metadata

@@ -85,12 +85,12 @@ def train_model(
     node_criterion = torch.nn.CrossEntropyLoss(
         weight=None,
         reduction="mean",
-        ignore_index=node_masked_class, 
+        ignore_index=node_masked_class,
     )
     edge_criterion = torch.nn.CrossEntropyLoss(
         weight=None,
         reduction="mean",
-        ignore_index=edge_masked_class, 
+        ignore_index=edge_masked_class,
     )
 
     # Train the model epoch:
@@ -143,7 +143,7 @@ def train_model(
         }
 
         # Pre-process the predictions for metric calculations:
-        # Note: This ensures all metrics receive 
+        # Note: This ensures all metrics receive
         #       the same values with the same dtype:
         node_pred = node_pred.argmax(dim=-1).long()
         edge_pred = edge_pred.argmax(dim=-1).long()
