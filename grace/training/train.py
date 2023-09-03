@@ -73,19 +73,27 @@ def train_model(
         valid_dataset, batch_size=batch_size, shuffle=False
     )
 
+    # Define the optimiser:
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=learning_rate,
         # weight_decay=5e-4),
     )
 
+    # Specify node & edge criterion:
+    # TODO: Implement class weighting
     node_criterion = torch.nn.CrossEntropyLoss(
-        ignore_index=node_masked_class, reduction="mean"
+        weight=None,
+        reduction="mean",
+        ignore_index=node_masked_class, 
     )
     edge_criterion = torch.nn.CrossEntropyLoss(
-        ignore_index=edge_masked_class, reduction="mean"
+        weight=None,
+        reduction="mean",
+        ignore_index=edge_masked_class, 
     )
 
+    # Train the model epoch:
     def train(loader):
         model.train()
 
@@ -100,6 +108,7 @@ def train_model(
             optimizer.step()
             optimizer.zero_grad()
 
+    # Validate the params, including metrics evaluation:
     def valid(loader):
         """Evaluates the GCN on node classification."""
         model.eval()
@@ -134,7 +143,10 @@ def train_model(
         }
 
         # Pre-process the predictions for metric calculations:
-        # TODO
+        # Note: This ensures all metrics receive 
+        #       the same values with the same dtype:
+        node_pred = node_pred.argmax(dim=-1).long()
+        edge_pred = edge_pred.argmax(dim=-1).long()
 
         # Calculate the metrics:
         for m in metrics:
@@ -146,7 +158,6 @@ def train_model(
             #     m_name = m.__name__
 
             m_node, m_edge = m_call(node_pred, edge_pred, node_true, edge_true)
-
             metric_values[m_name] = (m_node, m_edge)
 
         return metric_values
