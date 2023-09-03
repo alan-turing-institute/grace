@@ -111,7 +111,7 @@ def train_model(
 
         # Iterate through the data loader contents:
         for data in loader:
-            node_x, edge_x = model(data.x, data.edge_index)
+            _, _, node_x, edge_x = model(data.x, data.edge_index)
 
             node_pred.extend(node_x)
             edge_pred.extend(edge_x)

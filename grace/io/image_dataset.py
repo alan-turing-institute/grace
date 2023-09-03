@@ -1,5 +1,6 @@
 from typing import Callable
 import numpy.typing as npt
+import numpy as np
 
 import os
 import cv2
@@ -7,6 +8,7 @@ import tifffile
 import mrcfile
 
 from grace.io import read_graph
+from grace.base import GraphAttrs, Annotation
 
 import torch
 from torch.utils.data import Dataset
@@ -74,6 +76,41 @@ class ImageGraphDataset(Dataset):
             self.image_reader_fn(img_path), dtype=torch.float32
         )
         grace_dataset = read_graph(grace_path)
+
+        # HACK!
+        G = grace_dataset.graph
+
+        node_counter_st = [0] * 3
+        node_counter_en = [0] * 3
+        for _, node in G.nodes(data=True):
+            # print ("node", node[GraphAttrs.NODE_GROUND_TRUTH])
+            node_counter_st[node[GraphAttrs.NODE_GROUND_TRUTH]] += 1
+            if node[GraphAttrs.NODE_GROUND_TRUTH] == Annotation.UNKNOWN:
+                node[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
+            node_counter_en[node[GraphAttrs.NODE_GROUND_TRUTH]] += 1
+
+        edge_counter_st = [0] * 3
+        edge_counter_en = [0] * 3
+        for _, _, edge in G.edges(data=True):
+            # print ("edge", edge[GraphAttrs.EDGE_GROUND_TRUTH])
+            edge_counter_st[edge[GraphAttrs.EDGE_GROUND_TRUTH]] += 1
+            if edge[GraphAttrs.EDGE_GROUND_TRUTH] == Annotation.UNKNOWN:
+                edge[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
+            edge_counter_en[edge[GraphAttrs.EDGE_GROUND_TRUTH]] += 1
+
+        print(
+            "node count",
+            node_counter_st,
+            node_counter_en,
+            [n / np.sum(node_counter_en) for n in node_counter_en],
+        )
+        print(
+            "edge count",
+            edge_counter_st,
+            edge_counter_en,
+            [e / np.sum(edge_counter_en) for e in edge_counter_en],
+        )
+
 
         target = {}
         target["graph"] = grace_dataset.graph
