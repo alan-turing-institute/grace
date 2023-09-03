@@ -3,6 +3,7 @@ import napari
 import mrcfile
 
 from grace.io import starfile, core
+from grace.io.image_dataset import mrc_reader
 from pathlib import Path
 
 #
@@ -33,14 +34,13 @@ GRACE_PATH = DATA_PATH / "grace"
 
 FILE_STEM = Path(name_list[0].stem)
 
-print(FILE_STEM)
+print("Loading image: " + FILE_STEM)
 
 
 IMAGE = IMAGE_PATH / FILE_STEM.with_suffix(".mrc")
 DETECTION = GRACE_PATH / FILE_STEM.with_suffix(".grace")
 
-with mrcfile.open(IMAGE, "r") as mrc:
-    image_data = mrc.data.astype(int)
+image_data = mrc_reader(IMAGE)
 
 grace_file = core.GraceFile(DETECTION)
 grace_file = grace_file.read()
