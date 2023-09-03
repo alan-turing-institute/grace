@@ -1,6 +1,5 @@
 import napari
 
-import mrcfile
 
 from grace.io import starfile, core
 from grace.io.image_dataset import mrc_reader
