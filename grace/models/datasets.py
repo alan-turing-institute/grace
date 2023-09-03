@@ -83,13 +83,16 @@ def dataset_from_graph(
         pos = _pos(graph)
 
         data = Data(
-            x=_x(sub_graph),
+            x=_x(graph),
+            y=_y(graph),
             pos=pos,
-            edge_index=_edge_index(sub_graph),
+            edge_index=_edge_index(graph),
             edge_label=edge_label,
         )
 
-        return data
+        return [
+            data,
+        ]
 
 
 def _edge_label(graph: nx.Graph):
