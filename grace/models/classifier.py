@@ -1,9 +1,9 @@
 import torch
 
-# import torch.nn.functional as F
+import torch.nn.functional as F
 from torch.nn import Linear
 
-# from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv
 
 
 class GCN(torch.nn.Module):
@@ -46,10 +46,10 @@ class GCN(torch.nn.Module):
 
         # Define the list of graph convolutional layers:
         self.conv_layer_list = []
-        # self.conv_layer_list = [
-        #     GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
-        #     for i in range(len(hidden_channels_list) - 1)
-        # ]
+        self.conv_layer_list = [
+            GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
+            for i in range(len(hidden_channels_list) - 1)
+        ]
         self.node_classifier = Linear(
             hidden_channels_list[-1], node_output_classes
         )
@@ -83,22 +83,22 @@ class GCN(torch.nn.Module):
         edge_x : torch.Tensor
             Logit predictions of each edge class.
         """
-        # Ensure the model is in evaluation mode
+        # Ensure the model is in training mode:
         self.train()
 
         # Run through a series of graph convolutional layers:
-        # for layer in range(len(self.conv_layer_list)):
-        #     x = self.conv_layer_list[layer](x, edge_index)
-        #     if layer < len(self.conv_layer_list) - 1:
-        #         x = x.relu()
-        #     else:
-        #         node_embeddings = x
-        node_embeddings = x
+        for layer in range(len(self.conv_layer_list)):
+            x = self.conv_layer_list[layer](x, edge_index)
+            if layer < len(self.conv_layer_list) - 1:
+                x = x.relu()
+            else:
+                node_embeddings = x
+        # node_embeddings = x
 
         # Implement dropout at set probability:
-        # node_embeddings = F.dropout(
-        #     node_embeddings, p=self.dropout, training=self.training
-        # )
+        node_embeddings = F.dropout(
+            node_embeddings, p=self.dropout, training=self.training
+        )
 
         node_x = self.node_classifier(node_embeddings)
 
@@ -140,7 +140,7 @@ class GCN(torch.nn.Module):
             Logit predictions of each edge class.
         """
 
-        # Ensure the model is in evaluation mode
+        # Ensure the model is in evaluation mode:
         self.eval()
 
         # Forward pass through the model

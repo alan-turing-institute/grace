@@ -153,9 +153,9 @@ def train_model(
             if isinstance(m, str):
                 m_call = get_metric(m)
                 m_name = m
-            # else:
-            #     m_call = m
-            #     m_name = m.__name__
+            else:
+                m_call = m
+                m_name = m.__name__
 
             m_node, m_edge = m_call(node_pred, edge_pred, node_true, edge_true)
             metric_values[m_name] = (m_node, m_edge)
