@@ -1,5 +1,6 @@
 from typing import List, Union, Optional, Callable
 
+import random
 import torch
 import torch_geometric
 
@@ -54,16 +55,22 @@ def train_model(
     tensorboard_update_frequency : int
         Frequency (in epochs) at which to update tensorboard
     """
+    # Instantiate the logger:
     writer = SummaryWriter(log_dir)
 
+    # Shuffle the dataset to make sure subgraphs are unordered:
+    random.seed(23)
+    random.shuffle(dataset)
+
+    # Split the datasets:
     train_dataset = dataset[: round(train_fraction * len(dataset))]
-    test_dataset = dataset[round(train_fraction * len(dataset)) :]
+    valid_dataset = dataset[round(train_fraction * len(dataset)) :]
 
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
     )
-    test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False
+    valid_loader = DataLoader(
+        valid_dataset, batch_size=batch_size, shuffle=False
     )
 
     optimizer = torch.optim.Adam(
@@ -83,7 +90,7 @@ def train_model(
         model.train()
 
         for data in loader:
-            node_x, edge_x = model(data.x, data.edge_index)
+            _, _, node_x, edge_x = model(data.x, data.edge_index)
 
             loss_node = node_criterion(node_x, data.y)
             loss_edge = edge_criterion(edge_x, data.edge_label)
@@ -93,7 +100,7 @@ def train_model(
             optimizer.step()
             optimizer.zero_grad()
 
-    def test(loader):
+    def valid(loader):
         """Evaluates the GCN on node classification."""
         model.eval()
 
@@ -102,6 +109,7 @@ def train_model(
         node_true = []
         edge_true = []
 
+        # Iterate through the data loader contents:
         for data in loader:
             node_x, edge_x = model(data.x, data.edge_index)
 
@@ -110,11 +118,13 @@ def train_model(
             node_true.extend(data.y)
             edge_true.extend(data.edge_label)
 
+        # Stack the results:
         node_pred = torch.stack(node_pred, axis=0)
         edge_pred = torch.stack(edge_pred, axis=0)
         node_true = torch.stack(node_true, axis=0)
         edge_true = torch.stack(edge_true, axis=0)
 
+        # Calculate & record loss(es):
         loss_node = node_criterion(node_pred, node_true)
         loss_edge = edge_criterion(edge_pred, edge_true)
         loss = loss_node + loss_edge
@@ -123,13 +133,17 @@ def train_model(
             "loss": (float(loss_node), float(loss_edge), float(loss))
         }
 
+        # Pre-process the predictions for metric calculations:
+        # TODO
+
+        # Calculate the metrics:
         for m in metrics:
             if isinstance(m, str):
                 m_call = get_metric(m)
                 m_name = m
-            else:
-                m_call = m
-                m_name = m.__name__
+            # else:
+            #     m_call = m
+            #     m_name = m.__name__
 
             m_node, m_edge = m_call(node_pred, edge_pred, node_true, edge_true)
 
@@ -139,15 +153,15 @@ def train_model(
 
     for epoch in range(1, epochs + 1):
         train(train_loader)
-        train_metrics = test(train_loader)
-        test_metrics = test(test_loader)
+        train_metrics = valid(train_loader)
+        valid_metrics = valid(valid_loader)
 
         print_string = f"Epoch: {epoch:03d} | "
 
         for metric in train_metrics:
             for regime, metric_dict in [
                 ("train", train_metrics),
-                ("test", test_metrics),
+                ("valid", valid_metrics),
             ]:
                 node_value, edge_value = metric_dict[metric][:2]
 
@@ -180,6 +194,7 @@ def train_model(
                             f"{metric_name} (edge)", metric_out["edge"], epoch
                         )
 
+        # Output the epoch stats:
         print(print_string)
 
     writer.flush()
