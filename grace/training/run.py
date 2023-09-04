@@ -44,6 +44,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     feature_extractor = FeatureExtractor(
         model=extractor_model,
         augmentations=patch_augs,
+        normalise=config.normalise,
         bbox_size=config.patch_size,
         keep_patch_fraction=config.keep_patch_fraction,
     )
