@@ -7,6 +7,7 @@ import os
 import cv2
 import tifffile
 import mrcfile
+import logging
 
 from grace.io import read_graph
 from grace.base import GraphAttrs, Annotation
@@ -15,6 +16,13 @@ import torch
 from torch.utils.data import Dataset
 
 from pathlib import Path
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S %p",
+)
 
 
 class ImageGraphDataset(Dataset):
@@ -91,8 +99,8 @@ class ImageGraphDataset(Dataset):
 
         # Print original graph label statistics:
         if self.verbose is True:
-            print(img_path.stem)
-            print_label_statistics(graph)
+            logging.info(img_path.stem)
+            log_graph_label_statistics(graph)
 
         # Relabel Annotation.UNKNOWN if needed:
         if self.keep_unknown_labels is False:
@@ -100,8 +108,8 @@ class ImageGraphDataset(Dataset):
 
             # Print updated statistics:
             if self.verbose is True:
-                print("Relabelled 'Annotation.UNKNOWN'")
-                print_label_statistics(graph)
+                logging.info("Relabelled 'Annotation.UNKNOWN'")
+                log_graph_label_statistics(graph)
 
         # Package together:
         target = {}
@@ -129,7 +137,7 @@ def relabel_unknown_labels(G: nx.Graph):
             edge[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
 
 
-def print_label_statistics(G: nx.Graph) -> None:
+def log_graph_label_statistics(G: nx.Graph) -> None:
     graph_attributes = ["nodes", "edges"]
     component_list = [G.nodes(data=True), G.edges(data=True)]
     gt_label_keys = [
@@ -147,7 +155,7 @@ def print_label_statistics(G: nx.Graph) -> None:
         perc = [item / np.sum(counter) for item in counter]
         perc = ["%.4f" % elem for elem in perc]
         string = f"{attribute.capitalize()} count | {counter} x | {perc} %"
-        print(string)
+        logging.info(string)
 
 
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:
