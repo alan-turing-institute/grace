@@ -98,7 +98,7 @@ def train_model(
         model.train()
 
         for data in loader:
-            _, _, node_x, edge_x = model(data.x, data.edge_index)
+            node_x, edge_x = model(data.x, data.edge_index)
 
             loss_node = node_criterion(node_x, data.y)
             loss_edge = edge_criterion(edge_x, data.edge_label)
@@ -120,7 +120,7 @@ def train_model(
 
         # Iterate through the data loader contents:
         for data in loader:
-            _, _, node_x, edge_x = model(data.x, data.edge_index)
+            node_x, edge_x = model(data.x, data.edge_index)
 
             node_pred.extend(node_x)
             edge_pred.extend(edge_x)

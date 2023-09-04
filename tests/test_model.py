@@ -80,7 +80,7 @@ class TestGCN:
         subgraph = nx.ego_graph(graph, 0)
         num_nodes = subgraph.number_of_nodes()
         num_edges = subgraph.number_of_edges()
-        _, _, node_x, edge_x = gcn(x=data.x, edge_index=data.edge_index)
+        node_x, edge_x = gcn(x=data.x, edge_index=data.edge_index)
 
         assert node_x.size() == (num_nodes, node_output_classes)
         assert edge_x.size() == (num_edges, edge_output_classes)
