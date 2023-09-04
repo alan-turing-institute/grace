@@ -15,7 +15,7 @@ class Config:
     log_dir: Optional[os.PathLike] = None
     run_dir: Optional[os.PathLike] = None
     filetype: str = "mrc"
-    normalise: tuple[bool] = (True, True)
+    normalise: tuple[bool] = (False, False)
     img_graph_augs: list[str] = field(
         default_factory=lambda: [
             "random_edge_addition_and_removal",

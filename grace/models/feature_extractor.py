@@ -84,7 +84,7 @@ class FeatureExtractor(torch.nn.Module):
         model: Callable,
         *,
         bbox_size: tuple[int] = (224, 224),
-        normalise: tuple[bool] = (True, True),
+        normalise: tuple[bool] = (False, False),
         transforms: Callable = None,
         augmentations: Callable = default_augmentations,
         normalize_func: Callable = Normalize(mean=[0.0], std=[1.0]),
