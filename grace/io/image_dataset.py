@@ -37,6 +37,8 @@ class ImageGraphDataset(Dataset):
         If True, the Annotation.UNKNOWN will remain in graph.
         If False, all nodes & edges with Annotation.UNKNOWN
         will be relabelled to Annotation.TRUE_NEGATIVE
+    verbose : bool
+        Whether to print out the image node & edge statistics.
     """
 
     def __init__(
@@ -47,10 +49,12 @@ class ImageGraphDataset(Dataset):
         transform: Callable = lambda x, g: (x, g),
         image_filetype: str = "mrc",
         keep_unknown_labels: bool = False,
+        verbose: bool = True,
     ) -> None:
         self.image_reader_fn = FILETYPES[image_filetype]
         self.keep_unknown_labels = keep_unknown_labels
         self.transform = transform
+        self.verbose = verbose
 
         image_paths = list(Path(image_dir).glob(f"*.{image_filetype}"))
         grace_paths = list(Path(grace_dir).glob("*.grace"))
@@ -85,11 +89,21 @@ class ImageGraphDataset(Dataset):
         grace_dataset = read_graph(grace_path)
         graph = grace_dataset.graph
 
-        # Relabel Annotation.UNKNOWN if needed:
-        # TODO: make more elegant, print 'current' vs. 'post-processed'
-        if self.keep_unknown_labels is False:
-            relabel_unknown_labels(G=graph, print_stats=True)
+        # Print original graph label statistics:
+        if self.verbose is True:
+            print(img_path.stem)
+            print_label_statistics(graph)
 
+        # Relabel Annotation.UNKNOWN if needed:
+        if self.keep_unknown_labels is False:
+            relabel_unknown_labels(G=graph)
+
+            # Print updated statistics:
+            if self.verbose is True:
+                print("Relabelled 'Annotation.UNKNOWN'")
+                print_label_statistics(graph)
+
+        # Package together:
         target = {}
         target["graph"] = graph
         target["metadata"] = grace_dataset.metadata
@@ -101,42 +115,39 @@ class ImageGraphDataset(Dataset):
         return image, target
 
 
-def relabel_unknown_labels(G: nx.Graph, print_stats: bool = True):
+def relabel_unknown_labels(G: nx.Graph):
     """Relabels all Annotation.UNKNOWN nodes & edges
     to Annotation.TRUE_NEGATIVE by in-place graph
     modification. Good for exhaustive labelling.
     """
-    node_counter_st = [0] * len(Annotation)
-    node_counter_en = [0] * len(Annotation)
-
     for _, node in G.nodes(data=True):
-        node_counter_st[node[GraphAttrs.NODE_GROUND_TRUTH]] += 1
         if node[GraphAttrs.NODE_GROUND_TRUTH] == Annotation.UNKNOWN:
             node[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
-        node_counter_en[node[GraphAttrs.NODE_GROUND_TRUTH]] += 1
-
-    if print_stats is True:
-        node_perc = [n / np.sum(node_counter_en) for n in node_counter_en]
-        print(
-            f"Node count | before relabelling = {node_counter_st} "
-            f"| after relabelling = {node_counter_en} | {node_perc} %"
-        )
-
-    edge_counter_st = [0] * len(Annotation)
-    edge_counter_en = [0] * len(Annotation)
 
     for _, _, edge in G.edges(data=True):
-        edge_counter_st[edge[GraphAttrs.EDGE_GROUND_TRUTH]] += 1
         if edge[GraphAttrs.EDGE_GROUND_TRUTH] == Annotation.UNKNOWN:
             edge[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
-        edge_counter_en[edge[GraphAttrs.EDGE_GROUND_TRUTH]] += 1
 
-    if print_stats is True:
-        edge_perc = [e / np.sum(edge_counter_en) for e in edge_counter_en]
-        print(
-            f"Edge count | before relabelling = {edge_counter_st} "
-            f"| after relabelling = {edge_counter_en} | {edge_perc} %"
-        )
+
+def print_label_statistics(G: nx.Graph) -> None:
+    graph_attributes = ["nodes", "edges"]
+    component_list = [G.nodes(data=True), G.edges(data=True)]
+    gt_label_keys = [
+        GraphAttrs.NODE_GROUND_TRUTH,
+        GraphAttrs.EDGE_GROUND_TRUTH,
+    ]
+
+    for a, attribute in enumerate(graph_attributes):
+        counter = [0 for _ in range(len(Annotation))]
+
+        for comp in component_list[a]:
+            label = comp[-1][gt_label_keys[a]]
+            counter[label.value] += 1
+
+        perc = [item / np.sum(counter) for item in counter]
+        perc = ["%.4f" % elem for elem in perc]
+        string = f"{attribute.capitalize()} count | {counter} x | {perc} %"
+        print(string)
 
 
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:
