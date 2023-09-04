@@ -153,7 +153,7 @@ def log_graph_label_statistics(G: nx.Graph) -> None:
             counter[label.value] += 1
 
         perc = [item / np.sum(counter) for item in counter]
-        perc = ["%.4f" % elem for elem in perc]
+        perc = [float("%.2f" % (elem * 100)) for elem in perc]
         string = f"{attribute.capitalize()} count | {counter} x | {perc} %"
         logging.info(string)
 
