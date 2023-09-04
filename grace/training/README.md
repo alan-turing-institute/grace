@@ -92,11 +92,21 @@ To run the model, you need to start the `run.py` script from the grace directory
 python3 grace/training/run.py --config_file="/absolute/path/to/the/config/file/config.json"
 ```
 
+### `Tensorboard` visualisation:
+
+To launch `Tensorboard`, run this command in the command line:
+```sh
+tensorboard --logdir="/path/to/all/your/runs/"
+```
+
+...and copy the `http://localhost:6006/` to your browser.
+
+*Note:* If you desire to visualise multiple training run statistics, point the `logdir` to the directory one level above the run timestamp.
+
+
 ### [WIP] 🚧 Candidates for hyperparameters:
 
 + train to validation ratio
++ normalisation of image patch before & after augmentations
   + these should be updated from the config  
-+ specify which model you want to run: "gcn", "gat", "linear classifier", "tsne", "central patch pixel"
-+ clean the optimiser - make the inference function as `predict`
-  + set the model to eval()
-  + set the dropout to 0
++ specify which model you want to run: "gcn", "gat", "linear classifier", etc.
