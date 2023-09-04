@@ -99,6 +99,15 @@ conda install -c conda-forge pre_commit
 pre-commit install
 
 ```
+
+NB: when exporting your own grace conda environment, use the following:
+
+```sh
+conda env export --no-builds > new_environment.yaml
+```
+
+This will allow environments to be shared between different platforms and OS.  For a new install with a grace version not on pypi, please remove `grace` from the requirements under `pip` within the newly created yaml file. 
+
 ---
 
 If you currently do not have any data to test / implement GRACE on, have a look at the option of **simulating a synthetic dataset** as described in [this](./grace/simulator/README.md) README. An accessible link to some pre-annotated simulated images is coming soon! 🚧
