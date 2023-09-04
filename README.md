@@ -106,7 +106,7 @@ NB: when exporting your own grace conda environment, use the following:
 conda env export --no-builds > new_environment.yaml
 ```
 
-This will allow environments to be shared between different platforms and OS.  For a new install with a grace version not on pypi, please remove `grace` from the requirements under `pip` within the newly created yaml file. 
+This will allow environments to be shared between different platforms and OS.  For a new install with a grace version not on pypi, please remove `grace` from the requirements under `pip` within the newly created yaml file.
 
 ---
 
