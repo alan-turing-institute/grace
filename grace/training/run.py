@@ -89,6 +89,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         learning_rate=config.learning_rate,
         log_dir=run_dir,
         metrics=config.metrics,
+        train_fraction=config.train_to_valid_split,
         tensorboard_update_frequency=config.tensorboard_update_frequency,
     )
 
