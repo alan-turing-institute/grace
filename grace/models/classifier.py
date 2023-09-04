@@ -1,7 +1,7 @@
 import torch
 
 import torch.nn.functional as F
-from torch.nn import Linear
+from torch.nn import Linear, ModuleList
 
 from torch_geometric.nn import GCNConv
 
@@ -56,10 +56,14 @@ class GCN(torch.nn.Module):
             assert all([isinstance(num, int) for num in hidden_channels])
             hidden_channels_list = [input_channels] + hidden_channels
 
-            self.conv_layer_list = [
-                GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
-                for i in range(len(hidden_channels_list) - 1)
-            ]
+            self.conv_layer_list = ModuleList(
+                [
+                    GCNConv(
+                        hidden_channels_list[i], hidden_channels_list[i + 1]
+                    )
+                    for i in range(len(hidden_channels_list) - 1)
+                ]
+            )
             self.node_classifier = Linear(
                 hidden_channels_list[-1], node_output_classes
             )
