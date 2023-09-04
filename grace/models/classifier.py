@@ -41,21 +41,34 @@ class GCN(torch.nn.Module):
     ):
         super(GCN, self).__init__()
 
-        # Hidden channels start from input features:
-        hidden_channels_list = [input_channels] + hidden_channels
+        # If no hidden channels are specified, train simple Linear classifier:
+        if not hidden_channels:
+            self.conv_layer_list = None
+            self.node_classifier = Linear(input_channels, node_output_classes)
+            self.edge_classifier = Linear(
+                input_channels * 2, edge_output_classes
+            )
 
-        # Define the list of graph convolutional layers:
-        self.conv_layer_list = []
-        self.conv_layer_list = [
-            GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
-            for i in range(len(hidden_channels_list) - 1)
-        ]
-        self.node_classifier = Linear(
-            hidden_channels_list[-1], node_output_classes
-        )
-        self.edge_classifier = Linear(
-            hidden_channels_list[-1] * 2, edge_output_classes
-        )
+        # If hidden channels are specified, create dynamic num of GCN layers:
+        else:
+            # Hidden channels start from input features:
+            assert isinstance(hidden_channels, list)
+            assert all([isinstance(num, int) for num in hidden_channels])
+            hidden_channels_list = [input_channels] + hidden_channels
+
+            self.conv_layer_list = [
+                GCNConv(hidden_channels_list[i], hidden_channels_list[i + 1])
+                for i in range(len(hidden_channels_list) - 1)
+            ]
+            self.node_classifier = Linear(
+                hidden_channels_list[-1], node_output_classes
+            )
+            self.edge_classifier = Linear(
+                hidden_channels_list[-1] * 2, edge_output_classes
+            )
+
+        # Don't forget the dropout:
+        # TODO: Implement dropout at other positions, not just before Linear
         self.dropout = dropout
 
     def forward(
@@ -74,10 +87,6 @@ class GCN(torch.nn.Module):
 
         Returns
         -------
-        node_embeddings : torch.Tensor
-            Learnt features of each node after graph convolutions.
-        edge_embeddings : torch.Tensor
-            Concatenated embeddings of two nodes forming and edge.
         node_x : torch.Tensor
             Logit predictions of each node class.
         edge_x : torch.Tensor
@@ -87,22 +96,28 @@ class GCN(torch.nn.Module):
         self.train()
 
         # Run through a series of graph convolutional layers:
-        # for layer in range(len(self.conv_layer_list)):
-        #     x = self.conv_layer_list[layer](x, edge_index)
-        #     if layer < len(self.conv_layer_list) - 1:
-        #         x = x.relu()
-        #     else:
-        #         node_embeddings = x
+        if self.conv_layer_list is not None:
+            for layer in range(len(self.conv_layer_list)):
+                x = self.conv_layer_list[layer](x, edge_index)
+
+                # Don't perform ReLU after the last layer:
+                if layer < len(self.conv_layer_list) - 1:
+                    x = x.relu()
+
+        # Rename (un)learned 'x' to node_embeddings:
         node_embeddings = x
 
         # Implement dropout at set probability:
+        # TODO: Implement dropout at other positions
         node_embeddings = F.dropout(
             node_embeddings, p=self.dropout, training=self.training
         )
 
+        # Classify the nodes through a linear layer:
         node_x = self.node_classifier(node_embeddings)
 
         # Get the node embeddings contributing to each edge:
+        # TODO: Consider implementing embedding dot-product
         src, dst = edge_index
         edge_embeddings = torch.cat(
             [node_embeddings[..., src, :], node_embeddings[..., dst, :]],
@@ -112,7 +127,7 @@ class GCN(torch.nn.Module):
         # Classify the edges through a linear layer:
         edge_x = self.edge_classifier(edge_embeddings)
 
-        return node_embeddings, edge_embeddings, node_x, edge_x
+        return node_x, edge_x
 
     def predict(
         self,
@@ -130,10 +145,6 @@ class GCN(torch.nn.Module):
 
         Returns
         -------
-        node_embeddings : torch.Tensor
-            Learnt features of each node after graph convolutions.
-        edge_embeddings : torch.Tensor
-            Concatenated embeddings of two nodes forming and edge.
         node_x : torch.Tensor
             Logit predictions of each node class.
         edge_x : torch.Tensor
@@ -143,9 +154,8 @@ class GCN(torch.nn.Module):
         # Ensure the model is in evaluation mode:
         self.eval()
 
-        # Forward pass through the model
+        # Forward pass through the frozen model:
         with torch.no_grad():
-            node_emb, edge_emb, node_x, edge_x = self(x, edge_index)
-            # predicted_classes = torch.argmax(node_x, dim=-1)
+            node_x, edge_x = self(x, edge_index)
 
-        return node_emb, edge_emb, node_x, edge_x
+        return node_x, edge_x
