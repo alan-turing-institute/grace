@@ -1,33 +1,38 @@
-<!--
-Please complete the following sections when you submit your pull request. You are encouraged to keep this top level comment box updated as you develop and respond to reviews. Note that text within html comment tags will not be rendered.
--->
 ## Summary
 
-<!-- Describe the problem you're trying to fix in this pull request. Please reference any related issue and use fixes/close to automatically close them, if pertinent. For example: "Fixes #58", or "Addresses (but does not close) #238". -->
+**Why is this PR useful / good for?** *Please describe the problem you're trying to fix.*
+* <TEXT>
 
-Fixes #<NUM>
 
-*Lorem ipsum dolor sit amet, consectetur adipiscing.*
+### List of proposed changes / linked issues & discussions
 
-### List of changes proposed in this PR (pull-request)
-
-<!-- We suggest using bullets (indicated by * or -) and filled checkboxes [x] here -->
-
-* *Lorem ipsum dolor sit amet, consectetur adipiscing.*
-* *Lorem ipsum dolor sit amet, consectetur adipiscing.*
+- [ ] 🛠️ Fixes #<NUM>
+- [ ] ❌ Closes #<NUM>
+- [ ] ✅ Resolves #<NUM>
+- [ ] 🏷️ Addresses (but does not close) #<NUM>
 
 
 ### What should a reviewer concentrate their feedback on?
 
-<!-- This section is particularly useful if you have a pull request that is still in development. You can guide the reviews to focus on the parts that are ready for their comments. We suggest using bullets (indicated by * or -) and filled checkboxes [x] here -->
+- [ ] 🏃 Scripts / notebooks to run
+- [ ] 💻 Code quality
+- [ ] ✍🏻 Spell check
+- [ ] 📝 Everything looks OK?
 
-- [ ] *Lorem ipsum dolor sit amet, consectetur adipiscing.*
-- [ ] Everything looks OK?
+
+#### What type of PR is this? (check all applicable)
+
+- [ ] 🪄 Feature
+- [ ] 🐛 Bug fix
+- [ ] 📝 Documentation / update README.md
+- [ ] #️⃣ Documentation / code annotation
+- [ ] 🧑‍💻 Code refactor / style
+- [ ] 🔥 Performance Improvements
+- [ ] ✅ Test
 
 
-### Acknowledging contributors
+#### Added tests?
 
-<!-- Please select the correct box -->
-
-- [ ] All contributors to this pull request are already named in the [table of contributors](https://github.com/the-turing-way/the-turing-way/blob/main/README.md#contributors) in the README file.
-- [ ] The following people should be added to the [table of contributors](https://github.com/the-turing-way/the-turing-way/blob/main/README.md#contributors) in the README file: <!-- replace this text with the GitHub IDs of any new contributors -->
+- [ ] 👍 yes
+- [ ] 🙅 no, because they aren't needed
+- [ ] 🙋 no, because I need some help
