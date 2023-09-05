@@ -13,11 +13,11 @@ from grace.utils.metrics import get_metric
 
 from torch.utils.tensorboard import SummaryWriter
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S %p",
-)
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(asctime)s %(message)s",
+#     datefmt="%m/%d/%Y %I:%M:%S %p",
+# )
 
 
 def train_model(

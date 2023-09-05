@@ -18,11 +18,11 @@ from torch.utils.data import Dataset
 from pathlib import Path
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S %p",
-)
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(asctime)s %(message)s",
+#     datefmt="%m/%d/%Y %I:%M:%S %p",
+# )
 
 
 class ImageGraphDataset(Dataset):
