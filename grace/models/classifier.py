@@ -65,8 +65,8 @@ class GCN(torch.nn.Module):
             x = self.conv_layer_list[layer](x, edge_index)
             if layer < len(self.conv_layer_list) - 1:
                 x = x.relu()
-            else:
-                embeddings = x
+
+        embeddings = x
 
         embeddings = F.dropout(
             embeddings, p=self.dropout, training=self.training
