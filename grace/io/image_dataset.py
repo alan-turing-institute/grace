@@ -18,13 +18,6 @@ from torch.utils.data import Dataset
 from pathlib import Path
 
 
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format="%(asctime)s %(message)s",
-#     datefmt="%m/%d/%Y %I:%M:%S %p",
-# )
-
-
 class ImageGraphDataset(Dataset):
     """Creating a Torch dataset from an image directory and
     annotation (.grace file) directory.
