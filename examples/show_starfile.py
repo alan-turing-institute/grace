@@ -1,7 +1,9 @@
 import napari
 
 
-from grace.io import starfile, core
+from grace.base import GraphAttrs
+from grace.io import starfile
+from grace.io.core import GraceFile
 from grace.io.image_dataset import mrc_reader
 from pathlib import Path
 
@@ -41,7 +43,7 @@ DETECTION = GRACE_PATH / FILE_STEM.with_suffix(".grace")
 
 image_data = mrc_reader(IMAGE)
 
-grace_file = core.GraceFile(DETECTION)
+grace_file = GraceFile(DETECTION)
 grace_file = grace_file.read()
 
 graph = grace_file.graph
@@ -49,7 +51,7 @@ graph = grace_file.graph
 # make points from node attributes
 points = []
 for i in range(0, len(graph.nodes)):
-    x, y = graph.nodes[i]["x"], graph.nodes[i]["y"]
+    x, y = graph.nodes[i][GraphAttrs.NODE_X], graph.nodes[i][GraphAttrs.NODE_Y]
     points.append([y, x])
 
 
