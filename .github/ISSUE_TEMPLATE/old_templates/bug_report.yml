@@ -1,0 +1,25 @@
+name: Bug report
+description: Report issues installing or running GRACE
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the bug
+      description: Please describe the bug, including any error messages. Attach screenshots if available.
+  - type: textarea
+    id: python_version
+    attributes:
+      label: Python version
+      description: What version of Python are you running?
+  - type: textarea
+    id: OS
+    attributes:
+      label: What OS are you using?
+      description: What OS are you running?
+  - type: textarea
+    id: comment
+    attributes:
+      label: Comments
+      description: Add any other context about the problem here.
