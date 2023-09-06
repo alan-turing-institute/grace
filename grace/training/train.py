@@ -2,6 +2,7 @@ from typing import List, Union, Optional, Callable
 
 import torch
 import torch_geometric
+import logging
 
 import matplotlib.pyplot as plt
 
@@ -185,7 +186,8 @@ def train_model(
                             f"{metric_name} (edge)", metric_out["edge"], epoch
                         )
 
-        print(print_string)
+        # print(print_string)
+        logging.info(print_string)
 
     writer.flush()
     writer.close()

@@ -1,12 +1,16 @@
 from typing import Callable
 import numpy.typing as npt
+import numpy as np
+import networkx as nx
 
 import os
 import cv2
 import tifffile
 import mrcfile
+import logging
 
 from grace.io import read_graph
+from grace.base import GraphAttrs, Annotation
 
 import torch
 from torch.utils.data import Dataset
@@ -30,6 +34,12 @@ class ImageGraphDataset(Dataset):
         Transformation added to the images and targets
     image_filetype : str
         File extension of the image files
+    keep_unknown_labels : bool
+        If True, the Annotation.UNKNOWN will remain in graph.
+        If False, all nodes & edges with Annotation.UNKNOWN
+        will be relabelled to Annotation.TRUE_NEGATIVE
+    verbose : bool
+        Whether to print out the image node & edge statistics.
     """
 
     def __init__(
@@ -39,9 +49,13 @@ class ImageGraphDataset(Dataset):
         *,
         transform: Callable = lambda x, g: (x, g),
         image_filetype: str = "mrc",
+        keep_unknown_labels: bool = False,
+        verbose: bool = True,
     ) -> None:
         self.image_reader_fn = FILETYPES[image_filetype]
+        self.keep_unknown_labels = keep_unknown_labels
         self.transform = transform
+        self.verbose = verbose
 
         image_paths = list(Path(image_dir).glob(f"*.{image_filetype}"))
         grace_paths = list(Path(grace_dir).glob("*.grace"))
@@ -74,9 +88,25 @@ class ImageGraphDataset(Dataset):
             self.image_reader_fn(img_path), dtype=torch.float32
         )
         grace_dataset = read_graph(grace_path)
+        graph = grace_dataset.graph
 
+        # Print original graph label statistics:
+        if self.verbose is True:
+            logging.info(img_path.stem)
+            log_graph_label_statistics(graph)
+
+        # Relabel Annotation.UNKNOWN if needed:
+        if self.keep_unknown_labels is False:
+            relabel_unknown_labels(G=graph)
+
+            # Print updated statistics:
+            if self.verbose is True:
+                logging.info("Relabelled 'Annotation.UNKNOWN'")
+                log_graph_label_statistics(graph)
+
+        # Package together:
         target = {}
-        target["graph"] = grace_dataset.graph
+        target["graph"] = graph
         target["metadata"] = grace_dataset.metadata
         target["annotation"] = grace_dataset.annotation
         assert img_path.stem == target["metadata"]["image_filename"]
@@ -84,6 +114,41 @@ class ImageGraphDataset(Dataset):
         image, target = self.transform(image, target)
 
         return image, target
+
+
+def relabel_unknown_labels(G: nx.Graph):
+    """Relabels all Annotation.UNKNOWN nodes & edges
+    to Annotation.TRUE_NEGATIVE by in-place graph
+    modification. Good for exhaustive labelling.
+    """
+    for _, node in G.nodes(data=True):
+        if node[GraphAttrs.NODE_GROUND_TRUTH] == Annotation.UNKNOWN:
+            node[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
+
+    for _, _, edge in G.edges(data=True):
+        if edge[GraphAttrs.EDGE_GROUND_TRUTH] == Annotation.UNKNOWN:
+            edge[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
+
+
+def log_graph_label_statistics(G: nx.Graph) -> None:
+    graph_attributes = ["nodes", "edges"]
+    component_list = [G.nodes(data=True), G.edges(data=True)]
+    gt_label_keys = [
+        GraphAttrs.NODE_GROUND_TRUTH,
+        GraphAttrs.EDGE_GROUND_TRUTH,
+    ]
+
+    for a, attribute in enumerate(graph_attributes):
+        counter = [0 for _ in range(len(Annotation))]
+
+        for comp in component_list[a]:
+            label = comp[-1][gt_label_keys[a]]
+            counter[label.value] += 1
+
+        perc = [item / np.sum(counter) for item in counter]
+        perc = [float("%.2f" % (elem * 100)) for elem in perc]
+        string = f"{attribute.capitalize()} count | {counter} x | {perc} %"
+        logging.info(string)
 
 
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:

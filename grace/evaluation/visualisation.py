@@ -194,12 +194,14 @@ def read_patch_stack_by_label(
     crops : list[npt.NDArray]
         List of image stacks, divided by annotation class.
     """
-
-    classes = np.unique([e.value for e in Annotation])
-    crops = [[] for _ in range(len(classes))]
+    # Prepare the crops:
+    crops = [[] for _ in range(len(Annotation))]
 
     for _, node in G.nodes.data():
+        # Node coords:
         coords = node[GraphAttrs.NODE_Y], node[GraphAttrs.NODE_X]
+
+        # Locate the patch:
         st_x, en_x = (
             int(coords[0]) - crop_shape[0] // 2,
             int(coords[0]) + crop_shape[0] // 2,
@@ -209,12 +211,16 @@ def read_patch_stack_by_label(
             int(coords[1]) + crop_shape[1] // 2,
         )
 
-        # Sort crops based on labels:
+        # Crop & sort based on labels:
         crop = image[st_x:en_x, st_y:en_y]
         label = node[GraphAttrs.NODE_GROUND_TRUTH]
         crops[label].append(crop)
 
-    crops = [np.stack(c_stack) for c_stack in crops]
+    # Stack the crops:
+    for i in range(len(crops)):
+        if len(crops[i]) > 0:
+            crops[i] = np.stack(crops[i])
+
     return crops
 
 
@@ -228,18 +234,23 @@ def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
 
     """
     # Value extrema on all crops:
-    mn = np.min([np.min(c) for c in crops])
-    mx = np.max([np.max(c) for c in crops])
+    mn = np.min([np.min(c) for c in crops if isinstance(c, np.ndarray)])
+    mx = np.max([np.max(c) for c in crops if isinstance(c, np.ndarray)])
+
+    # Value extrema on all crops:
     plt.figure(figsize=(15, 5))
 
-    for c, crop_collection in enumerate(crops):
+    for c, patches in enumerate(crops):
+        if not isinstance(patches, np.ndarray):
+            continue
+
         # Randomise
-        np.random.shuffle(crop_collection)
+        np.random.shuffle(patches)
         mont = montage(
-            crop_collection[:49],
+            patches[:49],
             grid_shape=(7, 7),
             padding_width=10,
-            fill=np.max([np.max(c) for c in crop_collection[0]]),
+            fill=mx,
         )
         # Plot a few patches
         plt.subplot(1, len(crops), c + 1)
@@ -248,7 +259,6 @@ def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
         plt.title(f"Montage of patches\nwith 'node_label' = {c}")
         plt.axis("off")
     plt.show()
-    plt.close()
 
 
 def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
@@ -261,12 +271,13 @@ def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
 
     """
     plt.figure(figsize=(15, 5))
-    for c, crop_collection in enumerate(crops):
-        stack = np.mean(crop_collection, axis=0)
+    for c, patches in enumerate(crops):
+        if not isinstance(patches, np.ndarray):
+            continue
+        stack = np.mean(patches, axis=0)
         plt.subplot(1, len(crops), c + 1)
         plt.imshow(stack, cmap="binary_r")
         plt.colorbar(fraction=0.045)
         plt.title(f"Montage of patches\nwith 'node_label' = {c}")
         plt.axis("off")
     plt.show()
-    plt.close()

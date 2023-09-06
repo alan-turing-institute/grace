@@ -3,6 +3,7 @@ from typing import Union
 import os
 import click
 import torch
+import logging
 
 from datetime import datetime
 from tqdm.auto import tqdm
@@ -14,6 +15,12 @@ from grace.models.classifier import GCN
 from grace.models.feature_extractor import FeatureExtractor
 from grace.training.config import write_config_file, load_config_params
 from grace.utils.transforms import get_transforms
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S %p",
+)
 
 
 def run_grace(config_file: Union[str, os.PathLike]) -> None:
@@ -57,8 +64,10 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     for _, target in tqdm(
         input_data, desc="Extracting patch features from training data... "
     ):
-        print(target["metadata"]["image_filename"])
-        dataset.extend(dataset_from_graph(target["graph"], mode="sub"))
+        file_name = target["metadata"]["image_filename"]
+        logging.info(f"Processing file: {file_name}")
+        graph_dataset = dataset_from_graph(target["graph"], mode="sub")
+        dataset.extend(graph_dataset)
 
     classifier = GCN(
         input_channels=config.feature_dim,
