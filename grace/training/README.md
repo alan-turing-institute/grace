@@ -37,7 +37,9 @@ The `config_file` should be structured as specified in the `config.json` file, o
     "normalise": "(False, False)", -> [0-1] standardise patches before & after augmentations
     "patch_size": "(224, 224)", -> size of the patch to crop & feed to feature extractor
     "keep_patch_fraction": "1.0", -> required fraction of the image not to be excluded
-    "train_to_valid_split": "0.85", -> train & valid split of the shuffled dataset
+    "keep_unknown_labels": "False", -> if False, all graph components (nodes & edges)
+                            with `Annotation.UNKNOWN` label will be re-labelled to an
+                            `Annotation.TRUE_NEGATIVE`; good for exhaustive annotation
 
     # Groups of augmentations [see [table](table) below]:
     # see 'grace.utils/augment_graph.py' for full option list

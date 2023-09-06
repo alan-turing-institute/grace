@@ -37,6 +37,7 @@ class Config:
     )
     patch_size: tuple[int] = (224, 224)
     keep_patch_fraction: float = 1.0
+    keep_unknown_labels: bool = False
     train_to_valid_split: float = 0.85
     feature_dim: int = 2048
     num_node_classes: int = 2
@@ -97,7 +98,7 @@ def load_config_params(params_file: Union[str, Path]) -> Config:
                 value = Path(value)
             elif default_value is None:
                 value = value
-            elif isinstance(default_value, (list, tuple)):
+            elif isinstance(default_value, (bool, list, tuple)):
                 value = eval(value)
             else:
                 value = type(default_value)(value)
