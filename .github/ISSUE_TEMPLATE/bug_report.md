@@ -7,12 +7,12 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+### Describe the bug 🐛
 Please describe the bug, including any error messages. Provide screenshots if available.
 
-**Your setup:**
+### Your setup
  - OS:
  - Python version:
 
-**Comments**
+### Comments
 Add any other context about the problem here.
