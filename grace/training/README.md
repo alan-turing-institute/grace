@@ -58,6 +58,7 @@ The `config_file` should be structured as specified in the `config.json` file, o
     "batch_size": 64,
     "learning_rate": "0.001",
     "tensorboard_update_frequency": 1,
+}
 ```
 
 ### Downloading the feature extractor:
