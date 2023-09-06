@@ -1,4 +1,4 @@
-from typing import Any, List, Dict, Tuple, Union, Optional
+from typing import Any, Union, Optional
 
 import os
 import json
@@ -15,33 +15,36 @@ class Config:
     log_dir: Optional[os.PathLike] = None
     run_dir: Optional[os.PathLike] = None
     filetype: str = "mrc"
-    img_graph_augs: List[str] = field(
+    normalise: tuple[bool] = (False, False)
+    img_graph_augs: list[str] = field(
         default_factory=lambda: [
             "random_edge_addition_and_removal",
             "random_xy_translation",
             "random_image_graph_rotate",
         ]
     )
-    img_graph_aug_params: List[Dict[str, Any]] = field(
+    img_graph_aug_params: list[dict[str, Any]] = field(
         default_factory=lambda: [{}, {}, {}]
     )
     extractor_fn: Optional[os.PathLike] = None
-    patch_augs: List[str] = field(
+    patch_augs: list[str] = field(
         default_factory=lambda: [
             "random_edge_crop",
         ]
     )
-    patch_aug_params: List[Dict[str, Any]] = field(
+    patch_aug_params: list[dict[str, Any]] = field(
         default_factory=lambda: [{}]
     )
-    patch_size: Tuple[int] = (224, 224)
+    patch_size: tuple[int] = (224, 224)
     keep_patch_fraction: float = 1.0
+    keep_unknown_labels: bool = False
+    train_to_valid_split: float = 0.85
     feature_dim: int = 2048
     num_node_classes: int = 2
     num_edge_classes: int = 2
     epochs: int = 100
-    hidden_channels: List[int] = field(default_factory=lambda: [1024, 256, 64])
-    metrics: List[str] = field(
+    hidden_channels: list[int] = field(default_factory=lambda: [1024, 256, 64])
+    metrics: list[str] = field(
         default_factory=lambda: ["accuracy", "confusion_matrix"]
     )
     dropout: float = 0.5
@@ -65,6 +68,7 @@ def load_config_params(params_file: Union[str, Path]) -> Config:
     config : Config
         Updated config
     """
+
     config = Config()
 
     if isinstance(params_file, str):
@@ -94,7 +98,7 @@ def load_config_params(params_file: Union[str, Path]) -> Config:
                 value = Path(value)
             elif default_value is None:
                 value = value
-            elif isinstance(default_value, (list, tuple)):
+            elif isinstance(default_value, (bool, list, tuple)):
                 value = eval(value)
             else:
                 value = type(default_value)(value)

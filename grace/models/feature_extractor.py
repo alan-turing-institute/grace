@@ -83,7 +83,8 @@ class FeatureExtractor(torch.nn.Module):
         self,
         model: Callable,
         *,
-        bbox_size: Tuple[int] = (224, 224),
+        bbox_size: tuple[int] = (224, 224),
+        normalise: tuple[bool] = (False, False),
         transforms: Callable = None,
         augmentations: Callable = default_augmentations,
         normalize_func: Callable = Normalize(mean=[0.0], std=[1.0]),
@@ -92,6 +93,7 @@ class FeatureExtractor(torch.nn.Module):
         super(FeatureExtractor, self).__init__()
         self.bbox_size = bbox_size
         self.model = model
+        self.normalise = normalise
         self.transforms = transforms
         self.augmentations = augmentations
         self.normalize_func = normalize_func
@@ -126,7 +128,7 @@ class FeatureExtractor(torch.nn.Module):
         if image.ndim < 4:
             image = image[[None] * (4 - len(image.size()))]
 
-        for node_id, node_attrs in graph["graph"].nodes.data():
+        for _, node_attrs in graph["graph"].nodes.data():
             x, y = node_attrs[GraphAttrs.NODE_X], node_attrs[GraphAttrs.NODE_Y]
 
             x_low = int(x - self.bbox_size[0] / 2)
@@ -135,6 +137,7 @@ class FeatureExtractor(torch.nn.Module):
             y_low = int(y - self.bbox_size[1] / 2)
             y_box = slice(y_low, y_low + self.bbox_size[1])
 
+            # Identify corner patches:
             if (
                 x_low
                 > image_shape[-1]
@@ -147,13 +150,16 @@ class FeatureExtractor(torch.nn.Module):
                 or y_low + self.bbox_size[0]
                 < self.bbox_size[1] * self.keep_patch_fraction
             ):
+                # TODO: Clarify - is this not the label by default?
                 node_attrs[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.UNKNOWN
 
+            # Crop the bounding box under the node:
             bbox_image = image[..., y_box, x_box]
 
             x_pad_width = self.bbox_size[0] - bbox_image.size(-1)
             y_pad_width = self.bbox_size[1] - bbox_image.size(-2)
 
+            # Pad if the patch is close to the boundary:
             if x_pad_width > 0:
                 if x_low < 0:
                     x_pad = (x_pad_width, 0)
@@ -173,12 +179,21 @@ class FeatureExtractor(torch.nn.Module):
             bbox_image = F.pad(bbox_image, padding, "constant", 0)
 
             bbox_image = self.transforms(bbox_image)
-            bbox_image = self.normalize_func(bbox_image)
 
+            # Decide if to normalise before or after augmentations:
+            norm_bef_augment, norm_aft_augment = self.normalise
+
+            if norm_bef_augment is True:
+                bbox_image = self.normalize_func(bbox_image)
+
+            # Augment:
             if self.training:
                 bbox_image = self.augmentations(bbox_image)
 
-            bbox_image = self.normalize_func(bbox_image)
+            if norm_aft_augment is True:
+                bbox_image = self.normalize_func(bbox_image)
+
+            # Run through the feature extractor model:
             features = self.model(bbox_image)
             node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
 

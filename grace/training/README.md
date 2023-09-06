@@ -34,8 +34,12 @@ The `config_file` should be structured as specified in the `config.json` file, o
                    "512" if using ResNet 18 / 34; = input channels into the classifier
 
     # Patch data specs:
+    "normalise": "(False, False)", -> [0-1] standardise patches before & after augmentations
     "patch_size": "(224, 224)", -> size of the patch to crop & feed to feature extractor
     "keep_patch_fraction": "1.0", -> required fraction of the image not to be excluded
+    "keep_unknown_labels": "False", -> if False, all graph components (nodes & edges)
+                            with `Annotation.UNKNOWN` label will be re-labelled to an
+                            `Annotation.TRUE_NEGATIVE`; good for exhaustive annotation
 
     # Groups of augmentations [see [table](table) below]:
     # see 'grace.utils/augment_graph.py' for full option list
@@ -47,6 +51,7 @@ The `config_file` should be structured as specified in the `config.json` file, o
     "patch_aug_params": "[]",
 
     # Classifier model training:
+    "train_to_valid_split": "0.85",
     "epochs": "10",
     "num_node_classes": "2",
     "num_edge_classes": "2",
@@ -56,6 +61,7 @@ The `config_file` should be structured as specified in the `config.json` file, o
     "batch_size": 64,
     "learning_rate": "0.001",
     "tensorboard_update_frequency": 1,
+}
 ```
 
 ### Downloading the feature extractor:
@@ -104,9 +110,6 @@ tensorboard --logdir="/path/to/all/your/runs/"
 *Note:* If you desire to visualise multiple training run statistics, point the `logdir` to the directory one level above the run timestamp.
 
 
-### [WIP] 🚧 Candidates for hyperparameters:
+### [WIP] 🚧 Candidates for improvements:
 
-+ train to validation ratio
-+ normalisation of image patch before & after augmentations
-  + these should be updated from the config  
 + specify which model you want to run: "gcn", "gat", "linear classifier", etc.

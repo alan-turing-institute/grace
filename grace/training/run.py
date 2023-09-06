@@ -44,6 +44,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     feature_extractor = FeatureExtractor(
         model=extractor_model,
         augmentations=patch_augs,
+        normalise=config.normalise,
         bbox_size=config.patch_size,
         keep_patch_fraction=config.keep_patch_fraction,
     )
@@ -56,6 +57,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         image_dir=config.image_dir,
         grace_dir=config.grace_dir,
         image_filetype=config.filetype,
+        keep_unknown_labels=config.keep_unknown_labels,
         transform=transform,
     )
 
@@ -89,6 +91,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         learning_rate=config.learning_rate,
         log_dir=run_dir,
         metrics=config.metrics,
+        train_fraction=config.train_to_valid_split,
         tensorboard_update_frequency=config.tensorboard_update_frequency,
     )
 
