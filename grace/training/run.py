@@ -37,7 +37,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         assumed, this will be the filename of a config file (.json or .yaml).
     """
     config = load_config_params(config_file)
-    print(config.keep_unknown_labels, type(config.keep_unknown_labels))
 
     extractor_model = torch.load(config.extractor_fn)
     patch_augs = get_transforms(config, "patch")
