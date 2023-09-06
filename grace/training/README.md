@@ -51,6 +51,7 @@ The `config_file` should be structured as specified in the `config.json` file, o
     "patch_aug_params": "[]",
 
     # Classifier model training:
+    "train_to_valid_split": "0.85",
     "epochs": "10",
     "num_node_classes": "2",
     "num_edge_classes": "2",
