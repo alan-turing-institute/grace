@@ -47,14 +47,14 @@ Describe what this PR does & **how you reviewed** the individual items, where ne
 
 *Some helper checks to tick off:*
 
-- [ ] Focus on image annotation
-- [ ] Focus on model training
-- [ ] Could any optimization be applied?
-- [ ] Is there any redundant code?
-- [ ] Are there any spelling errors?
+* Focus on image annotation
+* Focus on model training
+* Could any optimization be applied?
+* Is there any redundant code?
+* Are there any spelling errors?
 
 
 **In conclusion**, after my review, I'd like to:
 
-- [ ] 🙋 ask some clarifying questions
-- [ ] 🙅 suggest some specific changes
+* 🙋 ask some clarifying questions
+* 🙅 suggest some specific changes
