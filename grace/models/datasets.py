@@ -79,14 +79,12 @@ def dataset_from_graph(
         return dataset
 
     elif mode == "whole":
-        edge_label = _edge_label(graph)
-        pos = _pos(graph)
-
         data = Data(
             x=_x(graph),
-            pos=pos,
+            y=_y(graph),
+            pos=_pos(graph),
             edge_index=_edge_index(graph),
-            edge_label=edge_label,
+            edge_label=_edge_label(graph),
         )
 
         return data
