@@ -1,5 +1,3 @@
-from typing import List, Tuple, Callable
-
 import torch
 
 import numpy as np
@@ -15,34 +13,18 @@ def accuracy_metric(
     edge_pred: torch.Tensor,
     node_true: torch.Tensor,
     edge_true: torch.Tensor,
-) -> Tuple[float]:
-    # Calculate class weighting:
-    # num_classes = np.unique(node_true)
-
-    # node_frequency = [
-    #     np.sum([n == c for n in node_true]) / len(node_true)
-    #     for c in num_classes
-    # ]
-    # node_weights = node_frequency[::-1]
-
-    # edge_frequency = [
-    #     np.sum([n == c for n in edge_true]) / len(edge_true)
-    #     for c in num_classes
-    # ]
-    # edge_weights = edge_frequency[::-1]
-
+) -> tuple[float]:
     # Calculate the accuracy, with/out weights:
+    # TODO: Implement / calculate class weighting:
     node_acc = accuracy_score(
         y_pred=node_pred,
         y_true=node_true,
         sample_weight=None,
-        # sample_weight=node_weights
     )
     edge_acc = accuracy_score(
         y_pred=edge_pred,
         y_true=edge_true,
         sample_weight=None,
-        # sample_weight=edge_weights
     )
 
     return float(node_acc), float(edge_acc)
@@ -53,26 +35,26 @@ def confusion_matrix_metric(
     edge_pred: torch.Tensor,
     node_true: torch.Tensor,
     edge_true: torch.Tensor,
-    node_classes: List[str] = ["TN_node", "TP_node"],
-    edge_classes: List[str] = ["TN_edge", "TP_edge"],
-    figsize: Tuple[int] = (6, 5),
-) -> Tuple[plt.Figure]:
-    node_pred_labels = node_pred.argmax(dim=-1)
-    edge_pred_labels = edge_pred.argmax(dim=-1)
-
+    node_classes: list[str] = ["TN_node", "TP_node"],
+    edge_classes: list[str] = ["TN_edge", "TP_edge"],
+    normalize: str = "true",
+    figsize: tuple[int] = (6, 5),
+) -> tuple[plt.Figure]:
+    # Calculate confusion matrices:
     cm_node = confusion_matrix(
         node_true.detach().numpy(),
-        node_pred_labels.detach().numpy(),
+        node_pred.detach().numpy(),
         labels=np.arange(len(node_classes)),
-        normalize="true",
+        normalize=normalize,
     )
     cm_edge = confusion_matrix(
         edge_true.detach().numpy(),
-        edge_pred_labels.detach().numpy(),
+        edge_pred.detach().numpy(),
         labels=np.arange(len(edge_classes)),
-        normalize="true",
+        normalize=normalize,
     )
 
+    # Store confusion matrices:
     df_node = pd.DataFrame(
         cm_node,
         index=node_classes,
@@ -84,6 +66,7 @@ def confusion_matrix_metric(
         columns=edge_classes,
     )
 
+    # Visualise confusion matrices:
     sn.set_theme(font="Helvetica", font_scale=2)
     fig_node = plt.figure(figsize=figsize)
     sn.heatmap(df_node, annot=True, vmin=0.0, vmax=1.0)
@@ -103,5 +86,5 @@ METRICS = {
 }
 
 
-def get_metric(name: str) -> Callable:
+def get_metric(name: str) -> callable:
     return METRICS[name]
