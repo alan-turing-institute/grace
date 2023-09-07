@@ -65,13 +65,13 @@ def train_model(
 
     # Split the datasets:
     train_dataset = dataset[: round(train_fraction * len(dataset))]
-    test_dataset = dataset[round(train_fraction * len(dataset)) :]
+    valid_dataset = dataset[round(train_fraction * len(dataset)) :]
 
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
     )
-    test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False
+    valid_loader = DataLoader(
+        valid_dataset, batch_size=batch_size, shuffle=False
     )
 
     optimizer = torch.optim.Adam(
@@ -101,7 +101,7 @@ def train_model(
             optimizer.step()
             optimizer.zero_grad()
 
-    def test(loader):
+    def valid(loader):
         """Evaluates the GCN on node classification."""
         model.eval()
 
@@ -147,15 +147,15 @@ def train_model(
 
     for epoch in range(1, epochs + 1):
         train(train_loader)
-        train_metrics = test(train_loader)
-        test_metrics = test(test_loader)
+        train_metrics = valid(train_loader)
+        valid_metrics = valid(valid_loader)
 
-        print_string = f"Epoch: {epoch:03d} | "
+        logger_string = f"Epoch: {epoch:03d} | "
 
         for metric in train_metrics:
             for regime, metric_dict in [
                 ("train", train_metrics),
-                ("test", test_metrics),
+                ("valid", valid_metrics),
             ]:
                 node_value, edge_value = metric_dict[metric][:2]
 
@@ -169,10 +169,10 @@ def train_model(
                     metric_out["total"] = metric_dict[metric][2]
 
                 if isinstance(node_value, float):
-                    print_string += (
+                    logger_string += (
                         f"{metric_name} (node): " f"{node_value:.4f} | "
                     )
-                    print_string += (
+                    logger_string += (
                         f"{metric_name} (edge): " f"{edge_value:.4f} | "
                     )
 
@@ -193,8 +193,8 @@ def train_model(
                             f"{metric_name} (edge)", metric_out["edge"], epoch
                         )
 
-        # print(print_string)
-        logging.info(print_string)
+        # Print out the logging string:
+        logging.info(logger_string)
 
     writer.flush()
     writer.close()
