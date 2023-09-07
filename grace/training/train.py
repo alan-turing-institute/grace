@@ -1,5 +1,6 @@
 from typing import List, Union, Optional, Callable
 
+import random
 import torch
 import torch_geometric
 import logging
@@ -55,8 +56,14 @@ def train_model(
     tensorboard_update_frequency : int
         Frequency (in epochs) at which to update tensorboard
     """
+    # Instantiate the logger:
     writer = SummaryWriter(log_dir)
 
+    # Shuffle the dataset to make sure subgraphs are unordered:
+    random.seed(23)
+    random.shuffle(dataset)
+
+    # Split the datasets:
     train_dataset = dataset[: round(train_fraction * len(dataset))]
     test_dataset = dataset[round(train_fraction * len(dataset)) :]
 
