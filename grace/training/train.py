@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from torch_geometric.loader import DataLoader
 
 from grace.base import Annotation
-from grace.utils.metrics import get_metric
+from grace.evaluation.metrics_classifier import get_metric
 
 from torch.utils.tensorboard import SummaryWriter
 
