@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sn
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 
 def accuracy_metric(
@@ -16,14 +16,34 @@ def accuracy_metric(
     node_true: torch.Tensor,
     edge_true: torch.Tensor,
 ) -> Tuple[float]:
-    node_pred_labels = node_pred.argmax(dim=-1)
-    edge_pred_labels = edge_pred.argmax(dim=-1)
+    # Calculate class weighting:
+    # num_classes = np.unique(node_true)
 
-    correct_nodes = (node_pred_labels == node_true).sum()
-    correct_edges = (edge_pred_labels == edge_true).sum()
+    # node_frequency = [
+    #     np.sum([n == c for n in node_true]) / len(node_true)
+    #     for c in num_classes
+    # ]
+    # node_weights = node_frequency[::-1]
 
-    node_acc = correct_nodes / node_pred.size(-2)
-    edge_acc = correct_edges / edge_pred.size(-2)
+    # edge_frequency = [
+    #     np.sum([n == c for n in edge_true]) / len(edge_true)
+    #     for c in num_classes
+    # ]
+    # edge_weights = edge_frequency[::-1]
+
+    # Calculate the accuracy, with/out weights:
+    node_acc = accuracy_score(
+        y_pred=node_pred,
+        y_true=node_true,
+        sample_weight=None,
+        # sample_weight=node_weights
+    )
+    edge_acc = accuracy_score(
+        y_pred=edge_pred,
+        y_true=edge_true,
+        sample_weight=None,
+        # sample_weight=edge_weights
+    )
 
     return float(node_acc), float(edge_acc)
 
