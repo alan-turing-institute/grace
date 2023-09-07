@@ -74,20 +74,29 @@ def train_model(
         valid_dataset, batch_size=batch_size, shuffle=False
     )
 
+    # Define the optimiser:
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=learning_rate,
-        # weight_decay=5e-4),
+        # weight_decay=5e-4,
     )
 
+    # Specify node & edge criterion:
+    # TODO: Implement class weighting
     node_criterion = torch.nn.CrossEntropyLoss(
-        ignore_index=node_masked_class, reduction="mean"
+        weight=None,
+        reduction="mean",
+        ignore_index=node_masked_class,
     )
     edge_criterion = torch.nn.CrossEntropyLoss(
-        ignore_index=edge_masked_class, reduction="mean"
+        weight=None,
+        reduction="mean",
+        ignore_index=edge_masked_class,
     )
 
+    # Train the model epoch:
     def train(loader):
+        """Trains a single epoch & updates params based on loss."""
         model.train()
 
         for data in loader:
@@ -101,8 +110,9 @@ def train_model(
             optimizer.step()
             optimizer.zero_grad()
 
+    # Validate the epoch, including evaluating metrics:
     def valid(loader):
-        """Evaluates the GCN on node classification."""
+        """Evaluates the classifier on node & edge classification."""
         model.eval()
 
         node_pred = []
@@ -110,6 +120,7 @@ def train_model(
         node_true = []
         edge_true = []
 
+        # Iterate through the data loader contents:
         for data in loader:
             node_x, edge_x = model(data.x, data.edge_index)
 
@@ -118,11 +129,13 @@ def train_model(
             node_true.extend(data.y)
             edge_true.extend(data.edge_label)
 
+        # Stack the results:
         node_pred = torch.stack(node_pred, axis=0)
         edge_pred = torch.stack(edge_pred, axis=0)
         node_true = torch.stack(node_true, axis=0)
         edge_true = torch.stack(edge_true, axis=0)
 
+        # Calculate & record loss(es):
         loss_node = node_criterion(node_pred, node_true)
         loss_edge = edge_criterion(edge_pred, edge_true)
         loss = loss_node + loss_edge
@@ -131,6 +144,12 @@ def train_model(
             "loss": (float(loss_node), float(loss_edge), float(loss))
         }
 
+        # Pre-process the predictions for metric calculations to
+        # ensure all metrics fns receive the same values / dtypes:
+        node_pred = node_pred.argmax(dim=-1).long()
+        edge_pred = edge_pred.argmax(dim=-1).long()
+
+        # Calculate the metrics:
         for m in metrics:
             if isinstance(m, str):
                 m_call = get_metric(m)
