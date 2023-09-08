@@ -1,5 +1,6 @@
 from typing import List, Union, Optional, Callable
 
+import random
 import torch
 import torch_geometric
 import logging
@@ -55,32 +56,47 @@ def train_model(
     tensorboard_update_frequency : int
         Frequency (in epochs) at which to update tensorboard
     """
+    # Instantiate the logger:
     writer = SummaryWriter(log_dir)
 
+    # Shuffle the dataset to make sure subgraphs are unordered:
+    random.seed(23)
+    random.shuffle(dataset)
+
+    # Split the datasets:
     train_dataset = dataset[: round(train_fraction * len(dataset))]
-    test_dataset = dataset[round(train_fraction * len(dataset)) :]
+    valid_dataset = dataset[round(train_fraction * len(dataset)) :]
 
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
     )
-    test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False
+    valid_loader = DataLoader(
+        valid_dataset, batch_size=batch_size, shuffle=False
     )
 
+    # Define the optimiser:
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=learning_rate,
-        # weight_decay=5e-4),
+        # weight_decay=5e-4,
     )
 
+    # Specify node & edge criterion:
+    # TODO: Implement class weighting
     node_criterion = torch.nn.CrossEntropyLoss(
-        ignore_index=node_masked_class, reduction="mean"
+        weight=None,
+        reduction="mean",
+        ignore_index=node_masked_class,
     )
     edge_criterion = torch.nn.CrossEntropyLoss(
-        ignore_index=edge_masked_class, reduction="mean"
+        weight=None,
+        reduction="mean",
+        ignore_index=edge_masked_class,
     )
 
+    # Train the model epoch:
     def train(loader):
+        """Trains a single epoch & updates params based on loss."""
         model.train()
 
         for data in loader:
@@ -94,8 +110,9 @@ def train_model(
             optimizer.step()
             optimizer.zero_grad()
 
-    def test(loader):
-        """Evaluates the GCN on node classification."""
+    # Validate the epoch, including evaluating metrics:
+    def valid(loader):
+        """Evaluates the classifier on node & edge classification."""
         model.eval()
 
         node_pred = []
@@ -103,6 +120,7 @@ def train_model(
         node_true = []
         edge_true = []
 
+        # Iterate through the data loader contents:
         for data in loader:
             node_x, edge_x = model(data.x, data.edge_index)
 
@@ -111,11 +129,13 @@ def train_model(
             node_true.extend(data.y)
             edge_true.extend(data.edge_label)
 
+        # Stack the results:
         node_pred = torch.stack(node_pred, axis=0)
         edge_pred = torch.stack(edge_pred, axis=0)
         node_true = torch.stack(node_true, axis=0)
         edge_true = torch.stack(edge_true, axis=0)
 
+        # Calculate & record loss(es):
         loss_node = node_criterion(node_pred, node_true)
         loss_edge = edge_criterion(edge_pred, edge_true)
         loss = loss_node + loss_edge
@@ -124,6 +144,12 @@ def train_model(
             "loss": (float(loss_node), float(loss_edge), float(loss))
         }
 
+        # Pre-process the predictions for metric calculations to
+        # ensure all metrics fns receive the same values / dtypes:
+        node_pred = node_pred.argmax(dim=-1).long()
+        edge_pred = edge_pred.argmax(dim=-1).long()
+
+        # Calculate the metrics:
         for m in metrics:
             if isinstance(m, str):
                 m_call = get_metric(m)
@@ -140,15 +166,15 @@ def train_model(
 
     for epoch in range(1, epochs + 1):
         train(train_loader)
-        train_metrics = test(train_loader)
-        test_metrics = test(test_loader)
+        train_metrics = valid(train_loader)
+        valid_metrics = valid(valid_loader)
 
-        print_string = f"Epoch: {epoch:03d} | "
+        logger_string = f"Epoch: {epoch:03d} | "
 
         for metric in train_metrics:
             for regime, metric_dict in [
                 ("train", train_metrics),
-                ("test", test_metrics),
+                ("valid", valid_metrics),
             ]:
                 node_value, edge_value = metric_dict[metric][:2]
 
@@ -162,10 +188,10 @@ def train_model(
                     metric_out["total"] = metric_dict[metric][2]
 
                 if isinstance(node_value, float):
-                    print_string += (
+                    logger_string += (
                         f"{metric_name} (node): " f"{node_value:.4f} | "
                     )
-                    print_string += (
+                    logger_string += (
                         f"{metric_name} (edge): " f"{edge_value:.4f} | "
                     )
 
@@ -186,8 +212,8 @@ def train_model(
                             f"{metric_name} (edge)", metric_out["edge"], epoch
                         )
 
-        # print(print_string)
-        logging.info(print_string)
+        # Print out the logging string:
+        logging.info(logger_string)
 
     writer.flush()
     writer.close()
