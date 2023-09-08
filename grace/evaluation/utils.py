@@ -281,7 +281,6 @@ def _legend_without_duplicate_labels(ax):
     ax.legend(*zip(*unique))
 
 
-# Plot:
 def plot_confusion_matrix_tiles(
     node_pred: npt.NDArray,
     edge_pred: npt.NDArray,
@@ -416,6 +415,7 @@ def show_object_bounding_boxes_on_graph(
     ax.set_axis_on()
     ax.set_title("IoU metric illustration on per-object level")
     plt.show()
+    plt.close()
 
 
 def visualise_bounding_boxes_on_graph(
