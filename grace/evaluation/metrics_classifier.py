@@ -154,7 +154,8 @@ def areas_under_curves_metrics(
     )
 
     # Annotate the figure:
-    axes[0].plot([0, 0], [1, 1], ls="dashed", lw=1, color="lightgrey")
+    # axes[0].plot([0, 0], [1, 1], ls="dashed", lw=1, color="lightgrey")
+    axes[0].plot([0, 1], [0, 1], ls="dashed", lw=1, color="lightgrey")
     axes[1].plot([0, 1], [0.5, 0.5], ls="dashed", lw=1, color="lightgrey")
     axes[1].plot([0.5, 0.5], [0, 1], ls="dashed", lw=1, color="lightgrey")
 
