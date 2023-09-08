@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import networkx as nx
@@ -8,7 +7,6 @@ from scipy.ndimage import label
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
-    ConfusionMatrixDisplay,
 )
 
 from grace.evaluation.utils import (
@@ -17,6 +15,7 @@ from grace.evaluation.utils import (
     find_matching_pairs,
     format_object_detection_metrics,
     plot_iou_histogram,
+    plot_confusion_matrix_tiles,
     visualise_semantic_iou_map,
     visualise_bounding_boxes_on_graph,
 )
@@ -155,34 +154,17 @@ class ExactMetricsComputer(object):
         figsize: tuple[int, int] = (10, 10),
         colormap: str = "copper",
     ) -> None:
-        # Prep:
-        confusion_matrix_plotting_data = []
-        for element_type in ["nodes", "edges"]:
-            y_pred, y_true = self.process_graph_elements_data(element_type)
-            elem = element_type.capitalize()
-            data = [y_pred, y_true, elem]
-            confusion_matrix_plotting_data.append(data)
-
-        # Plot:
-        _, axs = plt.subplots(2, 2, figsize=figsize)
-
-        for d, matrix_data in enumerate(confusion_matrix_plotting_data):
-            for n, nrm in enumerate([None, "true"]):
-                ConfusionMatrixDisplay.from_predictions(
-                    y_pred=matrix_data[0],
-                    y_true=matrix_data[1],
-                    normalize=nrm,
-                    ax=axs[d, n],
-                    cmap=colormap,
-                    display_labels=["TN", "TP"],
-                    text_kw={"fontsize": "large"},
-                )
-
-                flag = "Raw Counts" if nrm is None else "Normalised"
-                text = f"{matrix_data[2].capitalize()} | {flag} Values"
-                axs[d, n].set_title(text)
-
-        plt.show()
+        # Prepare the data:
+        node_pred, node_true = self.process_graph_elements_data("nodes")
+        edge_pred, edge_true = self.process_graph_elements_data("edges")
+        plot_confusion_matrix_tiles(
+            node_pred,
+            edge_pred,
+            node_true,
+            edge_true,
+            figsize,
+            colormap,
+        )
 
     def metrics(self, print_results: bool = False) -> dict[str, float]:
         results_dict = {}
