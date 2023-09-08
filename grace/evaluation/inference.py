@@ -25,13 +25,13 @@ class GraphLabelPredictor(object):
         n_probabs, e_probabs, n_pred, e_pred, _, _ = results
 
         # Iterate through each node, storing the variables:
-        for node_idx, node in G.nodes(data=True):
-            prediction_vector = (n_pred[node_idx], n_probabs[node_idx])
-            node[GraphAttrs.NODE_PREDICTION] = prediction_vector
+        for idx, node in G.nodes(data=True):
+            prediction = [int(n_pred[idx].item()), n_probabs[idx].numpy()]
+            node[GraphAttrs.NODE_PREDICTION] = prediction
 
         for e_idx, edge in enumerate(G.edges(data=True)):
-            prediction_vector = (e_pred[e_idx], e_probabs[e_idx])
-            edge[GraphAttrs.EDGE_PREDICTION] = prediction_vector
+            prediction = (int(e_pred[e_idx].item()), e_probabs[e_idx].numpy())
+            edge[-1][GraphAttrs.EDGE_PREDICTION] = prediction
 
 
 def infer_graph_predictions(
