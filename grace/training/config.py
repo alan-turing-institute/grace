@@ -15,7 +15,7 @@ class Config:
     log_dir: Optional[os.PathLike] = None
     run_dir: Optional[os.PathLike] = None
     filetype: str = "mrc"
-    normalise: tuple[bool] = (False, False)
+    normalize: tuple[bool] = (False, False)
     img_graph_augs: list[str] = field(
         default_factory=lambda: [
             "random_edge_addition_and_removal",
@@ -37,7 +37,9 @@ class Config:
     )
     patch_size: tuple[int] = (224, 224)
     keep_patch_fraction: float = 1.0
-    keep_unknown_labels: bool = False
+    keep_node_unknown_labels: bool = False
+    keep_edge_unknown_labels: bool = False
+
     train_to_valid_split: float = 0.85
     feature_dim: int = 2048
     num_node_classes: int = 2

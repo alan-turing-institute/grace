@@ -64,7 +64,7 @@ class FeatureExtractor(torch.nn.Module):
     bbox_size : tuple[int]
         Size the bounding boxes to be extracted, centered
         on the x-y coordinates of each node; (...,W,H)
-    normalise : tuple[bool]
+    normalize : tuple[bool]
         Whether to run all patches through the normalize_function
         before [0] and/or after [1] applying patch augmentations.
     transforms : Callable
@@ -73,7 +73,7 @@ class FeatureExtractor(torch.nn.Module):
     augmentations : Callable
         Series of augmentations to apply to the bbox image
         during training
-    normalise_func : Callable
+    normalize_func : Callable
         Function to normalize the images after the augmentations
         and after the transforms
     keep_patch_fraction : float
@@ -87,19 +87,19 @@ class FeatureExtractor(torch.nn.Module):
         model: Callable,
         *,
         bbox_size: tuple[int] = (224, 224),
-        normalise: tuple[bool] = (False, False),
+        normalize: tuple[bool] = (False, False),
         transforms: Callable = None,
         augmentations: Callable = default_augmentations,
-        normalise_func: Callable = Normalize(mean=[0.0], std=[1.0]),
+        normalize_func: Callable = Normalize(mean=[0.0], std=[1.0]),
         keep_patch_fraction: float = 1.0,
     ) -> None:
         super(FeatureExtractor, self).__init__()
         self.bbox_size = bbox_size
         self.model = model
-        self.normalise = normalise
+        self.normalize = normalize
         self.transforms = transforms
         self.augmentations = augmentations
-        self.normalise_func = normalise_func
+        self.normalize_func = normalize_func
         self.keep_patch_fraction = keep_patch_fraction
 
         if transforms is None:
@@ -183,18 +183,18 @@ class FeatureExtractor(torch.nn.Module):
 
             bbox_image = self.transforms(bbox_image)
 
-            # Decide if to normalise before or after augmentations:
-            norm_bef_augment, norm_aft_augment = self.normalise
+            # Decide if to normalize before or after augmentations:
+            norm_bef_augment, norm_aft_augment = self.normalize
 
             if norm_bef_augment is True:
-                bbox_image = self.normalise_func(bbox_image)
+                bbox_image = self.normalize_func(bbox_image)
 
             # Augment:
             if self.training:
                 bbox_image = self.augmentations(bbox_image)
 
             if norm_aft_augment is True:
-                bbox_image = self.normalise_func(bbox_image)
+                bbox_image = self.normalize_func(bbox_image)
 
             # Run through the feature extractor model:
             features = self.model(bbox_image)
