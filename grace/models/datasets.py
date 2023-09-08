@@ -1,5 +1,3 @@
-from typing import List, Union
-
 import networkx as nx
 import numpy as np
 import torch
@@ -14,7 +12,7 @@ def dataset_from_graph(
     mode: str = "whole",
     n_hop: int = 1,
     in_train_mode: bool = True,
-) -> Union[Data, List[Data]]:
+) -> list[Data]:
     """Create a pytorch geometric dataset from a given networkx graph.
 
     Parameters
@@ -30,7 +28,7 @@ def dataset_from_graph(
 
     Returns
     -------
-    dataset : List[Data] or Data
+    dataset : list[Data]
         A (list of) pytorch geometric data object(s) representing the extracted
         subgraphs or full graph.
 
@@ -87,7 +85,9 @@ def dataset_from_graph(
             edge_label=_edge_label(graph),
         )
 
-        return data
+        return [
+            data,
+        ]
 
 
 def _edge_label(graph: nx.Graph):
