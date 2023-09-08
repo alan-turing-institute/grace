@@ -1,4 +1,5 @@
 import networkx as nx
+import numpy as np
 
 import torch
 from torch_geometric.data import Data
@@ -6,6 +7,12 @@ from tqdm.auto import tqdm
 
 from grace.base import GraphAttrs
 from grace.models.datasets import dataset_from_graph
+
+from grace.evaluation.utils import plot_confusion_matrix_tiles
+from grace.evaluation.metrics_classifier import (
+    accuracy_metric,
+    areas_under_curves_metrics,
+)
 
 
 class GraphLabelPredictor(object):
@@ -33,11 +40,54 @@ class GraphLabelPredictor(object):
             prediction = (int(e_pred[e_idx].item()), e_probabs[e_idx].numpy())
             edge[-1][GraphAttrs.EDGE_PREDICTION] = prediction
 
+    def visualise_performance(self, G: nx.Graph):
+        # Prep the data & plot them:
+        node_true = [
+            node[GraphAttrs.NODE_GROUND_TRUTH]
+            for _, node in G.nodes(data=True)
+        ]
+        node_pred = [
+            node[GraphAttrs.NODE_PREDICTION][0]
+            for _, node in G.nodes(data=True)
+        ]
+        node_probabs = np.array(
+            [
+                node[GraphAttrs.NODE_PREDICTION][1]
+                for _, node in G.nodes(data=True)
+            ]
+        )
+
+        edge_true = [
+            edge[GraphAttrs.EDGE_GROUND_TRUTH]
+            for _, _, edge in G.edges(data=True)
+        ]
+        edge_pred = [
+            edge[GraphAttrs.EDGE_PREDICTION][0]
+            for _, _, edge in G.edges(data=True)
+        ]
+        edge_probabs = np.array(
+            [
+                edge[GraphAttrs.EDGE_PREDICTION][1]
+                for _, _, edge in G.edges(data=True)
+            ]
+        )
+
+        node_acc, edge_acc = accuracy_metric(
+            node_pred, edge_pred, node_true, edge_true
+        )
+        areas_under_curves_metrics(
+            node_probabs, edge_probabs, node_true, edge_true, figsize=(10, 4)
+        )
+        plot_confusion_matrix_tiles(node_pred, edge_pred, node_true, edge_true)
+        return node_acc, edge_acc
+
 
 def infer_graph_predictions(
     model: torch.nn.Module,
     data_batches: list[Data],
 ) -> tuple[torch.Tensor]:
+    """TODO: Clean this fn."""
+
     # Instantiate the vectors to return:
     node_softmax_preds = []
     edge_softmax_preds = []
