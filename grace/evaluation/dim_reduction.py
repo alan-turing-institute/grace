@@ -5,27 +5,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import networkx as nx
 
-# import numpy as np
 import numpy.typing as npt
 import matplotlib
 
-# import logging
 from sklearn.manifold import TSNE
 
-# from grace.base import GraphAttrs
-# from grace.io.image_dataset import ImageGraphDataset
 from grace.models.datasets import dataset_from_graph
 
-# from grace.models.feature_extractor import FeatureExtractor
-from grace.training.run import LOGGER
-
-# from grace.evaluation.process import assume_dummy_predictions_from_annotations
-# from grace.evaluation.dim_reduction import drop_linear_layers_from_model
-# from grace.evaluation.visualisation import (
-#     read_patch_stack_by_label,
-#     montage_from_image_patches,
-#     overlay_from_image_patches,
-# )
+from grace.logger import LOGGER
 
 
 def drop_linear_layers_from_model(
