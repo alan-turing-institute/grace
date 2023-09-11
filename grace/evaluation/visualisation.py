@@ -175,6 +175,123 @@ def display_image_and_grace_annotation(
     plt.close()
 
 
+def visualise_prediction_probs_hist(G: nx.Graph) -> None:
+    """Plot the prediction probabilities colour-coded by their GT label."""
+
+    # Process the true & pred values:
+    n_true, n_pred = [], []
+    for _, node in G.nodes(data=True):
+        n_pred.append(node[GraphAttrs.NODE_PREDICTION][1][1])
+        n_true.append(node[GraphAttrs.NODE_GROUND_TRUTH])
+
+    e_true, e_pred = [], []
+    for _, _, edge in G.edges(data=True):
+        e_pred.append(edge[GraphAttrs.EDGE_PREDICTION][1][1])
+        e_true.append(edge[GraphAttrs.EDGE_GROUND_TRUTH])
+
+    # Plot the node & edge histogram by label:
+    _, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 4))
+    for i, (pred, true, att) in enumerate(
+        zip([n_pred, e_pred], [n_true, e_true], ["nodes", "edges"])
+    ):
+        for lab_idx in np.unique(true):
+            preds = [p for p, t in zip(pred, true) if t == lab_idx]
+            axes[i].hist(
+                preds, alpha=0.7, label=f"GT = {lab_idx} | {len(preds)} {att}"
+            )
+            axes[i].set_title(f"Inferred predictions -> TP {att}")
+            axes[i].set_xlabel("Predicted softmax probability")
+            axes[i].legend()
+
+    axes[0].set_ylabel("Attribute count")
+    plt.show()
+    plt.close()
+
+
+def visualise_node_and_edge_probabilities(G: nx.Graph) -> None:
+    """Visualise per-node & per-edge predictions on color-coded
+    graph of TP attribute probabilities independently for
+    nodes, independently for edges & in overlay of both.
+    """
+
+    # Create a figure and axes
+    nrows, ncols = 1, 3
+    _, axes = plt.subplots(nrows, ncols, figsize=(15, 4))
+    cmap = plt.cm.ScalarMappable(cmap="coolwarm")
+
+    # JUST THE NODES:
+    nodes = list(G.nodes(data=True))
+    x_coords = [node[GraphAttrs.NODE_X] for _, node in nodes]
+    y_coords = [node[GraphAttrs.NODE_Y] for _, node in nodes]
+    node_preds = [node[GraphAttrs.NODE_PREDICTION][1][1] for _, node in nodes]
+
+    # Plot nodes:
+    axes[0].scatter(
+        x=x_coords,
+        y=y_coords,
+        c=node_preds,
+        cmap="coolwarm",
+        vmin=0.0,
+        vmax=1.0,
+    )
+    axes[2].scatter(
+        x=x_coords,
+        y=y_coords,
+        c=node_preds,
+        cmap="coolwarm",
+        vmin=0.0,
+        vmax=1.0,
+    )
+
+    # Add colorbar:
+    cbar = plt.colorbar(cmap, ax=axes[0])
+    cbar.set_label("Node Probability")
+
+    # JUST THE EDGES:
+    for src, dst, edge in G.edges(data=True):
+        e_st_x, e_st_y = (
+            nodes[src][1][GraphAttrs.NODE_X],
+            nodes[src][1][GraphAttrs.NODE_Y],
+        )
+        e_en_x, e_en_y = (
+            nodes[dst][1][GraphAttrs.NODE_X],
+            nodes[dst][1][GraphAttrs.NODE_Y],
+        )
+        edge_pred = edge[GraphAttrs.EDGE_PREDICTION][1][1]
+
+        axes[1].plot(
+            [e_st_x, e_en_x],
+            [e_st_y, e_en_y],
+            color=cmap.to_rgba(edge_pred),
+            marker="",
+        )
+        axes[2].plot(
+            [e_st_x, e_en_x],
+            [e_st_y, e_en_y],
+            color=cmap.to_rgba(edge_pred),
+            marker="",
+        )
+
+    # Add colorbar
+    cbar = plt.colorbar(cmap, ax=axes[1])
+    cbar.set_label("Edge Probability")
+
+    # Annotate & display:
+    cbar = plt.colorbar(cmap, ax=axes[2])
+    cbar.set_label("TP Probability")
+
+    axes[0].set_title("Probability of 'nodeness'")
+    axes[1].set_title("Probability of 'edgeness'")
+    axes[2].set_title("Merged graph predictions")
+
+    [axes[i].get_xaxis().set_visible(False) for i in range(ncols)]
+    [axes[i].get_yaxis().set_visible(False) for i in range(ncols)]
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
 def read_patch_stack_by_label(
     G: nx.Graph,
     image: npt.NDArray,
