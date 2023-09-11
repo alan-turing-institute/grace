@@ -3,11 +3,11 @@ from typing import Union
 import os
 import click
 import torch
-import logging
 
 from datetime import datetime
 from tqdm.auto import tqdm
 
+from grace.logger import LOGGER
 from grace.io.image_dataset import ImageGraphDataset
 from grace.training.train import train_model
 from grace.models.datasets import dataset_from_graph
@@ -15,12 +15,6 @@ from grace.models.classifier import GCN
 from grace.models.feature_extractor import FeatureExtractor
 from grace.training.config import write_config_file, load_config_params
 from grace.utils.transforms import get_transforms
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S %p",
-)
 
 
 def run_grace(config_file: Union[str, os.PathLike]) -> None:
@@ -68,7 +62,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         input_data, desc="Extracting patch features from training data... "
     ):
         file_name = target["metadata"]["image_filename"]
-        logging.info(f"Processing file: {file_name}")
+        LOGGER.info(f"Processing file: {file_name}")
         graph_dataset = dataset_from_graph(target["graph"], mode="sub")
         dataset.extend(graph_dataset)
 

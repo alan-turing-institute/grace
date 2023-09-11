@@ -7,10 +7,10 @@ import os
 import cv2
 import tifffile
 import mrcfile
-import logging
 
 from grace.io import read_graph
 from grace.base import GraphAttrs, Annotation
+from grace.logger import LOGGER
 
 import torch
 from torch.utils.data import Dataset
@@ -94,7 +94,7 @@ class ImageGraphDataset(Dataset):
 
         # Print original graph label statistics:
         if self.verbose is True:
-            logging.info(img_path.stem)
+            LOGGER.info(img_path.stem)
             log_graph_label_statistics(graph)
 
         # Relabel Annotation.UNKNOWN in nodes:
@@ -111,7 +111,7 @@ class ImageGraphDataset(Dataset):
                 self.keep_node_unknown_labels is False
                 or self.keep_edge_unknown_labels is False
             ):
-                logging.info("Relabelled 'Annotation.UNKNOWN'")
+                LOGGER.info("Relabelled 'Annotation.UNKNOWN'")
                 log_graph_label_statistics(graph)
 
         # Package together:
@@ -164,7 +164,7 @@ def log_graph_label_statistics(G: nx.Graph) -> None:
         perc = [item / np.sum(counter) for item in counter]
         perc = [float("%.2f" % (elem * 100)) for elem in perc]
         string = f"{attribute.capitalize()} count | {counter} x | {perc} %"
-        logging.info(string)
+        LOGGER.info(string)
 
 
 def mrc_reader(fn: os.PathLike) -> npt.NDArray:

@@ -3,7 +3,6 @@ from typing import List, Union, Optional, Callable
 import random
 import torch
 import torch_geometric
-import logging
 
 import matplotlib.pyplot as plt
 
@@ -11,6 +10,7 @@ from torch_geometric.loader import DataLoader
 
 from grace.base import Annotation
 from grace.evaluation.metrics_classifier import get_metric
+from grace.logger import LOGGER
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -213,7 +213,7 @@ def train_model(
                         )
 
         # Print out the logging string:
-        logging.info(logger_string)
+        LOGGER.info(logger_string)
 
     writer.flush()
     writer.close()
