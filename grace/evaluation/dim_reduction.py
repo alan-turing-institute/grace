@@ -81,7 +81,7 @@ class TSNEDimensionalityReduction(object):
             # If only `Linear` model, log the warning:
             if len(gcn_only_classifier) < 1:
                 LOGGER.info(
-                    "Warning, only returning the 'node_embeddings' as"
+                    "Warning, only returning the 'node_embeddings' as "
                     "the GCN contains no graph convolutional layers..."
                 )
 
