@@ -5,6 +5,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import matplotlib
 
 import numpy.typing as npt
 
@@ -12,23 +13,19 @@ from skimage.util import montage
 
 
 def plot_simple_graph(
-    # G: nx.Graph, title: str = "", figsize: tuple[int, int] = (16, 16),
     G: nx.Graph,
     title: str = "",
-    ax=None,
+    ax: matplotlib.axes = None,
 ) -> None:
     """Plots a simple graph with black nodes and edges."""
 
-    # Fancy annotation plot
-    # _, ax = plt.subplots(figsize=figsize)
-
-    # node positions
+    # Read node positions:
     pos = {
         idx: (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
         for idx, node in G.nodes(data=True)
     }
 
-    # draw all nodes/vertices in the graph, including noisy nodes
+    # Draw all nodes/vertices in the graph, including noisy nodes:
     nx.draw_networkx(
         G,
         ax=ax,
@@ -40,33 +37,33 @@ def plot_simple_graph(
     )
 
     ax.set_title(f"{title}")
-    # plt.show()
     return ax
 
 
 def plot_connected_components(
-    # G: nx.Graph, title: str = "", figsize: tuple[int, int] = (16, 16)
     G: nx.Graph,
     title: str = "",
-    ax=None,
+    ax: matplotlib.axes = None,
 ) -> None:
     """Colour-codes the connected components (individual objects)
     & plots them onto a simple graph with black nodes & edges.
     Connected component (subgraph) must contain at least one edge.
     """
 
-    # Fancy annotation plot
-    # _, ax = plt.subplots(figsize=figsize)
-
-    # node positions
+    # Read node positions:
     pos = {
         idx: (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
         for idx, node in G.nodes(data=True)
     }
 
-    # draw all nodes/vertices in the graph, including noisy nodes
+    # Draw all nodes/vertices in the graph, including noisy nodes:
     nx.draw_networkx(
-        G, ax=ax, pos=pos, with_labels=False, node_color="k", node_size=32
+        G,
+        ax=ax,
+        pos=pos,
+        with_labels=False,
+        node_color="k",
+        node_size=32,
     )
 
     # get each connected subgraph and draw it with a different colour
@@ -81,16 +78,20 @@ def plot_connected_components(
         sg = G.subgraph(sg).copy()
 
         nx.draw_networkx(
-            sg, ax=ax, pos=pos, edge_color=c_idx, node_color=c_idx
+            sg,
+            ax=ax,
+            pos=pos,
+            edge_color=c_idx,
+            node_color=c_idx,
         )
 
     ax.set_title(f"{title}")
-    # plt.show()
     return ax
 
 
 def display_image_and_grace_annotation(
-    image: npt.NDArray, target: dict[str]
+    image: npt.NDArray,
+    target: dict[str],
 ) -> None:
     """Overlays the annotation image (binary mask) with annotated graph,
         colour-coding the true positive (TP), true negative (TN), and
@@ -158,8 +159,7 @@ def display_image_and_grace_annotation(
 
     ax.imshow(annotation, cmap=plt.cm.turbo, interpolation="none")
 
-    # draw all nodes/vertices in the graph, including those not determined to be
-    # part of the objects
+    # draw all nodes/vertices in the graph:
     nx.draw_networkx(
         graph,
         ax=ax,
@@ -171,6 +171,8 @@ def display_image_and_grace_annotation(
     )
 
     ax.set_title(f"{target['metadata']['image_filename']}\n{node_GT_counter}")
+    plt.show()
+    plt.close()
 
 
 def read_patch_stack_by_label(
@@ -259,6 +261,7 @@ def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
         plt.title(f"Montage of patches\nwith 'node_label' = {c}")
         plt.axis("off")
     plt.show()
+    plt.close()
 
 
 def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
@@ -281,3 +284,4 @@ def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
         plt.title(f"Montage of patches\nwith 'node_label' = {c}")
         plt.axis("off")
     plt.show()
+    plt.close()
