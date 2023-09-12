@@ -1,6 +1,3 @@
-# import networkx as nx
-# import torch
-
 import pytest
 
 from grace.io.core import GraphAttrs, Annotation

@@ -1,6 +1,8 @@
 import networkx as nx
 import numpy as np
 
+from pathlib import Path
+
 import torch
 from torch_geometric.data import Data
 from tqdm.auto import tqdm
@@ -13,14 +15,23 @@ from grace.evaluation.metrics_classifier import (
     accuracy_metric,
     areas_under_curves_metrics,
 )
+from grace.evaluation.visualisation import (
+    visualise_prediction_probs_hist,
+    visualise_node_and_edge_probabilities,
+)
 
 
 class GraphLabelPredictor(object):
     """TODO: Fill in."""
 
-    def __init__(self, model: torch.nn.Module) -> None:
+    def __init__(self, model: str | torch.nn.Module) -> None:
         super().__init__()
 
+        if isinstance(model, str):
+            assert Path(model).is_file()
+            model = torch.load(model)
+
+        model.eval()
         self.pretrained_gcn = model
 
     def set_node_and_edge_probabilities(self, G: nx.Graph):
@@ -40,16 +51,22 @@ class GraphLabelPredictor(object):
             prediction = (int(e_pred[e_idx].item()), e_probabs[e_idx].numpy())
             edge[-1][GraphAttrs.EDGE_PREDICTION] = prediction
 
-    def visualise_performance(self, G: nx.Graph):
+    def visualise_model_performance_on_graph(
+        self, G: nx.Graph, positive_class: int = 1
+    ):
         # Prep the data & plot them:
-        node_true = [
-            node[GraphAttrs.NODE_GROUND_TRUTH]
-            for _, node in G.nodes(data=True)
-        ]
-        node_pred = [
-            node[GraphAttrs.NODE_PREDICTION][0]
-            for _, node in G.nodes(data=True)
-        ]
+        node_true = np.array(
+            [
+                node[GraphAttrs.NODE_GROUND_TRUTH]
+                for _, node in G.nodes(data=True)
+            ]
+        )
+        node_pred = np.array(
+            [
+                node[GraphAttrs.NODE_PREDICTION][0]
+                for _, node in G.nodes(data=True)
+            ]
+        )
         node_probabs = np.array(
             [
                 node[GraphAttrs.NODE_PREDICTION][1]
@@ -57,14 +74,18 @@ class GraphLabelPredictor(object):
             ]
         )
 
-        edge_true = [
-            edge[GraphAttrs.EDGE_GROUND_TRUTH]
-            for _, _, edge in G.edges(data=True)
-        ]
-        edge_pred = [
-            edge[GraphAttrs.EDGE_PREDICTION][0]
-            for _, _, edge in G.edges(data=True)
-        ]
+        edge_true = np.array(
+            [
+                edge[GraphAttrs.EDGE_GROUND_TRUTH]
+                for _, _, edge in G.edges(data=True)
+            ]
+        )
+        edge_pred = np.array(
+            [
+                edge[GraphAttrs.EDGE_PREDICTION][0]
+                for _, _, edge in G.edges(data=True)
+            ]
+        )
         edge_probabs = np.array(
             [
                 edge[GraphAttrs.EDGE_PREDICTION][1]
@@ -72,13 +93,41 @@ class GraphLabelPredictor(object):
             ]
         )
 
+        # Unify the inputs - get the predictions scores for TP class:
+        filter_mask = np.logical_or(
+            node_true == 0, node_true == positive_class
+        )
+        node_true = node_true[filter_mask]
+        node_pred = node_pred[filter_mask]
+        node_probabs = node_probabs[filter_mask]
+
+        filter_mask = np.logical_or(
+            edge_true == 0, edge_true == positive_class
+        )
+        edge_true = edge_true[filter_mask]
+        edge_pred = edge_pred[filter_mask]
+        edge_probabs = edge_probabs[filter_mask]
+
+        # Compute & return accuracy:
         node_acc, edge_acc = accuracy_metric(
             node_pred, edge_pred, node_true, edge_true
         )
-        areas_under_curves_metrics(
-            node_probabs, edge_probabs, node_true, edge_true, figsize=(10, 4)
-        )
+
+        # Display metrics figures:
         plot_confusion_matrix_tiles(node_pred, edge_pred, node_true, edge_true)
+
+        areas_under_curves_metrics(
+            node_probabs[:, positive_class],
+            edge_probabs[:, positive_class],
+            node_true,
+            edge_true,
+            figsize=(10, 4),
+        )
+
+        # Localise where the errors occur:
+        visualise_prediction_probs_hist(G=G)
+        visualise_node_and_edge_probabilities(G=G)
+
         return node_acc, edge_acc
 
 
