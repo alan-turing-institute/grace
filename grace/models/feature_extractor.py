@@ -58,12 +58,15 @@ class FeatureExtractor(torch.nn.Module):
 
     Parameters
     ----------
-    bbox_size : Tuple[int]
-        Size the bounding boxes to be extracted, centered
-        on the x-y coordinates of each node; (...,W,H)
     model : Callable
         Feature extractor model or function that maps a tensor
         to a tensor
+    bbox_size : tuple[int]
+        Size the bounding boxes to be extracted, centered
+        on the x-y coordinates of each node; (...,W,H)
+    normalize : tuple[bool]
+        Whether to run all patches through the normalize_function
+        before [0] and/or after [1] applying patch augmentations.
     transforms : Callable
         Series of transforms to apply to the bbox image before
         feature extraction
@@ -84,7 +87,7 @@ class FeatureExtractor(torch.nn.Module):
         model: Callable,
         *,
         bbox_size: tuple[int] = (224, 224),
-        normalise: tuple[bool] = (False, False),
+        normalize: tuple[bool] = (False, False),
         transforms: Callable = None,
         augmentations: Callable = default_augmentations,
         normalize_func: Callable = Normalize(mean=[0.0], std=[1.0]),
@@ -93,7 +96,7 @@ class FeatureExtractor(torch.nn.Module):
         super(FeatureExtractor, self).__init__()
         self.bbox_size = bbox_size
         self.model = model
-        self.normalise = normalise
+        self.normalize = normalize
         self.transforms = transforms
         self.augmentations = augmentations
         self.normalize_func = normalize_func
@@ -180,8 +183,8 @@ class FeatureExtractor(torch.nn.Module):
 
             bbox_image = self.transforms(bbox_image)
 
-            # Decide if to normalise before or after augmentations:
-            norm_bef_augment, norm_aft_augment = self.normalise
+            # Decide if to normalize before or after augmentations:
+            norm_bef_augment, norm_aft_augment = self.normalize
 
             if norm_bef_augment is True:
                 bbox_image = self.normalize_func(bbox_image)

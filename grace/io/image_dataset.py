@@ -34,10 +34,12 @@ class ImageGraphDataset(Dataset):
         Transformation added to the images and targets
     image_filetype : str
         File extension of the image files
-    keep_unknown_labels : bool
+    keep_node_unknown_labels : bool
         If True, the Annotation.UNKNOWN will remain in graph.
-        If False, all nodes & edges with Annotation.UNKNOWN
-        will be relabelled to Annotation.TRUE_NEGATIVE
+        If False, all UNKNOWN nodes are relabelled to TRUE_NEGATIVE
+    keep_edge_unknown_labels : bool
+        If True, the Annotation.UNKNOWN will remain in graph.
+        If False, all UNKNOWN edges are relabelled to TRUE_NEGATIVE
     verbose : bool
         Whether to print out the image node & edge statistics.
     """
@@ -49,11 +51,13 @@ class ImageGraphDataset(Dataset):
         *,
         transform: Callable = lambda x, g: (x, g),
         image_filetype: str = "mrc",
-        keep_unknown_labels: bool = False,
+        keep_node_unknown_labels: bool = False,
+        keep_edge_unknown_labels: bool = False,
         verbose: bool = True,
     ) -> None:
         self.image_reader_fn = FILETYPES[image_filetype]
-        self.keep_unknown_labels = keep_unknown_labels
+        self.keep_node_unknown_labels = keep_node_unknown_labels
+        self.keep_edge_unknown_labels = keep_edge_unknown_labels
         self.transform = transform
         self.verbose = verbose
 
@@ -93,12 +97,20 @@ class ImageGraphDataset(Dataset):
             logging.info(img_path.stem)
             log_graph_label_statistics(graph)
 
-        # Relabel Annotation.UNKNOWN if needed:
-        if self.keep_unknown_labels is False:
-            relabel_unknown_labels(G=graph)
+        # Relabel Annotation.UNKNOWN in nodes:
+        if self.keep_node_unknown_labels is False:
+            relabel_unknown_node_labels(G=graph)
 
-            # Print updated statistics:
-            if self.verbose is True:
+        # Relabel Annotation.UNKNOWN in edges:
+        if self.keep_edge_unknown_labels is False:
+            relabel_unknown_edge_labels(G=graph)
+
+        # Print updated statistics:
+        if self.verbose is True:
+            if (
+                self.keep_node_unknown_labels is False
+                or self.keep_edge_unknown_labels is False
+            ):
                 logging.info("Relabelled 'Annotation.UNKNOWN'")
                 log_graph_label_statistics(graph)
 
@@ -114,8 +126,8 @@ class ImageGraphDataset(Dataset):
         return image, target
 
 
-def relabel_unknown_labels(G: nx.Graph):
-    """Relabels all Annotation.UNKNOWN nodes & edges
+def relabel_unknown_node_labels(G: nx.Graph):
+    """Relabels all Annotation.UNKNOWN nodes
     to Annotation.TRUE_NEGATIVE by in-place graph
     modification. Good for exhaustive labelling.
     """
@@ -123,6 +135,12 @@ def relabel_unknown_labels(G: nx.Graph):
         if node[GraphAttrs.NODE_GROUND_TRUTH] == Annotation.UNKNOWN:
             node[GraphAttrs.NODE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE
 
+
+def relabel_unknown_edge_labels(G: nx.Graph):
+    """Relabels all Annotation.UNKNOWN edges
+    to Annotation.TRUE_NEGATIVE by in-place graph
+    modification. Good for exhaustive labelling.
+    """
     for _, _, edge in G.edges(data=True):
         if edge[GraphAttrs.EDGE_GROUND_TRUTH] == Annotation.UNKNOWN:
             edge[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation.TRUE_NEGATIVE

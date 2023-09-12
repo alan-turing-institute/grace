@@ -7,6 +7,7 @@ import matplotlib.patches as patches
 
 from matplotlib.colors import to_rgb
 from scipy.ndimage import label
+from sklearn.metrics import ConfusionMatrixDisplay
 
 from grace.base import GraphAttrs
 
@@ -280,6 +281,43 @@ def _legend_without_duplicate_labels(ax):
     ax.legend(*zip(*unique))
 
 
+def plot_confusion_matrix_tiles(
+    node_pred: npt.NDArray,
+    edge_pred: npt.NDArray,
+    node_true: npt.NDArray,
+    edge_true: npt.NDArray,
+    figsize: tuple[int, int] = (10, 10),
+    colormap: str = "copper",
+) -> None:
+    # Prep:
+    confusion_matrix_plotting_data = [
+        [node_pred, node_true, "nodes"],
+        [edge_pred, edge_true, "edges"],
+    ]
+
+    # Plot:
+    _, axs = plt.subplots(2, 2, figsize=figsize)
+
+    for d, matrix_data in enumerate(confusion_matrix_plotting_data):
+        for n, nrm in enumerate([None, "true"]):
+            ConfusionMatrixDisplay.from_predictions(
+                y_pred=matrix_data[0],
+                y_true=matrix_data[1],
+                normalize=nrm,
+                ax=axs[d, n],
+                cmap=colormap,
+                display_labels=["TN", "TP"],
+                text_kw={"fontsize": "large"},
+            )
+
+            flag = "Raw Counts" if nrm is None else "Normalised"
+            text = f"{matrix_data[2].capitalize()} | {flag} Values"
+            axs[d, n].set_title(text)
+
+    plt.show()
+    plt.close()
+
+
 def plot_iou_histogram(
     iou_per_object: list | npt.NDArray,
     iou_semantic: float,
@@ -377,6 +415,7 @@ def show_object_bounding_boxes_on_graph(
     ax.set_axis_on()
     ax.set_title("IoU metric illustration on per-object level")
     plt.show()
+    plt.close()
 
 
 def visualise_bounding_boxes_on_graph(

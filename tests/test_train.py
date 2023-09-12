@@ -2,7 +2,10 @@ import os
 import pytest
 
 from grace.base import GraphAttrs, Annotation
-from grace.utils.metrics import accuracy_metric, confusion_matrix_metric
+from grace.evaluation.metrics_classifier import (
+    accuracy_metric,
+    confusion_matrix_metric,
+)
 from grace.training.train import train_model
 from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import GCN
