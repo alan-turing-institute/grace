@@ -141,15 +141,19 @@ def optimise_graph(
     # build a set of false positive hypotheses
     for i, n_dict in graph.nodes.data():
         hypotheses.append(
-            Hypothesis(i=i, j=None, rho=n_dict[GraphAttrs.NODE_PREDICTION])
+            Hypothesis(
+                i=i, j=None, rho=n_dict[GraphAttrs.NODE_PREDICTION][1][0]
+            )
         )
         hypotheses.append(
-            Hypothesis(i=None, j=i, rho=n_dict[GraphAttrs.NODE_PREDICTION])
+            Hypothesis(
+                i=None, j=i, rho=n_dict[GraphAttrs.NODE_PREDICTION][1][0]
+            )
         )
     # build a set of link hypotheses
     for i, j, e_dict in graph.edges.data():
         hypotheses.append(
-            Hypothesis(i=i, j=j, rho=e_dict[GraphAttrs.EDGE_PREDICTION])
+            Hypothesis(i=i, j=j, rho=e_dict[GraphAttrs.EDGE_PREDICTION][1][1])
         )
 
     n_hypotheses = len(hypotheses)

@@ -102,7 +102,7 @@ def delaunay_edges_from_nodes(
     # add edge nodes
     if update_graph:
         edge_attrs = {
-            GraphAttrs.EDGE_PREDICTION: 0.0,
+            GraphAttrs.EDGE_PREDICTION: (0, np.array([0.9, 0.1])),
             GraphAttrs.EDGE_GROUND_TRUTH: Annotation.UNKNOWN,
         }
         graph.add_edges_from(edges, **edge_attrs)
