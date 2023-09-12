@@ -51,7 +51,9 @@ class GraphLabelPredictor(object):
             prediction = (int(e_pred[e_idx].item()), e_probabs[e_idx].numpy())
             edge[-1][GraphAttrs.EDGE_PREDICTION] = prediction
 
-    def visualise_model_performance_on_test_graph(self, G: nx.Graph):
+    def visualise_model_performance_on_graph(
+        self, G: nx.Graph, positive_class: int = 1
+    ):
         # Prep the data & plot them:
         node_true = np.array(
             [
@@ -92,14 +94,18 @@ class GraphLabelPredictor(object):
         )
 
         # Unify the inputs - get the predictions scores for TP class:
-        filter_mask = node_true <= 1
-        node_pred = node_pred[filter_mask]
+        filter_mask = np.logical_or(
+            node_true == 0, node_true == positive_class
+        )
         node_true = node_true[filter_mask]
+        node_pred = node_pred[filter_mask]
         node_probabs = node_probabs[filter_mask]
 
-        filter_mask = edge_true <= 1
-        edge_pred = edge_pred[filter_mask]
+        filter_mask = np.logical_or(
+            edge_true == 0, edge_true == positive_class
+        )
         edge_true = edge_true[filter_mask]
+        edge_pred = edge_pred[filter_mask]
         edge_probabs = edge_probabs[filter_mask]
 
         # Compute & return accuracy:
@@ -111,8 +117,8 @@ class GraphLabelPredictor(object):
         plot_confusion_matrix_tiles(node_pred, edge_pred, node_true, edge_true)
 
         areas_under_curves_metrics(
-            node_probabs[:, 1],
-            edge_probabs[:, 1],
+            node_probabs[:, positive_class],
+            edge_probabs[:, positive_class],
             node_true,
             edge_true,
             figsize=(10, 4),
