@@ -25,18 +25,17 @@ def update_graph_with_dummy_predictions(
 
     Returns
     -------
-    The 'uncertainty' parameter separates the distributions of predictions
-    for the respective classes, e.g. 0.5 will produce a distribution of
-    attribute values for TN between [0.0, 0.5) & TP between (0.5, 1.0] which
-    are very close, whilst 0.1 will force larger separation between them,
-    i.e. TN between [0.0, 0.1) & TP between (0.9, 1.0].
+    None
 
     Notes
     -----
     - Modifies the graph in place.
-    -
-    - Only motifs with the same object identity should be linked,
-        but this is buggy: HACK!
+    - The 'uncertainty' parameter separates the distributions of predictions
+        for the respective classes, e.g. 0.5 will produce a distribution of
+        attribute values for TN between [0.0, 0.5) & TP between (0.5, 1.0]
+        which are very close, whilst 0.1 will force larger separation between
+        them, i.e. TN between [0.0, 0.1) & TP between (0.9, 1.0].
+    - Only motifs with the same object identity should be linked (TODO)
     """
 
     # Make sure all objects are labelled according to object identity:
