@@ -10,12 +10,12 @@ from tqdm.auto import tqdm
 from grace.base import GraphAttrs
 from grace.models.datasets import dataset_from_graph
 
-from grace.evaluation.utils import plot_confusion_matrix_tiles
 from grace.evaluation.metrics_classifier import (
     accuracy_metric,
     areas_under_curves_metrics,
 )
-from grace.evaluation.visualisation import (
+from grace.visualisation.utils import plot_confusion_matrix_tiles
+from grace.visualisation.plotting import (
     visualise_prediction_probs_hist,
     visualise_node_and_edge_probabilities,
 )
