@@ -17,6 +17,7 @@ class Config:
     infer_image_dir: Optional[os.PathLike] = None
     infer_grace_dir: Optional[os.PathLike] = None
     log_dir: Optional[os.PathLike] = None
+    run_dir: Optional[os.PathLike] = log_dir
     filetype: str = "mrc"
     normalize: tuple[bool] = (False, False)
     img_graph_augs: list[str] = field(
