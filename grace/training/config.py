@@ -14,6 +14,8 @@ class Config:
     train_grace_dir: Optional[os.PathLike] = None
     valid_image_dir: Optional[os.PathLike] = None
     valid_grace_dir: Optional[os.PathLike] = None
+    infer_image_dir: Optional[os.PathLike] = None
+    infer_grace_dir: Optional[os.PathLike] = None
     log_dir: Optional[os.PathLike] = None
     filetype: str = "mrc"
     normalize: tuple[bool] = (False, False)
@@ -41,7 +43,6 @@ class Config:
     keep_node_unknown_labels: bool = False
     keep_edge_unknown_labels: bool = False
 
-    train_to_valid_split: float = 0.85
     feature_dim: int = 2048
     num_node_classes: int = 2
     num_edge_classes: int = 2
