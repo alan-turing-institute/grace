@@ -7,7 +7,6 @@ from pathlib import Path, PosixPath
 
 import torch
 from torch_geometric.data import Data
-from tqdm.auto import tqdm
 
 from sklearn.metrics import (
     accuracy_score,
@@ -27,9 +26,25 @@ from grace.visualisation.plotting import (
 
 
 class GraphLabelPredictor(object):
+<<<<<<< HEAD
     """Loader for pre-trained classifier model & update
     predictions probabilities for nodes & edges of an
     individual graph, or entire inference batch dataset.
+=======
+    """Constructor for GNN inference on pre-trained model.
+
+    Parameters
+    ----------
+    model : str | torch.nn.Module
+        Absolute path or pre-loaded GNN model.
+
+    Notes
+    -----
+    - Updates the graph node / edge prediction probabilities
+    via the `set_node_and_edge_probabilities` method.
+    - Modifies the input graph in place (returns None)
+    """
+>>>>>>> bae7a79 (Annotate inference GLP object)
 
     Parameters
     ----------
@@ -255,6 +270,7 @@ class GraphLabelPredictor(object):
             plt.show()
         plt.close()
 
+<<<<<<< HEAD
         # Predicted probs hist:
         plot_prediction_probabilities_hist(n_pred, e_pred, n_true, e_true)
         if save_figures is True:
@@ -262,3 +278,87 @@ class GraphLabelPredictor(object):
         if show_figures is True:
             plt.show()
         plt.close()
+=======
+        filter_mask = np.logical_or(
+            edge_true == 0, edge_true == positive_class
+        )
+        edge_true = edge_true[filter_mask]
+        edge_pred = edge_pred[filter_mask]
+        edge_probabs = edge_probabs[filter_mask]
+
+        # Compute & return accuracy:
+        node_acc, edge_acc = accuracy_metric(
+            node_pred, edge_pred, node_true, edge_true
+        )
+
+        # Display metrics figures:
+        plot_confusion_matrix_tiles(node_pred, edge_pred, node_true, edge_true)
+
+        areas_under_curves_metrics(
+            node_probabs[:, positive_class],
+            edge_probabs[:, positive_class],
+            node_true,
+            edge_true,
+            figsize=(10, 4),
+        )
+
+        # Localise where the errors occur:
+        visualise_prediction_probs_hist(G=G)
+        visualise_node_and_edge_probabilities(G=G)
+
+        return node_acc, edge_acc
+
+
+def infer_graph_predictions(
+    model: torch.nn.Module,
+    data_batches: list[Data],
+) -> tuple[torch.Tensor]:
+    """TODO: Clean this fn."""
+
+    # Instantiate the vectors to return:
+    node_softmax_preds = []
+    edge_softmax_preds = []
+    node_argmax_preds = []
+    edge_argmax_preds = []
+    node_labels = []
+    edge_labels = []
+
+    # Predict labels from sub-graph:
+    # for data in tqdm(data_batches, desc="Predicting for the entire graph: "):
+    for data in data_batches:
+        # Get the ground truth labels:
+        node_labels.extend(data.y)
+        edge_labels.extend(data.edge_label)
+
+        # Get the model predictions:
+        node_x, edge_x = model.predict(x=data.x, edge_index=data.edge_index)
+
+        # Process node probs into classes predictions:
+        node_soft = node_x.softmax(dim=1)
+        node_softmax_preds.extend(node_soft)
+        node_arg = node_soft.argmax(dim=1).long()
+        node_argmax_preds.extend(node_arg)
+
+        # Process edge probs into classes predictions:
+        edge_soft = edge_x.softmax(dim=1)
+        edge_softmax_preds.extend(edge_soft)
+        edge_arg = edge_soft.argmax(dim=1).long()
+        edge_argmax_preds.extend(edge_arg)
+
+    # Stack the results:
+    node_softmax_preds = torch.stack(node_softmax_preds, axis=0)
+    edge_softmax_preds = torch.stack(edge_softmax_preds, axis=0)
+    node_argmax_preds = torch.stack(node_argmax_preds, axis=0)
+    edge_argmax_preds = torch.stack(edge_argmax_preds, axis=0)
+    node_labels = torch.stack(node_labels, axis=0)
+    edge_labels = torch.stack(edge_labels, axis=0)
+
+    return (
+        node_softmax_preds,
+        edge_softmax_preds,
+        node_argmax_preds,
+        edge_argmax_preds,
+        node_labels,
+        edge_labels,
+    )
+>>>>>>> bae7a79 (Annotate inference GLP object)
