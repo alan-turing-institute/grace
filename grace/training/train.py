@@ -10,8 +10,10 @@ import matplotlib.pyplot as plt
 from torch_geometric.loader import DataLoader
 
 from grace.base import Annotation
-from grace.evaluation.metrics_classifier import get_metric
 from grace.logger import LOGGER
+from grace.evaluation.metrics_classifier import get_metric
+from grace.evaluation.inference import GraphLabelPredictor
+from grace.visualisation.plotting import visualise_node_and_edge_probabilities
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -20,7 +22,7 @@ def train_model(
     model: torch.nn.Module,
     train_dataset: list[torch_geometric.data.Data],
     valid_dataset: list[torch_geometric.data.Data],
-    valid_graph_list: list[nx.Graph],
+    valid_target_list: list[nx.Graph],
     *,
     epochs: int = 100,
     batch_size: int = 64,
@@ -43,8 +45,8 @@ def train_model(
         Training dataset of tiny subgraphs
     valid_dataset : list[torch_geometric.data.Data]
         Validation dataset of tiny subgraphs
-    valid_graph_list : list[nx.Graph]
-        List of entire graphs for validation visualisation
+    valid_target_list : list[dict[str]]
+        List of entire graph targets for validation visualisation
     epochs : int
         Number of epochs to train the model
     batch_size : int
@@ -66,6 +68,10 @@ def train_model(
     """
     # Instantiate the logger:
     writer = SummaryWriter(log_dir)
+
+    # Create subdirectory to save out plots:
+    valid_path = log_dir / "valid_plots"
+    valid_path.mkdir(parents=True, exist_ok=True)
 
     # Shuffle the dataset to make sure subgraphs are unordered:
     random.seed(23)
@@ -228,7 +234,25 @@ def train_model(
         # Print out the logging string:
         LOGGER.info(logger_string)
 
-        # TODO: Define subdirectories as well, to save plots...
+        # At chosen epochs, visualise the prediction probabs for whole graph:
+        if epoch % valid_graph_ploter_frequency == 0:
+            # Instantiate the model with frozen weights:
+            GLP = GraphLabelPredictor(model)
 
+            # Iterate through all validation graphs & predict nodes / edges:
+            for valid_target in valid_target_list:
+                valid_graph = valid_target["graph"]
+
+                # Filename:
+                valid_name = valid_target["metadata"]["image_filename"]
+                valid_name = f"{valid_name}-Epoch_{epoch}.png"
+
+                # Update probabs & visualise the graph:
+                GLP.set_node_and_edge_probabilities(G=valid_graph)
+                visualise_node_and_edge_probabilities(
+                    G=valid_graph, filename=valid_path / valid_name
+                )
+
+    # Clear & close the tensorboard writer:
     writer.flush()
     writer.close()
