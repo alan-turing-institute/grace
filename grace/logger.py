@@ -14,7 +14,5 @@ LOGGER.basicConfig(
 
 # matplotlib.rc('font', **font)
 
-FONT_SETTER = plt.rcParams[
-    "font.size"
-] = 12  # Change 12 to your desired font size
+FONT_SETTER = plt.rcParams["font.size"] = 12  # desired font size
 LOGGER.info(f"Font set to: {FONT_SETTER}")
