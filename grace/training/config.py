@@ -10,10 +10,11 @@ from dataclasses import field, dataclass
 
 @dataclass
 class Config:
-    image_dir: Optional[os.PathLike] = None
-    grace_dir: Optional[os.PathLike] = None
+    train_image_dir: Optional[os.PathLike] = None
+    train_grace_dir: Optional[os.PathLike] = None
+    valid_image_dir: Optional[os.PathLike] = None
+    valid_grace_dir: Optional[os.PathLike] = None
     log_dir: Optional[os.PathLike] = None
-    run_dir: Optional[os.PathLike] = None
     filetype: str = "mrc"
     normalize: tuple[bool] = (False, False)
     img_graph_augs: list[str] = field(
@@ -49,10 +50,11 @@ class Config:
     metrics: list[str] = field(
         default_factory=lambda: ["accuracy", "confusion_matrix"]
     )
-    dropout: float = 0.5
+    dropout: float = 0.2
     batch_size: int = 64
     learning_rate: float = 0.001
     tensorboard_update_frequency: int = 1
+    valid_graph_ploter_frequency: int = 1
 
 
 def load_config_params(params_file: Union[str, Path]) -> Config:
