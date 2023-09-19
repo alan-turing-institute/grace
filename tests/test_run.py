@@ -12,10 +12,9 @@ def test_run_grace(mrc_image_and_annotations_dir, simple_extractor):
     torch.save(simple_extractor, extractor_fn)
 
     config = Config(
-        image_dir=tmp_data_dir,
-        grace_dir=tmp_data_dir,
+        train_image_dir=tmp_data_dir,
+        train_grace_dir=tmp_data_dir,
         log_dir=tmp_data_dir,
-        run_dir=tmp_data_dir,
         extractor_fn=extractor_fn,
         epochs=3,
         batch_size=1,
