@@ -1,5 +1,6 @@
-from typing import List, Union, Optional, Callable
+from typing import Optional, Callable
 
+import networkx as nx
 import random
 import torch
 import torch_geometric
@@ -17,7 +18,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 def train_model(
     model: torch.nn.Module,
-    dataset: List[torch_geometric.data.Data],
+    train_dataset: list[torch_geometric.data.Data],
+    valid_dataset: list[torch_geometric.data.Data],
+    valid_graph_list: list[nx.Graph],
     *,
     epochs: int = 100,
     batch_size: int = 64,
@@ -26,8 +29,9 @@ def train_model(
     node_masked_class: Annotation = Annotation.UNKNOWN,
     edge_masked_class: Annotation = Annotation.UNKNOWN,
     log_dir: Optional[str] = None,
-    metrics: List[Union[str, Callable]] = [],
+    metrics: list[str | Callable] = [],
     tensorboard_update_frequency: int = 1,
+    valid_graph_ploter_frequency: int = 1,
 ):
     """Train the pytorch model.
 
@@ -35,8 +39,12 @@ def train_model(
     ----------
     model : torch.nn.Module
         Model to train
-    dataset : List[torch_geometric.data.Data]
-        Training and validation data
+    train_dataset : list[torch_geometric.data.Data]
+        Training dataset of tiny subgraphs
+    valid_dataset : list[torch_geometric.data.Data]
+        Validation dataset of tiny subgraphs
+    valid_graph_list : list[nx.Graph]
+        List of entire graphs for validation visualisation
     epochs : int
         Number of epochs to train the model
     batch_size : int
@@ -61,11 +69,12 @@ def train_model(
 
     # Shuffle the dataset to make sure subgraphs are unordered:
     random.seed(23)
-    random.shuffle(dataset)
+    random.shuffle(train_dataset)
+    random.shuffle(valid_dataset)
 
     # Split the datasets:
-    train_dataset = dataset[: round(train_fraction * len(dataset))]
-    valid_dataset = dataset[round(train_fraction * len(dataset)) :]
+    # train_dataset = dataset[: round(train_fraction * len(dataset))]
+    # valid_dataset = dataset[round(train_fraction * len(dataset)) :]
 
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
@@ -95,7 +104,7 @@ def train_model(
     )
 
     # Train the model epoch:
-    def train(loader):
+    def train(loader: torch_geometric.loader.DataLoader) -> None:
         """Trains a single epoch & updates params based on loss."""
         model.train()
 
@@ -111,7 +120,9 @@ def train_model(
             optimizer.zero_grad()
 
     # Validate the epoch, including evaluating metrics:
-    def valid(loader):
+    def valid(
+        loader: torch_geometric.loader.DataLoader,
+    ) -> dict[str, torch.tensor]:
         """Evaluates the classifier on node & edge classification."""
         model.eval()
 
@@ -164,11 +175,13 @@ def train_model(
 
         return metric_values
 
+    # Iterate over all epochs:
     for epoch in range(1, epochs + 1):
-        train(train_loader)
+        train(train_loader)  # computes loss, backprops grads, updates params
         train_metrics = valid(train_loader)
         valid_metrics = valid(valid_loader)
 
+        # Log the loss & metrics data:
         logger_string = f"Epoch: {epoch:03d} | "
 
         for metric in train_metrics:
@@ -214,6 +227,8 @@ def train_model(
 
         # Print out the logging string:
         LOGGER.info(logger_string)
+
+        # TODO: Define subdirectories as well, to save plots...
 
     writer.flush()
     writer.close()
