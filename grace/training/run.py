@@ -114,8 +114,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = config.log_dir / current_time
     setattr(config, "run_dir", run_dir)
-    print(run_dir, type(run_dir))
-    print(config.run_dir, type(config.run_dir))
 
     # Perform the training:
     train_model(
