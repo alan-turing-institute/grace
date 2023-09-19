@@ -26,7 +26,6 @@ def train_model(
     *,
     epochs: int = 100,
     batch_size: int = 64,
-    train_fraction: float = 0.85,
     learning_rate: float = 0.001,
     node_masked_class: Annotation = Annotation.UNKNOWN,
     edge_masked_class: Annotation = Annotation.UNKNOWN,
@@ -51,8 +50,6 @@ def train_model(
         Number of epochs to train the model
     batch_size : int
         Batch size
-    train_fraction : float
-        Fraction of data to be used for training (rest for validation)
     learning_rate : float
         Learning rate to use during training
     node_masked_class : Annotation
@@ -78,10 +75,7 @@ def train_model(
     random.shuffle(train_dataset)
     random.shuffle(valid_dataset)
 
-    # Split the datasets:
-    # train_dataset = dataset[: round(train_fraction * len(dataset))]
-    # valid_dataset = dataset[round(train_fraction * len(dataset)) :]
-
+    # Split the datasets into respective dataloaders:
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True
     )
