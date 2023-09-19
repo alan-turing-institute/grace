@@ -35,7 +35,7 @@ def plot_simple_graph(
         edge_color="k",
         node_color="k",
     )
-
+    ax.invert_yaxis()
     ax.set_title(f"{title}")
     return ax
 
@@ -85,6 +85,7 @@ def plot_connected_components(
             node_color=c_idx,
         )
 
+    ax.invert_yaxis()
     ax.set_title(f"{title}")
     return ax
 
@@ -109,10 +110,6 @@ def display_image_and_grace_annotation(
                 binary annotated image mask
             'metadata' : str
                 'image_filename', etc.
-
-    Notes
-    -----
-    TODO: Complicated & duplex function, could break into two functions.
     """
 
     annotation = target["annotation"]
@@ -124,7 +121,7 @@ def display_image_and_grace_annotation(
 
     for i, image in enumerate([image, annotation]):
         plt.subplot(1, 2, i + 1)
-        plt.imshow(image)
+        plt.imshow(image, cmap=plt.cm.turbo, interpolation="none")
         plt.colorbar(fraction=0.045)
         plt.title(f"{names[i]}: {target['metadata']['image_filename']}")
     plt.show()
