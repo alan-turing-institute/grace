@@ -80,8 +80,8 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Read the VALID data:
     valid_input_data = ImageGraphDataset(
-        image_dir=config.train_image_dir,
-        grace_dir=config.train_grace_dir,
+        image_dir=config.valid_image_dir,
+        grace_dir=config.valid_grace_dir,
         image_filetype=config.filetype,
         keep_node_unknown_labels=config.keep_node_unknown_labels,
         keep_edge_unknown_labels=config.keep_edge_unknown_labels,
@@ -89,12 +89,15 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     )
 
     # Iterate through images & extract node features:
+    valid_graph_list = []
     valid_dataset = []
     for _, target in tqdm(
         valid_input_data, desc="Extracting patch features from image data... "
     ):
-        file_name = target["metadata"]["image_filename"]
-        LOGGER.info(f"Processing file: {file_name}")
+        LOGGER.info(f"Current file: {target['metadata']['image_filename']}")
+        # Store the valid graph list:
+        valid_graph_list.append(target["graph"])
+        # Chop graph into subgraphs & store:
         graph_dataset = dataset_from_graph(target["graph"], mode="sub")
         valid_dataset.extend(graph_dataset)
 
@@ -119,6 +122,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         classifier,
         train_dataset,
         valid_dataset,
+        valid_graph_list,
         epochs=config.epochs,
         batch_size=config.batch_size,
         learning_rate=config.learning_rate,
