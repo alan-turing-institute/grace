@@ -89,14 +89,14 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     )
 
     # Iterate through images & extract node features:
-    valid_graph_list = []
+    valid_target_list = []
     valid_dataset = []
     for _, target in tqdm(
         valid_input_data, desc="Extracting patch features from image data... "
     ):
         LOGGER.info(f"Current file: {target['metadata']['image_filename']}")
         # Store the valid graph list:
-        valid_graph_list.append(target["graph"])
+        valid_target_list.append(target)
         # Chop graph into subgraphs & store:
         graph_dataset = dataset_from_graph(target["graph"], mode="sub")
         valid_dataset.extend(graph_dataset)
@@ -122,7 +122,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         classifier,
         train_dataset,
         valid_dataset,
-        valid_graph_list,
+        valid_target_list,
         epochs=config.epochs,
         batch_size=config.batch_size,
         learning_rate=config.learning_rate,
