@@ -16,6 +16,11 @@ from grace.models.classifier import GCN
 from grace.models.feature_extractor import FeatureExtractor
 from grace.training.config import write_config_file, load_config_params
 from grace.utils.transforms import get_transforms
+from grace.evaluation.inference import GraphLabelPredictor
+from grace.visualisation.plotting import (
+    visualise_node_and_edge_probabilities,
+    visualise_prediction_probs_hist,
+)
 
 
 def run_grace(config_file: Union[str, os.PathLike]) -> None:
@@ -71,7 +76,8 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     # Iterate through images & extract node features:
     train_dataset = []
     for _, target in tqdm(
-        train_input_data, desc="Extracting patch features from image data... "
+        train_input_data,
+        desc="Extracting patch features from TRAIN images... ",
     ):
         file_name = target["metadata"]["image_filename"]
         LOGGER.info(f"Processing file: {file_name}")
@@ -92,7 +98,8 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     valid_target_list = []
     valid_dataset = []
     for _, target in tqdm(
-        valid_input_data, desc="Extracting patch features from image data... "
+        valid_input_data,
+        desc="Extracting patch features from VALID images... ",
     ):
         LOGGER.info(f"Current file: {target['metadata']['image_filename']}")
         # Store the valid graph list:
@@ -126,7 +133,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         learning_rate=config.learning_rate,
         log_dir=run_dir,
         metrics=config.metrics,
-        train_fraction=config.train_to_valid_split,
         tensorboard_update_frequency=config.tensorboard_update_frequency,
         valid_graph_ploter_frequency=config.valid_graph_ploter_frequency,
     )
@@ -135,6 +141,62 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     model_save_fn = run_dir / "classifier.pt"
     torch.save(classifier, model_save_fn)
     write_config_file(config)
+
+    # TODO: Run inference on the final, trained model on unseen data:
+    # Create subdirectory to save out plots:
+    infer_path = run_dir / "infer_plots"
+    infer_path.mkdir(parents=True, exist_ok=True)
+
+    # Read the INFER data:
+    infer_input_data = ImageGraphDataset(
+        image_dir=config.infer_image_dir,
+        grace_dir=config.infer_grace_dir,
+        image_filetype=config.filetype,
+        keep_node_unknown_labels=config.keep_node_unknown_labels,
+        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
+        transform=transform_valid_mode,
+    )
+
+    # Iterate through images & extract node features:
+    infer_target_list = []
+    for _, target in tqdm(
+        infer_input_data,
+        desc="Extracting patch features from INFER images... ",
+    ):
+        LOGGER.info(f"Current file: {target['metadata']['image_filename']}")
+        infer_target_list.append(target)
+
+    # Instantiate the model with frozen weights:
+    GLP = GraphLabelPredictor(model_save_fn)
+
+    # Iterate through all validation graphs & predict nodes / edges:
+    for infer_target in infer_target_list:
+        infer_graph = infer_target["graph"]
+
+        # Filename:
+        infer_name = infer_target["metadata"]["image_filename"]
+
+        # Update probabs & visualise the graph:
+        GLP.set_node_and_edge_probabilities(G=infer_graph)
+        # TODO: Re-implement when plotting issues are solved:
+
+        # GLP.visualise_model_performance_on_graph(
+        #     G=infer_graph,
+        #     filename=infer_path / f"{infer_name}-Areas_under_Curves.png"
+        # )
+
+        # HACK: Save out at least two plots:
+        visualise_node_and_edge_probabilities(
+            G=infer_graph,
+            filename=infer_path / f"{infer_name}-Inference_Graph.png",
+        )
+        visualise_prediction_probs_hist(
+            G=infer_graph,
+            filename=infer_path / f"{infer_name}-Prediction_Hist.png",
+        )
+
+    # Close the run:
+    LOGGER.info("Run complete... Done!")
 
 
 @click.command(name="GRACE Trainer")
