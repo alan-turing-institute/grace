@@ -66,10 +66,6 @@ def train_model(
     # Instantiate the logger:
     writer = SummaryWriter(log_dir)
 
-    # Create subdirectory to save out plots:
-    valid_path = log_dir / "valid_plots"
-    valid_path.mkdir(parents=True, exist_ok=True)
-
     # Shuffle the dataset to make sure subgraphs are unordered:
     random.seed(23)
     random.shuffle(train_dataset)
@@ -244,7 +240,7 @@ def train_model(
                 # Update probabs & visualise the graph:
                 GLP.set_node_and_edge_probabilities(G=valid_graph)
                 visualise_node_and_edge_probabilities(
-                    G=valid_graph, filename=valid_path / valid_name
+                    G=valid_graph, filename=log_dir / "valid" / valid_name
                 )
 
     # Clear & close the tensorboard writer:
