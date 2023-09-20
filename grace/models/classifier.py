@@ -6,6 +6,27 @@ from torch.nn import Linear, ModuleList
 from torch_geometric.nn import GCNConv
 
 
+class GNNClassifier(torch.nn.Module):
+    """Wrapper object to return the correct instance of the GNN classifier."""
+
+    def __init__(self) -> None:
+        self.models = {
+            # "LINEAR" : Linear,
+            "GCN": GCN,
+        }
+
+    def get_model(self, gnn_classifier_type: str, **kwargs) -> torch.nn.Module:
+        gnn_classifier_type = gnn_classifier_type.upper()
+
+        if gnn_classifier_type not in self.models:
+            raise NotImplementedError(
+                f"GNN Classifier '{gnn_classifier_type}' not implemented."
+            )
+        else:
+            model_class = self.models[gnn_classifier_type]
+            return model_class(**kwargs)
+
+
 class GCN(torch.nn.Module):
     """A graph convolutional network for subgraph classification.
 
