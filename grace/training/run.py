@@ -12,11 +12,14 @@ from grace.logger import LOGGER
 from grace.io.image_dataset import ImageGraphDataset
 from grace.training.train import train_model
 from grace.models.datasets import dataset_from_graph
-from grace.models.classifier import GCN
+
+# from grace.models.classifier import GCN
+from grace.models.classifier import GNNClassifier
 from grace.models.feature_extractor import FeatureExtractor
 from grace.training.config import write_config_file, load_config_params
 from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
+from grace.visualisation.animation import animate_entire_valid_set
 from grace.visualisation.plotting import (
     visualise_node_and_edge_probabilities,
     visualise_prediction_probs_hist,
@@ -130,7 +133,8 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Define the GNN classifier model:
     # TODO: Instantiate a classifier which will nominate the GNN
-    classifier = GCN(
+    classifier = GNNClassifier().get_model(
+        config.gnn_classifier_type,
         input_channels=config.feature_dim,
         hidden_channels=config.hidden_channels,
         dropout=config.dropout,
@@ -157,6 +161,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     model_save_fn = run_dir / "classifier.pt"
     torch.save(classifier, model_save_fn)
     write_config_file(config)
+
+    # Animate the validations:
+    animate_entire_valid_set(run_dir / "valid", verbose=False)
 
     # TODO: Run inference on the final, trained model on unseen data:
 
