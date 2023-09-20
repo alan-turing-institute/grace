@@ -43,8 +43,9 @@ class Config:
     keep_patch_fraction: float = 1.0
     keep_node_unknown_labels: bool = False
     keep_edge_unknown_labels: bool = False
-
     feature_dim: int = 2048
+
+    gnn_classifier_type: str = "GCN"
     num_node_classes: int = 2
     num_edge_classes: int = 2
     epochs: int = 100
