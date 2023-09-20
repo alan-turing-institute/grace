@@ -1,5 +1,3 @@
-# import os
-# from pathlib import Path
 import pytest
 
 from grace.base import GraphAttrs, Annotation
@@ -35,13 +33,14 @@ class TestTraining:
                 for src, dst in graph.edges
             ]
         )
+        target = {"graph": graph, "metadata": {"image_filename": "filename"}}
         dataset = dataset_from_graph(graph, mode="sub")
 
         return (
             dataset,
             model,
             [
-                graph,
+                target,
             ],
         )
 
@@ -64,7 +63,7 @@ class TestTraining:
             metrics=metrics,
             log_dir=tmpdir,
             epochs=1,
+            valid_graph_ploter_frequency=5,
         )
 
-        # assert os.path.exists(tmpdir)
-        assert tmpdir.is_dir()
+        assert tmpdir.exists()
