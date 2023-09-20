@@ -39,6 +39,16 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     # Load all config parameters:
     config = load_config_params(config_file)
 
+    # Define where you'll save the outputs:
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_dir = config.log_dir / current_time
+    setattr(config, "run_dir", run_dir)
+
+    # Create subdirectory to save out plots:
+    for subfolder in ["valid", "infer"]:
+        subfolder_path = run_dir / subfolder
+        subfolder_path.mkdir(parents=True, exist_ok=True)
+
     # Prepare the feature extractor:
     extractor_model = torch.load(config.extractor_fn)
     patch_augs = get_transforms(config, "patch")
@@ -51,64 +61,75 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         keep_patch_fraction=config.keep_patch_fraction,
     )
 
-    # Condition the augmentations to train mode only: TODO: type correctly:
-    def transform(img, grph, in_train_mode: bool = True) -> Callable:
+    # Condition the augmentations to train mode only:
+    def transform(
+        image: torch.Tensor, graph: dict, *, in_train_mode: bool = True
+    ) -> Callable:
+        # Ensure augmentations are only run on train data:
         if in_train_mode:
-            img_aug, grph_aug = img_graph_augs(img, grph)
-            return feature_extractor(img_aug, grph_aug)
+            image_aug, graph_aug = img_graph_augs(image, graph)
+            return feature_extractor(image_aug, graph_aug)
         else:
-            return feature_extractor(img, grph)
+            return feature_extractor(image, graph)
+
+    # Process the datasets as desired:
+    def prepare_dataset(
+        image_dir: Union[str, os.PathLike],
+        grace_dir: Union[str, os.PathLike],
+        transform_method: Callable,
+        *,
+        graph_processing: str = "sub",
+        verbose: bool = True,
+    ) -> tuple[list]:
+        # Read the data & terate through images & extract node features:
+        input_data = ImageGraphDataset(
+            image_dir=image_dir,
+            grace_dir=grace_dir,
+            image_filetype=config.filetype,
+            keep_node_unknown_labels=config.keep_node_unknown_labels,
+            keep_edge_unknown_labels=config.keep_edge_unknown_labels,
+            transform=transform_method,
+        )
+
+        # Process the (sub)graph data into torch_geometric dataset:
+        target_list, dataset = [], []
+        desc = "Extracting patch features from images... "
+        for _, target in tqdm(input_data, desc=desc, disable=not verbose):
+            file_name = target["metadata"]["image_filename"]
+            LOGGER.info(f"Processing file: {file_name}")
+
+            # Store the valid graph list:
+            target_list.append(target)
+
+            # Chop graph into subgraphs & store:
+            graphs = dataset_from_graph(target["graph"], mode=graph_processing)
+            dataset.extend(graphs)
+
+        return target_list, dataset
 
     # Create a transform function with frozen 'in_train_mode' parameter:
     transform_train_mode = partial(transform, in_train_mode=True)
     transform_valid_mode = partial(transform, in_train_mode=False)
 
-    # Read the TRAIN data:
-    train_input_data = ImageGraphDataset(
-        image_dir=config.train_image_dir,
-        grace_dir=config.train_grace_dir,
-        image_filetype=config.filetype,
-        keep_node_unknown_labels=config.keep_node_unknown_labels,
-        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
-        transform=transform_train_mode,
+    # Read the respective datasets:
+    _, train_dataset = prepare_dataset(
+        config.train_image_dir,
+        config.train_grace_dir,
+        transform_train_mode,
     )
-
-    # Iterate through images & extract node features:
-    train_dataset = []
-    for _, target in tqdm(
-        train_input_data,
-        desc="Extracting patch features from TRAIN images... ",
-    ):
-        file_name = target["metadata"]["image_filename"]
-        LOGGER.info(f"Processing file: {file_name}")
-        graph_dataset = dataset_from_graph(target["graph"], mode="sub")
-        train_dataset.extend(graph_dataset)
-
-    # Read the VALID data:
-    valid_input_data = ImageGraphDataset(
-        image_dir=config.valid_image_dir,
-        grace_dir=config.valid_grace_dir,
-        image_filetype=config.filetype,
-        keep_node_unknown_labels=config.keep_node_unknown_labels,
-        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
-        transform=transform_valid_mode,
+    valid_target_list, valid_dataset = prepare_dataset(
+        config.valid_image_dir,
+        config.valid_grace_dir,
+        transform_valid_mode,
     )
-
-    # Iterate through images & extract node features:
-    valid_target_list = []
-    valid_dataset = []
-    for _, target in tqdm(
-        valid_input_data,
-        desc="Extracting patch features from VALID images... ",
-    ):
-        LOGGER.info(f"Current file: {target['metadata']['image_filename']}")
-        # Store the valid graph list:
-        valid_target_list.append(target)
-        # Chop graph into subgraphs & store:
-        graph_dataset = dataset_from_graph(target["graph"], mode="sub")
-        valid_dataset.extend(graph_dataset)
+    infer_target_list, _ = prepare_dataset(
+        config.infer_image_dir,
+        config.infer_grace_dir,
+        transform_valid_mode,
+    )
 
     # Define the GNN classifier model:
+    # TODO: Instantiate a classifier which will nominate the GNN
     classifier = GCN(
         input_channels=config.feature_dim,
         hidden_channels=config.hidden_channels,
@@ -116,11 +137,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
     )
-
-    # Define where you'll save the outputs:
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    run_dir = config.log_dir / current_time
-    setattr(config, "run_dir", run_dir)
 
     # Perform the training:
     train_model(
@@ -137,34 +153,12 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         valid_graph_ploter_frequency=config.valid_graph_ploter_frequency,
     )
 
-    # Save the model:
+    # Save the trained model:
     model_save_fn = run_dir / "classifier.pt"
     torch.save(classifier, model_save_fn)
     write_config_file(config)
 
     # TODO: Run inference on the final, trained model on unseen data:
-    # Create subdirectory to save out plots:
-    infer_path = run_dir / "infer_plots"
-    infer_path.mkdir(parents=True, exist_ok=True)
-
-    # Read the INFER data:
-    infer_input_data = ImageGraphDataset(
-        image_dir=config.infer_image_dir,
-        grace_dir=config.infer_grace_dir,
-        image_filetype=config.filetype,
-        keep_node_unknown_labels=config.keep_node_unknown_labels,
-        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
-        transform=transform_valid_mode,
-    )
-
-    # Iterate through images & extract node features:
-    infer_target_list = []
-    for _, target in tqdm(
-        infer_input_data,
-        desc="Extracting patch features from INFER images... ",
-    ):
-        LOGGER.info(f"Current file: {target['metadata']['image_filename']}")
-        infer_target_list.append(target)
 
     # Instantiate the model with frozen weights:
     GLP = GraphLabelPredictor(model_save_fn)
@@ -188,11 +182,11 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         # HACK: Save out at least two plots:
         visualise_node_and_edge_probabilities(
             G=infer_graph,
-            filename=infer_path / f"{infer_name}-Inference_Graph.png",
+            filename=run_dir / "infer" / f"{infer_name}-Inference_Graph.png",
         )
         visualise_prediction_probs_hist(
             G=infer_graph,
-            filename=infer_path / f"{infer_name}-Prediction_Hist.png",
+            filename=run_dir / "infer" / f"{infer_name}-Prediction_Hist.png",
         )
 
     # Close the run:
