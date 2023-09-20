@@ -11,10 +11,12 @@ def animate_valid_graph_plots(
     LOGGER.info(f"Animation for file {plots_file} launched...")
 
     # # Define the output video file name
-    video_filename = plots_path / "{plots_file}-Animation.mp4"
+    video_filename = plots_path / f"{plots_file}-Animation.mp4"
 
     # Get a list of all the image files in the folder
-    images = [img for img in plots_path.glob("*.png") if plots_file in img]
+    images = [
+        img for img in plots_path.glob("*.png") if plots_file in img.stem
+    ]
 
     # Custom sorting function to sort by the numeric part of the filename
     def sort_by_numeric_part(filename):
@@ -63,7 +65,7 @@ def animate_entire_valid_set(
     plots_path: str | Path, verbose: bool = True
 ) -> None:
     unique_images = set(
-        [img.split("-")[0] for img in plots_path.glob("*.png")]
+        [str(img.stem).split("-")[0] for img in plots_path.glob("*.png")]
     )
     desc = (
         f"Processing {len(unique_images)} validation images for animation..."
