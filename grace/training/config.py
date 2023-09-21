@@ -50,8 +50,11 @@ class Config:
     num_edge_classes: int = 2
     epochs: int = 100
     hidden_channels: list[int] = field(default_factory=lambda: [1024, 256, 64])
-    metrics: list[str] = field(
+    metrics_classifier: list[str] = field(
         default_factory=lambda: ["accuracy", "confusion_matrix"]
+    )
+    metrics_objects: list[str] = field(
+        default_factory=lambda: ["exact", "approx"]
     )
     dropout: float = 0.2
     batch_size: int = 64
