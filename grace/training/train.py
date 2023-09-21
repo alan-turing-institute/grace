@@ -239,9 +239,10 @@ def train_model(
 
                 # Update probabs & visualise the graph:
                 GLP.set_node_and_edge_probabilities(G=valid_graph)
-                visualise_node_and_edge_probabilities(
-                    G=valid_graph, filename=log_dir / "valid" / valid_name
-                )
+                visualise_node_and_edge_probabilities(G=valid_graph)
+
+                plt.savefig(log_dir / "valid" / valid_name)
+                plt.close()
 
     # Clear & close the tensorboard writer:
     writer.flush()

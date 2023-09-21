@@ -15,10 +15,16 @@ from grace.models.datasets import dataset_from_graph
 
 from grace.models.classifier import GNNClassifier
 from grace.models.feature_extractor import FeatureExtractor
+from grace.models.optimiser import optimise_graph
 from grace.training.config import write_config_file, load_config_params
 from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
+from grace.evaluation.process import generate_ground_truth_graph
 from grace.visualisation.animation import animate_entire_valid_set
+from grace.evaluation.metrics_objects import (
+    ExactMetricsComputer,
+    ApproxMetricsComputer,
+)
 
 
 def run_grace(config_file: Union[str, os.PathLike]) -> None:
@@ -146,7 +152,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         batch_size=config.batch_size,
         learning_rate=config.learning_rate,
         log_dir=run_dir,
-        metrics=config.metrics,
+        metrics=config.metrics_classifier,
         tensorboard_update_frequency=config.tensorboard_update_frequency,
         valid_graph_ploter_frequency=config.valid_graph_ploter_frequency,
     )
@@ -169,6 +175,11 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         save_figures=True,
         show_figures=False,
     )
+    # Log inference metrics:
+    LOGGER.info(f"Inference batch dataset metrics: {inference_metrics}")
+
+    # Define which metrics to calculate:
+    metrics = [m.upper() for m in config.metrics_objects]
 
     # Process each file individually:
     desc = "Measuring inference metrics on images... "
@@ -183,9 +194,38 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             show_figures=False,
         )
 
-    # Log inference metrics:
-    # TODO: Write out more:
-    LOGGER.info(f"Inference metrics: {inference_metrics}")
+        # Generate GT & optimised graphs:
+        graph = graph_data["graph"]
+        GLP.set_node_and_edge_probabilities(graph)
+
+        true_graph = generate_ground_truth_graph(graph)
+        pred_graph = optimise_graph(graph)
+
+        if "EXACT" in metrics:
+            # LOGGER.info(f"Calculating 'EXACT' metrics for inference dataset")
+
+            EMC = ExactMetricsComputer(
+                G=graph,
+                pred_optimised_graph=pred_graph,
+                true_annotated_graph=true_graph,
+            )
+            results_dict = EMC.metrics()
+            LOGGER.info(
+                f"'EXACT' metrics for file: {file_name} | {results_dict}"
+            )
+            EMC.visualise(
+                save_path=run_dir / "infer",
+                file_name=file_name,
+                save_figures=True,
+                show_figures=False,
+            )
+        if "APPROX" in metrics:
+            # LOGGER.info(f"Calculating 'APPROX' metrics for inference dataset")
+            LOGGER.warning(
+                "----- WARNING ----- 'APPROX' metrics calculation not implemented yet"
+            )
+            # TODO: Implement:
+            ApproxMetricsComputer
 
     # Close the run:
     LOGGER.info("Run complete... Done!")
