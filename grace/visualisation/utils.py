@@ -323,7 +323,7 @@ def plot_confusion_matrix_tiles(
 
 def plot_iou_histogram(
     iou_per_object: list | npt.NDArray,
-    iou_semantic: float,
+    iou_semantic: float = None,
     figsize: tuple[int, int] = (10, 3),
 ) -> None:
     # Instantiate a figure
@@ -335,13 +335,14 @@ def plot_iou_histogram(
     mn, std = np.mean(iou_per_object), np.std(iou_per_object)
 
     # Add vertical lines
-    plt.axvline(
-        x=iou_semantic,
-        color="cyan",
-        linestyle="dashed",
-        linewidth=2,
-        label=f"IoU semantic: {iou_semantic:.4f}",
-    )
+    if isinstance(iou_semantic, float):
+        plt.axvline(
+            x=iou_semantic,
+            color="cyan",
+            linestyle="dashed",
+            linewidth=2,
+            label=f"IoU semantic: {iou_semantic:.4f}",
+        )
     plt.axvline(
         x=mn,
         color="purple",
