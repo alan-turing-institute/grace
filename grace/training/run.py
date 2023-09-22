@@ -4,7 +4,7 @@ from functools import partial
 import os
 import click
 import torch
-
+import matplotlib.pyplot as plt
 from datetime import datetime
 from tqdm.auto import tqdm
 
@@ -16,11 +16,20 @@ from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import GNNClassifier
 from grace.models.feature_extractor import FeatureExtractor
 from grace.models.optimiser import optimise_graph
-from grace.training.config import write_config_file, load_config_params
+from grace.training.config import (
+    load_config_params,
+    write_config_file,
+    write_json_file,
+)
 from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
 from grace.evaluation.process import generate_ground_truth_graph
 from grace.visualisation.animation import animate_entire_valid_set
+from grace.visualisation.utils import plot_iou_histogram
+from grace.visualisation.plotting import (
+    plot_simple_graph,
+    plot_connected_components,
+)
 from grace.evaluation.metrics_objects import (
     ExactMetricsComputer,
     ApproxMetricsComputer,
@@ -178,6 +187,12 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     # Log inference metrics:
     LOGGER.info(f"Inference batch dataset metrics: {inference_metrics}")
 
+    # Write out the batch metrics:
+    batch_metrics_fn = (
+        run_dir / "infer" / "Inference_Dataset-Batch_Metrics.json"
+    )
+    write_json_file(inference_metrics, batch_metrics_fn)
+
     # Define which metrics to calculate:
     metrics = [m.upper() for m in config.metrics_objects]
 
@@ -201,29 +216,58 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         true_graph = generate_ground_truth_graph(graph)
         pred_graph = optimise_graph(graph)
 
-        if "EXACT" in metrics:
-            # LOGGER.info(f"Calculating 'EXACT' metrics for inference dataset")
+        # Save out the connected components figure:
+        # shape = 5
+        _, axes = plt.subplots(1, 3, figsize=(15, 5))
 
+        plot_simple_graph(graph, title="Triangulated graph", ax=axes[0])
+        plot_connected_components(
+            true_graph, title="Ground truth graph", ax=axes[1]
+        )
+        plot_connected_components(
+            pred_graph, title="Optimised graph", ax=axes[2]
+        )
+
+        plt.tight_layout()
+        plt.savefig(
+            run_dir / "infer" / f"{file_name}-Graph_Connected_Components.png"
+        )
+        # plt.show()
+
+        if "EXACT" in metrics:
             EMC = ExactMetricsComputer(
                 G=graph,
                 pred_optimised_graph=pred_graph,
                 true_annotated_graph=true_graph,
             )
             results_dict = EMC.metrics()
-            LOGGER.info(
-                f"'EXACT' metrics for file: {file_name} | {results_dict}"
-            )
+            LOGGER.info(f"'EXACT' metrics: {file_name} | {results_dict}")
+            save_fn = run_dir / "infer" / f"{file_name}-Metrics.json"
+            write_json_file(results_dict, save_fn)
+
             EMC.visualise(
                 save_path=run_dir / "infer",
                 file_name=file_name,
                 save_figures=True,
                 show_figures=False,
             )
+
+            # Append IoUs:
+            if "Object IoUs" not in inference_metrics:
+                inference_metrics["Object IoUs"] = []
+            file_instance_ious = results_dict["Instance IoU [list]"]
+            inference_metrics["Object IoUs"].extend(file_instance_ious)
+
+        # Plot overal IoUs:
+        plot_iou_histogram(iou_per_object=inference_metrics["Object IoUs"])
+        plt.savefig(
+            run_dir / "infer" / "Inference_Dataset-Object_IoU_Histogram.png"
+        )
+        plt.close()
+
         if "APPROX" in metrics:
-            # LOGGER.info(f"Calculating 'APPROX' metrics for inference dataset")
-            LOGGER.warning(
-                "----- WARNING ----- 'APPROX' metrics calculation not implemented yet"
-            )
+            LOGGER.warning("WARNING; 'APPROX' metrics not implemented yet")
+
             # TODO: Implement:
             ApproxMetricsComputer
 
