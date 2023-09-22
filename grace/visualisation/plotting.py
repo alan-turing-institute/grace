@@ -1,6 +1,4 @@
 from grace.base import GraphAttrs, Annotation
-from grace.napari.utils import EdgeColor
-from collections import Counter
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -105,88 +103,6 @@ def plot_connected_components(
     ax.invert_yaxis()
     ax.set_title(f"{title}")
     return ax
-
-
-def display_image_and_grace_annotation(
-    image: npt.NDArray,
-    target: dict[str],
-) -> None:
-    """Overlays the annotation image (binary mask) with annotated graph,
-        colour-coding the true positive (TP), true negative (TN), and
-        unannotated elements of the graph (nodes & edges).
-
-    Parameters
-    ----------
-    image : npt.NDArray
-        Raw image array
-    target : dict[str]
-        Dictionary containing keys:
-            'graph' : nx.Graph
-                annotated graph with node & edge attributes
-            'annotation' : npt.NDArray
-                binary annotated image mask
-            'metadata' : str
-                'image_filename', etc.
-    """
-
-    annotation = target["annotation"]
-    assert image.shape == annotation.shape
-
-    # Simple image data plot - side by side:
-    plt.figure(figsize=(15, 7))
-    names = ["Raw image data", "GRACE annotation"]
-
-    for i, image in enumerate([image, annotation]):
-        plt.subplot(1, 2, i + 1)
-        plt.imshow(image, cmap=plt.cm.turbo, interpolation="none")
-        plt.colorbar(fraction=0.045)
-        plt.title(f"{names[i]}: {target['metadata']['image_filename']}")
-    plt.show()
-
-    # Read the annotated graph & count the nodes:
-    graph = target["graph"]
-    node_GT_counter = Counter(
-        [
-            node[GraphAttrs.NODE_GROUND_TRUTH]
-            for _, node in graph.nodes(data=True)
-        ]
-    )
-
-    # Fancy annotation plot
-    _, ax = plt.subplots(figsize=(16, 16))
-
-    # node positions
-    pos = {
-        idx: (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
-        for idx, node in graph.nodes(data=True)
-    }
-    # edge annotations
-    edge_gt = [
-        graph[u][v][GraphAttrs.EDGE_GROUND_TRUTH] for u, v in graph.edges
-    ]
-    edge_colors = [EdgeColor[gt.name].value for gt in edge_gt]
-
-    node_colors = [
-        EdgeColor[node_attrs[GraphAttrs.NODE_GROUND_TRUTH].name].value
-        for _, node_attrs in graph.nodes(data=True)
-    ]
-
-    ax.imshow(annotation, cmap=plt.cm.turbo, interpolation="none")
-
-    # draw all nodes/vertices in the graph:
-    nx.draw_networkx(
-        graph,
-        ax=ax,
-        pos=pos,
-        with_labels=False,
-        node_size=32,
-        edge_color=edge_colors,
-        node_color=node_colors,
-    )
-
-    ax.set_title(f"{target['metadata']['image_filename']}\n{node_GT_counter}")
-    plt.show()
-    plt.close()
 
 
 def plot_confusion_matrix_tiles(
