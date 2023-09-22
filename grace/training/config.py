@@ -149,8 +149,17 @@ def write_config_file(
 
     fn = config.run_dir / f"config_hyperparams.{filetype}"
 
-    with open(fn, "w") as outfile:
-        if filetype == "json":
-            json.dump(params, outfile, indent=4)
-        else:
-            yaml.dump(params, outfile)
+    if filetype == "json":
+        write_json_file(params, fn)
+    else:
+        write_yaml_file(params, fn)
+
+
+def write_json_file(parameters_dict: dict[str], filename: str | Path) -> None:
+    with open(filename, "w") as outfile:
+        json.dump(parameters_dict, outfile, indent=4)
+
+
+def write_yaml_file(parameters_dict: dict[str], filename: str | Path) -> None:
+    with open(filename, "w") as outfile:
+        yaml.dump(parameters_dict, outfile)
