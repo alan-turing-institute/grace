@@ -24,7 +24,8 @@ from grace.training.config import (
 from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
 from grace.evaluation.process import generate_ground_truth_graph
-from grace.visualisation.animation import animate_entire_valid_set
+
+# from grace.visualisation.animation import animate_entire_valid_set
 from grace.visualisation.utils import plot_iou_histogram
 from grace.visualisation.plotting import (
     plot_simple_graph,
@@ -172,7 +173,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     write_config_file(config)
 
     # Animate the validation outputs:
-    animate_entire_valid_set(run_dir / "valid", verbose=False)
+    # animate_entire_valid_set(run_dir / "valid", verbose=False)
 
     # Run inference on the final, trained model on unseen data:
     GLP = GraphLabelPredictor(model_save_fn)
