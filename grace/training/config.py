@@ -6,6 +6,7 @@ import yaml
 
 from pathlib import Path
 from dataclasses import field, dataclass
+from grace.styling import LOGGER
 
 
 @dataclass
@@ -16,6 +17,7 @@ class Config:
     valid_grace_dir: Optional[os.PathLike] = None
     infer_image_dir: Optional[os.PathLike] = None
     infer_grace_dir: Optional[os.PathLike] = None
+    extractor_fn: Optional[os.PathLike] = None
     log_dir: Optional[os.PathLike] = None
     run_dir: Optional[os.PathLike] = log_dir
     filetype: str = "mrc"
@@ -30,7 +32,6 @@ class Config:
     img_graph_aug_params: list[dict[str, Any]] = field(
         default_factory=lambda: [{}, {}, {}]
     )
-    extractor_fn: Optional[os.PathLike] = None
     patch_augs: list[str] = field(
         default_factory=lambda: [
             "random_edge_crop",
@@ -45,7 +46,7 @@ class Config:
     keep_edge_unknown_labels: bool = False
     feature_dim: int = 2048
 
-    gnn_classifier_type: str = "GCN"
+    classifier_type: str = "GCN"
     num_node_classes: int = 2
     num_edge_classes: int = 2
     epochs: int = 100
@@ -61,6 +62,8 @@ class Config:
     learning_rate: float = 0.001
     tensorboard_update_frequency: int = 1
     valid_graph_ploter_frequency: int = 1
+    animate_valid_progress: bool = False
+    visualise_tsne_manifold: bool = False
 
 
 def load_config_params(params_file: Union[str, Path]) -> Config:
@@ -122,6 +125,45 @@ def load_config_params(params_file: Union[str, Path]) -> Config:
     return config
 
 
+def validate_required_config_hparams(config: Config) -> None:
+    # Check all required directories are defined:
+    directories = [
+        config.train_image_dir,
+        config.train_grace_dir,
+        config.valid_image_dir,
+        config.valid_grace_dir,
+        config.infer_image_dir,
+        config.infer_grace_dir,
+    ]
+    for dr in directories:
+        if dr is None:
+            raise PathNotDefinedError(path_name=dr)
+        elif not any(dr.iterdir()):
+            raise EmptyDirectoryError(path_name=dr)
+        else:
+            pass
+
+    # Check log_dir exists:
+    if config.log_dir is None:
+        raise PathNotDefinedError(path_name=dr)
+
+    # Check extractor is there:
+    if not config.extractor_fn.is_file():
+        raise PathNotDefinedError(path_name=dr)
+
+    # HACK: not automated yet:
+    if config.animate_valid_progress is True:
+        LOGGER.warning("WARNING; auto-animation not implemented yet")
+        config.animate_valid_progress = False
+        # TODO: implemented, but ffmpeg causes issues in tests
+
+    # HACK: not implemented yet:
+    if config.visualise_tsne_manifold is True:
+        LOGGER.warning("WARNING; TSNE manifold not implemented yet")
+        config.visualise_tsne_manifold = False
+        # TODO: implemented, but can't be run from run.py yet
+
+
 def write_config_file(
     config: Config,
     filetype: str = "json",
@@ -163,3 +205,13 @@ def write_json_file(parameters_dict: dict[str], filename: str | Path) -> None:
 def write_yaml_file(parameters_dict: dict[str], filename: str | Path) -> None:
     with open(filename, "w") as outfile:
         yaml.dump(parameters_dict, outfile)
+
+
+class PathNotDefinedError(Exception):
+    def __init__(self, path_name):
+        super().__init__(f"The path '{path_name}' is not defined.")
+
+
+class EmptyDirectoryError(Exception):
+    def __init__(self, path_name):
+        super().__init__(f"The path '{path_name}' is empty.")

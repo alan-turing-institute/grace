@@ -18,7 +18,7 @@
     "patch_augs": "[]",
     "patch_aug_params": "[]",
     "feature_dim": "2048",
-    "gnn_classifier_type": "GCN",
+    "classifier_type": "GCN",
     "num_node_classes": "2",
     "num_edge_classes": "2",
     "epochs": "5",

@@ -5,6 +5,7 @@ import networkx as nx
 
 from collections import Counter
 from grace.base import GraphAttrs
+from grace.styling import COLORMAPS
 from grace.napari.utils import EdgeColor
 
 
@@ -73,6 +74,7 @@ def draw_annotation_mask_from_ground_truth_graph(
 def display_image_and_grace_annotation(
     image: npt.NDArray,
     target: dict[str],
+    cmap: str = COLORMAPS["annotation"],
 ) -> None:
     """Overlays the annotation image (binary mask) with annotated graph,
         colour-coding the true positive (TP), true negative (TN), and
@@ -101,7 +103,7 @@ def display_image_and_grace_annotation(
 
     for i, image in enumerate([image, annotation]):
         plt.subplot(1, 2, i + 1)
-        plt.imshow(image, cmap=plt.cm.turbo, interpolation="none")
+        plt.imshow(image, cmap=cmap, interpolation="none")
         plt.colorbar(fraction=0.045)
         plt.title(f"{names[i]}: {target['metadata']['image_filename']}")
     plt.show()
@@ -134,7 +136,7 @@ def display_image_and_grace_annotation(
         for _, node_attrs in graph.nodes(data=True)
     ]
 
-    ax.imshow(annotation, cmap=plt.cm.turbo, interpolation="none")
+    ax.imshow(annotation, cmap=cmap, interpolation="none")
 
     # draw all nodes/vertices in the graph:
     nx.draw_networkx(

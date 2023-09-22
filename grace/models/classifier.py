@@ -15,15 +15,15 @@ class GNNClassifier(torch.nn.Module):
             "GCN": GCN,
         }
 
-    def get_model(self, gnn_classifier_type: str, **kwargs) -> torch.nn.Module:
-        gnn_classifier_type = gnn_classifier_type.upper()
+    def get_model(self, classifier_type: str, **kwargs) -> torch.nn.Module:
+        classifier_type = classifier_type.upper()
 
-        if gnn_classifier_type not in self.models:
+        if classifier_type not in self.models:
             raise NotImplementedError(
-                f"GNN Classifier '{gnn_classifier_type}' not implemented."
+                f"GNN Classifier '{classifier_type}' not implemented."
             )
         else:
-            model_class = self.models[gnn_classifier_type]
+            model_class = self.models[classifier_type]
             return model_class(**kwargs)
 
 

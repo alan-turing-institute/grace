@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from torch_geometric.loader import DataLoader
 
 from grace.base import Annotation
-from grace.logger import LOGGER
+from grace.styling import LOGGER
 from grace.evaluation.metrics_classifier import get_metric
 from grace.evaluation.inference import GraphLabelPredictor
 from grace.visualisation.plotting import visualise_node_and_edge_probabilities

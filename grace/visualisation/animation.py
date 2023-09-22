@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FFMpegWriter
 from pathlib import Path
 from tqdm.auto import tqdm
-from grace.logger import LOGGER
+from grace.styling import LOGGER
 
 
 def animate_valid_graph_plots(

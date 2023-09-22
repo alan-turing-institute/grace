@@ -1,4 +1,5 @@
 from grace.base import GraphAttrs, Annotation
+from grace.styling import COLORMAPS
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -239,6 +240,8 @@ def plot_prediction_probabilities_hist(
             axes[i].legend()
 
     axes[0].set_ylabel("Attribute count")
+
+    # Style & return:
     plt.tight_layout()
     return fig
 
@@ -267,8 +270,7 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
         x=x_coords,
         y=y_coords,
         c=node_preds,
-        # cmap="coolwarm",
-        cmap="RdPu",
+        cmap=cmap,
         vmin=0.0,
         vmax=1.0,
     )
@@ -276,14 +278,13 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
         x=x_coords,
         y=y_coords,
         c=node_preds,
-        # cmap="coolwarm",
-        cmap="RdPu",
+        cmap=cmap,
         vmin=0.0,
         vmax=1.0,
     )
 
     # Add colorbar:
-    cbar = plt.colorbar(cmap, ax=axes[0])
+    cbar = plt.colorbar(color_map, ax=axes[0])
     cbar.set_label("Node Probability")
 
     # JUST THE EDGES:
@@ -301,22 +302,22 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
         axes[1].plot(
             [e_st_x, e_en_x],
             [e_st_y, e_en_y],
-            color=cmap.to_rgba(edge_pred),
+            color=color_map.to_rgba(edge_pred),
             marker="",
         )
         axes[2].plot(
             [e_st_x, e_en_x],
             [e_st_y, e_en_y],
-            color=cmap.to_rgba(edge_pred),
+            color=color_map.to_rgba(edge_pred),
             marker="",
         )
 
     # Add colorbar
-    cbar = plt.colorbar(cmap, ax=axes[1])
+    cbar = plt.colorbar(color_map, ax=axes[1])
     cbar.set_label("Edge Probability")
 
     # Annotate & display:
-    cbar = plt.colorbar(cmap, ax=axes[2])
+    cbar = plt.colorbar(color_map, ax=axes[2])
     cbar.set_label("TP Probability")
 
     axes[0].set_title("Probability of 'nodeness'")
@@ -382,7 +383,10 @@ def read_patch_stack_by_label(
     return crops
 
 
-def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
+def montage_from_image_patches(
+    crops: list[npt.NDArray],
+    cmap: str = COLORMAPS["patches"],
+) -> None:
     """Visualise the few random patches per class as a montage.
 
     Parameters
@@ -412,7 +416,7 @@ def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
         )
         # Plot a few patches
         plt.subplot(1, len(crops), c + 1)
-        plt.imshow(mont, cmap="binary_r", vmin=mn, vmax=mx)
+        plt.imshow(mont, cmap=cmap, vmin=mn, vmax=mx)
         plt.colorbar(fraction=0.045)
         plt.title(f"Montage of patches\nwith 'node_label' = {c}")
         plt.axis("off")
@@ -420,7 +424,10 @@ def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
     plt.close()
 
 
-def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
+def overlay_from_image_patches(
+    crops: list[npt.NDArray],
+    cmap: str = COLORMAPS["patches"],
+) -> None:
     """Visualise the average patch from stack per each class.
 
     Parameters
@@ -435,7 +442,7 @@ def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
             continue
         stack = np.mean(patches, axis=0)
         plt.subplot(1, len(crops), c + 1)
-        plt.imshow(stack, cmap="binary_r")
+        plt.imshow(stack, cmap=cmap)
         plt.colorbar(fraction=0.045)
         plt.title(f"Montage of patches\nwith 'node_label' = {c}")
         plt.axis("off")

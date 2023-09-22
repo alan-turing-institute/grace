@@ -10,6 +10,7 @@ from scipy.ndimage import label
 from sklearn.metrics import ConfusionMatrixDisplay
 
 from grace.base import GraphAttrs
+from grace.styling import COLORMAPS
 
 
 COLOR_LIST = ["limegreen", "gold", "dodgerblue"]
@@ -288,9 +289,7 @@ def plot_confusion_matrix_tiles(
     edge_true: npt.NDArray,
     *,
     figsize: tuple[int, int] = (10, 10),
-    colormap: str = "copper",
-    filename: str = "",
-    **kwargs,
+    cmap: str = COLORMAPS["conf_matrix"],
 ) -> None:
     # Prep:
     confusion_matrix_plotting_data = [
@@ -311,7 +310,7 @@ def plot_confusion_matrix_tiles(
                 y_true=matrix_data[1],
                 normalize=nrm,
                 ax=axs[d, n],
-                cmap=colormap,
+                cmap=cmap,
                 display_labels=["TN", "TP"],
                 text_kw={"fontsize": "large"},
             )
@@ -373,8 +372,6 @@ def plot_iou_histogram(
     )
     plt.legend()
     return fig
-    # plt.show()
-    # plt.close()
 
 
 def show_object_bounding_boxes_on_graph(
@@ -383,6 +380,7 @@ def show_object_bounding_boxes_on_graph(
     legend_handle: dict[str, str],
     annotation: npt.NDArray = None,
     figsize: tuple[int] = (10, 10),
+    cmap: str = COLORMAPS["patches"],
 ) -> None:
     """TODO: Fill in."""
 
@@ -391,7 +389,7 @@ def show_object_bounding_boxes_on_graph(
 
     # Plot the faded annotation under the graph
     if annotation is not None:
-        ax.imshow(annotation, alpha=0.5, cmap="gray", interpolation="none")
+        ax.imshow(annotation, alpha=0.5, cmap=cmap, interpolation="none")
 
     # Display the graph node positions
     pos = {
@@ -423,8 +421,6 @@ def show_object_bounding_boxes_on_graph(
     ax.set_axis_on()
     ax.set_title("IoU metric illustration on per-object level")
     return fig
-    # plt.show()
-    # plt.close()
 
 
 def visualise_bounding_boxes_on_graph(
