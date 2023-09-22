@@ -302,6 +302,9 @@ def plot_confusion_matrix_tiles(
     fig, axs = plt.subplots(2, 2, figsize=figsize)
 
     for d, matrix_data in enumerate(confusion_matrix_plotting_data):
+        if len(np.unique(matrix_data[1])) < 2:
+            continue
+
         for n, nrm in enumerate([None, "true"]):
             ConfusionMatrixDisplay.from_predictions(
                 y_pred=matrix_data[0],

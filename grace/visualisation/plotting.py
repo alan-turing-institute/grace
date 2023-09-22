@@ -351,7 +351,8 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
         x=x_coords,
         y=y_coords,
         c=node_preds,
-        cmap="coolwarm",
+        # cmap="coolwarm",
+        cmap="RdPu",
         vmin=0.0,
         vmax=1.0,
     )
@@ -359,7 +360,8 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
         x=x_coords,
         y=y_coords,
         c=node_preds,
-        cmap="coolwarm",
+        # cmap="coolwarm",
+        cmap="RdPu",
         vmin=0.0,
         vmax=1.0,
     )
