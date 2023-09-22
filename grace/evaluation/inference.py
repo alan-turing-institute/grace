@@ -10,6 +10,12 @@ import torch
 from torch_geometric.data import Data
 
 from sklearn.metrics import (
+    precision_recall_fscore_support,
+    roc_auc_score,
+    average_precision_score,
+)
+
+from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
     roc_auc_score,
