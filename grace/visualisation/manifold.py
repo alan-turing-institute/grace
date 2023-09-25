@@ -29,7 +29,7 @@ def drop_linear_layers_from_model(
     return node_emb_extractor
 
 
-class TSNEDimensionalityReduction(object):
+class TSNEManifoldProjection(object):
     def __init__(
         self,
         graph: nx.Graph,
