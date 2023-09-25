@@ -37,27 +37,48 @@ class Annotation(enum.IntEnum):
 
 @dataclasses.dataclass
 class Prediction:
-    """Value of predicted label (argmax) of all
-    normalised class probabilities (softmax).
+    """Prediction dataclass all normalised softmax class probabilities.
 
     Parameters
     ----------
-    LABEL : int
-        Predicted class label (argmax)
-    PROB_TN : float
-        Probability of true negative detection (softmax)
-    PROB_TP : float
-        Probability of true positive detection (softmax)
+    softmax_probabs : npt.NDArray
+        Array or normalised softmax probs as predicted by classifier.
+
+    Methods
+    -------
+    label : self -> Annotation
+        Annotation class label with the highest probability.
+    prob_TN : self -> float
+        Probability of true negative detection (normalised softmax).
+    prob_TP : self -> float
+        Probability of true positive detection (normalised softmax).
 
     Notes
     -----
     - Normalised probabilities of all classes must sum up to 1.
-    - LABEL is the index of the highest softmax label probability.
+    - label return the Annotation (index) of the highest label prob.
     """
 
-    LABEL: int
-    PROB_TN: float
-    PROB_TP: float
+    softmax_probabs: npt.NDArray
+
+    def __post_init__(self):
+        assert self.softmax_probabs.ndim == 1
+        assert self.softmax_probabs.shape[0] >= 2
+        assert np.all(self.softmax_probabs >= 0)
+        assert np.all(self.softmax_probabs <= 1)
+        assert np.isclose(np.sum(self.softmax_probabs), 1.0)
+
+    @property
+    def label(self) -> Annotation:
+        return Annotation(np.argmax(self.softmax_probabs))
+
+    @property
+    def prob_TN(self) -> float:
+        return self.softmax_probabs[Annotation.TRUE_NEGATIVE]
+
+    @property
+    def prob_TP(self) -> float:
+        return self.softmax_probabs[Annotation.TRUE_POSITIVE]
 
 
 def _map_annotation(annotation: int | Annotation) -> Annotation:
