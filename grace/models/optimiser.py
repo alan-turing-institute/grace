@@ -6,7 +6,7 @@ import networkx as nx
 from cvxopt import matrix, spmatrix
 from cvxopt.glpk import ilp
 
-from grace.base import GraphAttrs
+from grace.base import GraphAttrs, Prediction
 
 # options for the GLPK optimiser
 OPTIMIZER_OPTIONS = {
@@ -142,18 +142,26 @@ def optimise_graph(
     for i, n_dict in graph.nodes.data():
         hypotheses.append(
             Hypothesis(
-                i=i, j=None, rho=n_dict[GraphAttrs.NODE_PREDICTION][1][0]
+                i=i,
+                j=None,
+                rho=n_dict[GraphAttrs.NODE_PREDICTION][Prediction.PROB_TN],
             )
         )
         hypotheses.append(
             Hypothesis(
-                i=None, j=i, rho=n_dict[GraphAttrs.NODE_PREDICTION][1][0]
+                i=None,
+                j=i,
+                rho=n_dict[GraphAttrs.NODE_PREDICTION][Prediction.PROB_TN],
             )
         )
     # build a set of link hypotheses
     for i, j, e_dict in graph.edges.data():
         hypotheses.append(
-            Hypothesis(i=i, j=j, rho=e_dict[GraphAttrs.EDGE_PREDICTION][1][1])
+            Hypothesis(
+                i=i,
+                j=j,
+                rho=e_dict[GraphAttrs.EDGE_PREDICTION][Prediction.PROB_TP],
+            )
         )
 
     n_hypotheses = len(hypotheses)
@@ -185,8 +193,11 @@ def optimise_graph(
     for node, node_data in graph.nodes.data():
         optimized.add_node(node, **node_data)
 
+    # This adds the edges which *are* in the optimised solution, and maintains
+    # their respective edge attributes in the new, optimised graph:
     for h in solution:
         if h.label == HypothesisType.LINK:
-            optimized.add_edge(h.i, h.j)
+            edge_data = graph[h.i][h.j]
+            optimized.add_edge(h.i, h.j, **edge_data)
 
     return optimized
