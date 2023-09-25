@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import enum
 import networkx as nx
 import numpy as np
@@ -34,13 +35,13 @@ class Annotation(enum.IntEnum):
     UNKNOWN = 2
 
 
-class Prediction(enum.Enum):
-    """Values of predicted label & logits."""
+@dataclasses.dataclass
+class Prediction:
+    """Values of predicted label, i.e. argmax of the predictions."""
 
     LABEL: int = "predicted class label (argmax)"
     PROB_TN: float = "probability of true negative detection (softmax)"
     PROB_TP: float = "probability of true positive detection (softmax)"
-    # PROB_UNKNOWN: float = "probability of unknown detection (softmax)"
 
 
 def _map_annotation(annotation: int | Annotation) -> Annotation:
