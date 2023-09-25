@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from typing import Any, Dict, Set, Tuple
+from typing import Any
 from scipy.spatial import Delaunay
 
 
@@ -34,6 +34,15 @@ class Annotation(enum.IntEnum):
     UNKNOWN = 2
 
 
+class Prediction(enum.Enum):
+    """Values of predicted label & logits."""
+
+    LABEL: int = "predicted class label (argmax)"
+    PROB_TN: float = "probability of true negative detection (softmax)"
+    PROB_TP: float = "probability of true positive detection (softmax)"
+    # PROB_UNKNOWN: float = "probability of unknown detection (softmax)"
+
+
 def _map_annotation(annotation: int | Annotation) -> Annotation:
     if isinstance(annotation, Annotation):
         return Annotation
@@ -42,7 +51,7 @@ def _map_annotation(annotation: int | Annotation) -> Annotation:
     return Annotation.UNKNOWN
 
 
-def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
+def _sorted_vertices(vertices: npt.NDArray) -> set[tuple[int, int]]:
     ndim = len(vertices)
     edges = []
     for idx in range(ndim):
@@ -51,7 +60,7 @@ def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
     return set(edges)
 
 
-def edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
+def edges_from_delaunay(tri: Delaunay) -> set[tuple[int, int]]:
     """Return the set of unique edges from a Delaunay graph.
 
     Parameters
@@ -72,7 +81,7 @@ def edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
 
 def delaunay_edges_from_nodes(
     graph: nx.Graph, *, update_graph: bool = True
-) -> Set[Tuple[int, int]]:
+) -> set[tuple[int, int]]:
     """Create a Delaunay triangulation from a graph containing only nodes.
 
     Parameters
@@ -102,7 +111,7 @@ def delaunay_edges_from_nodes(
     # add edge nodes
     if update_graph:
         edge_attrs = {
-            GraphAttrs.EDGE_PREDICTION: (0, np.array([0.9, 0.1])),
+            # GraphAttrs.EDGE_PREDICTION: (0, np.array([0.9, 0.1])),
             GraphAttrs.EDGE_GROUND_TRUTH: Annotation.UNKNOWN,
         }
         graph.add_edges_from(edges, **edge_attrs)
@@ -110,8 +119,8 @@ def delaunay_edges_from_nodes(
 
 
 def remap_graph_dict(
-    graph_dict: Dict[str | GraphAttrs, Any]
-) -> Dict[GraphAttrs, Any]:
+    graph_dict: dict[str | GraphAttrs, Any]
+) -> dict[GraphAttrs, Any]:
     """Remap the keys of a dictionary to the appropriate `GraphAttrs`."""
     graph_attrs_str_set = {attr.value for attr in GraphAttrs}
     keys = list(graph_dict.keys())
