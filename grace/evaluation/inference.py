@@ -1,184 +1,254 @@
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
+import matplotlib.pyplot as plt
 
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 import torch
 from torch_geometric.data import Data
 from tqdm.auto import tqdm
 
-from grace.base import GraphAttrs
-from grace.models.datasets import dataset_from_graph
-
-from grace.evaluation.metrics_classifier import (
-    accuracy_metric,
-    areas_under_curves_metrics,
+from sklearn.metrics import (
+    accuracy_score,
+    precision_recall_fscore_support,
+    roc_auc_score,
+    average_precision_score,
 )
-from grace.visualisation.utils import plot_confusion_matrix_tiles
+
+from grace.base import GraphAttrs, Annotation, Prediction
+from grace.models.datasets import dataset_from_graph
 from grace.visualisation.plotting import (
-    visualise_prediction_probs_hist,
-    visualise_node_and_edge_probabilities,
+    plot_confusion_matrix_tiles,
+    plot_areas_under_curves,
+    plot_prediction_probabilities_hist,
+    # visualise_node_and_edge_probabilities,
 )
 
 
 class GraphLabelPredictor(object):
-    """TODO: Fill in."""
+    """Loader for pre-trained classifier model & update
+    predictions probabilities for nodes & edges of an
+    individual graph, or entire inference batch dataset.
 
-    def __init__(self, model: str | torch.nn.Module) -> None:
+    Parameters
+    ----------
+    model : str | torch.nn.Module
+        (Path to) Pre-trained classifier model.
+
+    """
+
+    def __init__(
+        self,
+        model: str | torch.nn.Module,
+    ) -> None:
         super().__init__()
 
         if isinstance(model, str):
             assert Path(model).is_file()
-            model = torch.load(model)
+        elif isinstance(model, PosixPath):
+            assert model.is_file()
 
-        model.eval()
-        self.pretrained_gcn = model
+        self.pretrained_gcn = torch.load(model)
+        self.pretrained_gcn.eval()
 
-    def set_node_and_edge_probabilities(self, G: nx.Graph):
-        # Process graph into torch_geometric.data:
+    def infer_graph_predictions(
+        self, data_batches: list[Data], verbose: bool = False
+    ) -> tuple[npt.NDArray]:
+        """Returns stacks of true & pred labels from graph dataset(s)."""
+
+        # Instantiate the vectors to return:
+        node_softmax_preds = []
+        edge_softmax_preds = []
+        node_labels = []
+        edge_labels = []
+
+        # Predict labels from sub-graph:
+        desc = "Inferring predictions from graph data batches: "
+        for data in tqdm(data_batches, desc=desc, disable=not verbose):
+            # Get the ground truth labels:
+            node_labels.extend(data.y)
+            edge_labels.extend(data.edge_label)
+
+            # Get the model predictions:
+            node_x, edge_x = self.pretrained_gcn.predict(
+                x=data.x, edge_index=data.edge_index
+            )
+
+            # Process node probs into classes predictions:
+            node_soft = node_x.softmax(dim=1).numpy()
+            node_softmax_preds.extend(node_soft)
+
+            # Process edge probs into classes predictions:
+            edge_soft = edge_x.softmax(dim=1).numpy()
+            edge_softmax_preds.extend(edge_soft)
+
+        # Stack the results & return:
+        return (
+            np.stack(node_softmax_preds, axis=0),
+            np.stack(edge_softmax_preds, axis=0),
+            np.stack(node_labels, axis=0),
+            np.stack(edge_labels, axis=0),
+        )
+
+    def set_node_and_edge_probabilities(self, G: nx.Graph) -> None:
+        """Update predicted node / edge probs by Prediction in-place."""
+
         data_batch = dataset_from_graph(
             graph=G, mode="whole", in_train_mode=False
         )
-        results = infer_graph_predictions(self.pretrained_gcn, data_batch)
-        n_probabs, e_probabs, n_pred, e_pred, _, _ = results
+        # Process graph into torch_geometric.data:
+        n_probs, e_probs, _, _ = self.infer_graph_predictions(data_batch)
 
-        # Iterate through each node, storing the variables:
-        for idx, node in G.nodes(data=True):
-            prediction = [int(n_pred[idx].item()), n_probabs[idx].numpy()]
+        # Iterate through each node, storing the 3 class predictions:
+        for n_idx, node in G.nodes(data=True):
+            prediction = Prediction(np.append(n_probs[n_idx], 0.0))
             node[GraphAttrs.NODE_PREDICTION] = prediction
 
         for e_idx, edge in enumerate(G.edges(data=True)):
-            prediction = (int(e_pred[e_idx].item()), e_probabs[e_idx].numpy())
+            prediction = Prediction(np.append(e_probs[e_idx], 0.0))
             edge[-1][GraphAttrs.EDGE_PREDICTION] = prediction
 
-    def visualise_model_performance_on_graph(
-        self, G: nx.Graph, positive_class: int = 1
-    ):
-        # Prep the data & plot them:
-        node_true = np.array(
-            [
-                node[GraphAttrs.NODE_GROUND_TRUTH]
-                for _, node in G.nodes(data=True)
-            ]
-        )
-        node_pred = np.array(
-            [
-                node[GraphAttrs.NODE_PREDICTION][0]
-                for _, node in G.nodes(data=True)
-            ]
-        )
-        node_probabs = np.array(
-            [
-                node[GraphAttrs.NODE_PREDICTION][1]
-                for _, node in G.nodes(data=True)
-            ]
-        )
+    def get_predictions_for_entire_batch(
+        self,
+        infer_target_list: list[dict[str]],
+        verbose: bool = False,
+    ) -> tuple[npt.NDArray]:
+        """Processes predictions for list of graph targets."""
 
-        edge_true = np.array(
-            [
-                edge[GraphAttrs.EDGE_GROUND_TRUTH]
-                for _, _, edge in G.edges(data=True)
-            ]
-        )
-        edge_pred = np.array(
-            [
-                edge[GraphAttrs.EDGE_PREDICTION][0]
-                for _, _, edge in G.edges(data=True)
-            ]
-        )
-        edge_probabs = np.array(
-            [
-                edge[GraphAttrs.EDGE_PREDICTION][1]
-                for _, _, edge in G.edges(data=True)
-            ]
-        )
+        data = [[] for _ in range(6)]
 
-        # Unify the inputs - get the predictions scores for TP class:
-        filter_mask = np.logical_or(
-            node_true == 0, node_true == positive_class
+        for target in tqdm(infer_target_list, disable=not verbose):
+            # Read & update the graph:
+            G = target["graph"]
+            self.set_node_and_edge_probabilities(G=G)
+
+            # Store the node & edge data into vectors:
+            for _, n in G.nodes(data=True):
+                label = n[GraphAttrs.NODE_GROUND_TRUTH]
+                if label == Annotation.UNKNOWN:
+                    continue
+                data[0].append(label)
+                data[1].append(n[GraphAttrs.NODE_PREDICTION].label)
+                data[2].append(n[GraphAttrs.NODE_PREDICTION].prob_TP)
+
+            for _, _, e in G.edges(data=True):
+                label = e[GraphAttrs.EDGE_GROUND_TRUTH]
+                if label == Annotation.UNKNOWN:
+                    continue
+                data[3].append(label)
+                data[4].append(e[GraphAttrs.EDGE_PREDICTION].label)
+                data[5].append(e[GraphAttrs.EDGE_PREDICTION].prob_TP)
+
+        # Sanity checks:
+        assert len(data[0]) == len(data[1]) == len(data[2])
+        assert len(data[3]) == len(data[4]) == len(data[5])
+        data = [np.array(item) for item in data]
+
+        n_true, n_pred, n_prob, e_true, e_pred, e_prob = data
+        return n_true, n_pred, n_prob, e_true, e_pred, e_prob
+
+    def calculate_numerical_results(
+        self,
+        infer_target_list: list[dict[str]],
+        verbose: bool = False,
+    ) -> dict[str, float]:
+        """Calculates & return dictionary of numerical metrics for batch."""
+        # Get the batch probs & predictions:
+        data = self.get_predictions_for_entire_batch(
+            infer_target_list=infer_target_list, verbose=verbose
         )
-        node_true = node_true[filter_mask]
-        node_pred = node_pred[filter_mask]
-        node_probabs = node_probabs[filter_mask]
+        n_true, n_pred, n_prob, e_true, e_pred, e_prob = data
 
-        filter_mask = np.logical_or(
-            edge_true == 0, edge_true == positive_class
+        inference_batch_metrics = {}
+
+        # Accuracy:
+        inference_batch_metrics["Batch accuracy (nodes)"] = accuracy_score(
+            y_pred=n_pred, y_true=n_true, normalize=True
         )
-        edge_true = edge_true[filter_mask]
-        edge_pred = edge_pred[filter_mask]
-        edge_probabs = edge_probabs[filter_mask]
-
-        # Compute & return accuracy:
-        node_acc, edge_acc = accuracy_metric(
-            node_pred, edge_pred, node_true, edge_true
-        )
-
-        # Display metrics figures:
-        plot_confusion_matrix_tiles(node_pred, edge_pred, node_true, edge_true)
-
-        areas_under_curves_metrics(
-            node_probabs[:, positive_class],
-            edge_probabs[:, positive_class],
-            node_true,
-            edge_true,
-            figsize=(10, 4),
+        inference_batch_metrics["Batch accuracy (edges)"] = accuracy_score(
+            y_pred=e_pred, y_true=e_true, normalize=True
         )
 
-        # Localise where the errors occur:
-        visualise_prediction_probs_hist(G=G)
-        visualise_node_and_edge_probabilities(G=G)
+        # PRF1:
+        prf1_nodes = precision_recall_fscore_support(
+            y_pred=n_pred, y_true=n_true, average="binary"
+        )
+        prf1_edges = precision_recall_fscore_support(
+            y_pred=e_pred, y_true=e_true, average="binary"
+        )
+        inference_batch_metrics["Batch precision (nodes)"] = prf1_nodes[0]
+        inference_batch_metrics["Batch precision (edges)"] = prf1_edges[0]
+        inference_batch_metrics["Batch recall (nodes)"] = prf1_nodes[1]
+        inference_batch_metrics["Batch recall (edges)"] = prf1_edges[1]
+        inference_batch_metrics["Batch f1-score (nodes)"] = prf1_nodes[2]
+        inference_batch_metrics["Batch f1-score (edges)"] = prf1_edges[2]
 
-        return node_acc, edge_acc
+        # AUC scores:
+        inference_batch_metrics["Batch AUROC (nodes)"] = roc_auc_score(
+            y_true=n_true, y_score=n_prob
+        )
+        inference_batch_metrics["Batch AUROC (edges)"] = roc_auc_score(
+            y_true=e_true, y_score=e_prob
+        )
 
+        # AP scores:
+        inference_batch_metrics[
+            "Batch avg precision (nodes)"
+        ] = average_precision_score(y_true=n_true, y_score=n_prob)
+        inference_batch_metrics[
+            "Batch avg precision (edges)"
+        ] = average_precision_score(y_true=e_true, y_score=e_prob)
 
-def infer_graph_predictions(
-    model: torch.nn.Module,
-    data_batches: list[Data],
-) -> tuple[torch.Tensor]:
-    """TODO: Clean this fn."""
+        return inference_batch_metrics
 
-    # Instantiate the vectors to return:
-    node_softmax_preds = []
-    edge_softmax_preds = []
-    node_argmax_preds = []
-    edge_argmax_preds = []
-    node_labels = []
-    edge_labels = []
+    def visualise_model_performance_on_entire_batch(
+        self,
+        infer_target_list: list[dict[str]],
+        *,
+        save_figures: str | Path = None,
+        show_figures: bool = False,
+        verbose: bool = False,
+    ) -> None:
+        """Visualise and/or saves out performance plots for batch."""
+        # Create the save path:
+        if save_figures is not None:
+            save_path = save_figures
+            if isinstance(save_path, str):
+                save_path = Path(save_path)
+            assert save_path.is_dir()
+            save_figures = True
+        else:
+            save_figures = False
 
-    # Predict labels from sub-graph:
-    for data in tqdm(data_batches, desc="Predicting for the entire graph: "):
-        # Get the ground truth labels:
-        node_labels.extend(data.y)
-        edge_labels.extend(data.edge_label)
+        # Process batch data predictions:
+        data = self.get_predictions_for_entire_batch(
+            infer_target_list=infer_target_list, verbose=verbose
+        )
+        n_true, n_pred, n_prob, e_true, e_pred, e_prob = data
 
-        # Get the model predictions:
-        node_x, edge_x = model.predict(x=data.x, edge_index=data.edge_index)
+        # Confusion matrix tiles:
+        plot_confusion_matrix_tiles(n_pred, e_pred, n_true, e_true)
+        if save_figures is True:
+            plt.savefig(save_path / "Batch_Dataset-Confusion_Matrix_Tiles.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
 
-        # Process node probs into classes predictions:
-        node_soft = node_x.softmax(dim=1)
-        node_softmax_preds.extend(node_soft)
-        node_arg = node_soft.argmax(dim=1).long()
-        node_argmax_preds.extend(node_arg)
+        # Areas under curves:
+        plot_areas_under_curves(n_prob, e_prob, n_true, e_true)
+        if save_figures is True:
+            plt.savefig(save_path / "Batch_Dataset-Areas_Under_Curves.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
 
-        # Process edge probs into classes predictions:
-        edge_soft = edge_x.softmax(dim=1)
-        edge_softmax_preds.extend(edge_soft)
-        edge_arg = edge_soft.argmax(dim=1).long()
-        edge_argmax_preds.extend(edge_arg)
+        # Predicted probs hist:
+        plot_prediction_probabilities_hist(n_pred, e_pred, n_true, e_true)
+        if save_figures is True:
+            plt.savefig(save_path / "Batch_Dataset-Prediction_Probs_Hist.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
 
-    # Stack the results:
-    node_softmax_preds = torch.stack(node_softmax_preds, axis=0)
-    edge_softmax_preds = torch.stack(edge_softmax_preds, axis=0)
-    node_argmax_preds = torch.stack(node_argmax_preds, axis=0)
-    edge_argmax_preds = torch.stack(edge_argmax_preds, axis=0)
-    node_labels = torch.stack(node_labels, axis=0)
-    edge_labels = torch.stack(edge_labels, axis=0)
-
-    return (
-        node_softmax_preds,
-        edge_softmax_preds,
-        node_argmax_preds,
-        edge_argmax_preds,
-        node_labels,
-        edge_labels,
-    )
+        # TODO: Instance IoU histogram
