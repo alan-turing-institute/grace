@@ -46,12 +46,14 @@ class Prediction:
 
     Methods
     -------
-    label : self -> Annotation
+    label : Annotation
         Annotation class label with the highest probability.
-    prob_TN : self -> float
+    prob_TN : float
         Probability of true negative detection (normalised softmax).
-    prob_TP : self -> float
+    prob_TP : float
         Probability of true positive detection (normalised softmax).
+    prob_UNKNOWN : float
+        Probability of UNKNOWN label; should be 0 if excluded from training.
 
     Notes
     -----
@@ -59,26 +61,32 @@ class Prediction:
     - label return the Annotation (index) of the highest label prob.
     """
 
-    softmax_probabs: npt.NDArray
+    softmax_probs: npt.NDArray
 
     def __post_init__(self):
-        assert self.softmax_probabs.ndim == 1
-        assert self.softmax_probabs.shape[0] >= 2
-        assert np.all(self.softmax_probabs >= 0)
-        assert np.all(self.softmax_probabs <= 1)
-        assert np.isclose(np.sum(self.softmax_probabs), 1.0)
+        assert self.softmax_probs.ndim == 1
+        assert len(self.softmax_probs) == len(Annotation)
+
+        self.softmax_probs.shape[0] >= 2
+        assert np.all(self.softmax_probs >= 0)
+        assert np.all(self.softmax_probs <= 1)
+        assert np.isclose(np.sum(self.softmax_probs), 1.0)
 
     @property
     def label(self) -> Annotation:
-        return Annotation(np.argmax(self.softmax_probabs))
+        return Annotation(np.argmax(self.softmax_probs))
 
     @property
     def prob_TN(self) -> float:
-        return self.softmax_probabs[Annotation.TRUE_NEGATIVE]
+        return self.softmax_probs[Annotation.TRUE_NEGATIVE]
 
     @property
     def prob_TP(self) -> float:
-        return self.softmax_probabs[Annotation.TRUE_POSITIVE]
+        return self.softmax_probs[Annotation.TRUE_POSITIVE]
+
+    @property
+    def prob_UNKNOWN(self) -> float:
+        return self.softmax_probs[Annotation.UNKNOWN]
 
 
 def _map_annotation(annotation: int | Annotation) -> Annotation:
@@ -149,7 +157,6 @@ def delaunay_edges_from_nodes(
     # add edge nodes
     if update_graph:
         edge_attrs = {
-            # GraphAttrs.EDGE_PREDICTION: (0, np.array([0.9, 0.1])),
             GraphAttrs.EDGE_GROUND_TRUTH: Annotation.UNKNOWN,
         }
         graph.add_edges_from(edges, **edge_attrs)
