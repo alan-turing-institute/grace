@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import dataclasses
 import enum
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from typing import Any, Dict, Set, Tuple
+from typing import Any
 from scipy.spatial import Delaunay
 
 
@@ -34,6 +35,60 @@ class Annotation(enum.IntEnum):
     UNKNOWN = 2
 
 
+@dataclasses.dataclass
+class Prediction:
+    """Prediction dataclass all normalised softmax class probabilities.
+
+    Parameters
+    ----------
+    softmax_probabs : npt.NDArray
+        Array or normalised softmax probs as predicted by classifier.
+
+    Methods
+    -------
+    label : Annotation
+        Annotation class label with the highest probability.
+    prob_TN : float
+        Probability of true negative detection (normalised softmax).
+    prob_TP : float
+        Probability of true positive detection (normalised softmax).
+    prob_UNKNOWN : float
+        Probability of UNKNOWN label; should be 0 if excluded from training.
+
+    Notes
+    -----
+    - Normalised probabilities of all classes must sum up to 1.
+    - label return the Annotation (index) of the highest label prob.
+    """
+
+    softmax_probs: npt.NDArray
+
+    def __post_init__(self):
+        assert self.softmax_probs.ndim == 1
+        assert len(self.softmax_probs) == len(Annotation)
+
+        self.softmax_probs.shape[0] >= 2
+        assert np.all(self.softmax_probs >= 0)
+        assert np.all(self.softmax_probs <= 1)
+        assert np.isclose(np.sum(self.softmax_probs), 1.0)
+
+    @property
+    def label(self) -> Annotation:
+        return Annotation(np.argmax(self.softmax_probs))
+
+    @property
+    def prob_TN(self) -> float:
+        return self.softmax_probs[Annotation.TRUE_NEGATIVE]
+
+    @property
+    def prob_TP(self) -> float:
+        return self.softmax_probs[Annotation.TRUE_POSITIVE]
+
+    @property
+    def prob_UNKNOWN(self) -> float:
+        return self.softmax_probs[Annotation.UNKNOWN]
+
+
 def _map_annotation(annotation: int | Annotation) -> Annotation:
     if isinstance(annotation, Annotation):
         return Annotation
@@ -42,7 +97,7 @@ def _map_annotation(annotation: int | Annotation) -> Annotation:
     return Annotation.UNKNOWN
 
 
-def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
+def _sorted_vertices(vertices: npt.NDArray) -> set[tuple[int, int]]:
     ndim = len(vertices)
     edges = []
     for idx in range(ndim):
@@ -51,7 +106,7 @@ def _sorted_vertices(vertices: npt.NDArray) -> Set[Tuple[int, int]]:
     return set(edges)
 
 
-def edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
+def edges_from_delaunay(tri: Delaunay) -> set[tuple[int, int]]:
     """Return the set of unique edges from a Delaunay graph.
 
     Parameters
@@ -72,7 +127,7 @@ def edges_from_delaunay(tri: Delaunay) -> Set[Tuple[int, int]]:
 
 def delaunay_edges_from_nodes(
     graph: nx.Graph, *, update_graph: bool = True
-) -> Set[Tuple[int, int]]:
+) -> set[tuple[int, int]]:
     """Create a Delaunay triangulation from a graph containing only nodes.
 
     Parameters
@@ -102,7 +157,6 @@ def delaunay_edges_from_nodes(
     # add edge nodes
     if update_graph:
         edge_attrs = {
-            GraphAttrs.EDGE_PREDICTION: 0.0,
             GraphAttrs.EDGE_GROUND_TRUTH: Annotation.UNKNOWN,
         }
         graph.add_edges_from(edges, **edge_attrs)
@@ -110,8 +164,8 @@ def delaunay_edges_from_nodes(
 
 
 def remap_graph_dict(
-    graph_dict: Dict[str | GraphAttrs, Any]
-) -> Dict[GraphAttrs, Any]:
+    graph_dict: dict[str | GraphAttrs, Any]
+) -> dict[GraphAttrs, Any]:
     """Remap the keys of a dictionary to the appropriate `GraphAttrs`."""
     graph_attrs_str_set = {attr.value for attr in GraphAttrs}
     keys = list(graph_dict.keys())

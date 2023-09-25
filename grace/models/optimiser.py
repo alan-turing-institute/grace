@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import networkx as nx
 from cvxopt import matrix, spmatrix
@@ -48,9 +48,9 @@ class Hypothesis:
 
 
 def _build_matrices(
-    hypotheses: List[Hypothesis],
+    hypotheses: list[Hypothesis],
     N: int,
-) -> Tuple[spmatrix, matrix]:
+) -> tuple[spmatrix, matrix]:
     """Build the constraints matrix.
 
     Returns
@@ -91,7 +91,7 @@ def _build_matrices(
 def optimise_graph(
     graph: nx.Graph,
     *,
-    options: Dict[str, Any] = OPTIMIZER_OPTIONS,
+    options: dict[str, Any] = OPTIMIZER_OPTIONS,
 ) -> nx.Graph:
     """Optimise a graph to split into objects.
 
@@ -133,7 +133,7 @@ def optimise_graph(
                 b is a constraint that is set to include all detections
 
     """
-    hypotheses: List[Hypothesis] = []
+    hypotheses: list[Hypothesis] = []
 
     # the number of detections (or vertices) in the graph
     n_detections = graph.number_of_nodes()
@@ -141,15 +141,27 @@ def optimise_graph(
     # build a set of false positive hypotheses
     for i, n_dict in graph.nodes.data():
         hypotheses.append(
-            Hypothesis(i=i, j=None, rho=n_dict[GraphAttrs.NODE_PREDICTION])
+            Hypothesis(
+                i=i,
+                j=None,
+                rho=n_dict[GraphAttrs.NODE_PREDICTION].prob_TN,
+            )
         )
         hypotheses.append(
-            Hypothesis(i=None, j=i, rho=n_dict[GraphAttrs.NODE_PREDICTION])
+            Hypothesis(
+                i=None,
+                j=i,
+                rho=n_dict[GraphAttrs.NODE_PREDICTION].prob_TN,
+            )
         )
     # build a set of link hypotheses
     for i, j, e_dict in graph.edges.data():
         hypotheses.append(
-            Hypothesis(i=i, j=j, rho=e_dict[GraphAttrs.EDGE_PREDICTION])
+            Hypothesis(
+                i=i,
+                j=j,
+                rho=e_dict[GraphAttrs.EDGE_PREDICTION].prob_TP,
+            )
         )
 
     n_hypotheses = len(hypotheses)
@@ -181,8 +193,11 @@ def optimise_graph(
     for node, node_data in graph.nodes.data():
         optimized.add_node(node, **node_data)
 
+    # This adds the edges which *are* in the optimised solution, and maintains
+    # their respective edge attributes in the new, optimised graph:
     for h in solution:
         if h.label == HypothesisType.LINK:
-            optimized.add_edge(h.i, h.j)
+            edge_data = graph[h.i][h.j]
+            optimized.add_edge(h.i, h.j, **edge_data)
 
     return optimized

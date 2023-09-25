@@ -1,57 +1,105 @@
 import networkx as nx
 import numpy as np
 
-from grace.base import GraphAttrs, Annotation
+from grace.base import GraphAttrs, Annotation, Prediction
 
 
 def update_graph_with_dummy_predictions(
     G: nx.Graph,
-    node_confidence: float = 0.5,
-    edge_confidence: float = 0.1,
+    node_uncertainty: float = 0.5,
+    edge_uncertainty: float = 0.1,
 ) -> None:
     """Updates dummy graph prediction instead of node / edge classifier.
-        Uses random values but assignes all predictions *correctly*.
+        Uses random values but assignes all predictions correctly (default).
 
     Parameters
     ----------
     G : nx.Graph
         The graph which node & edge predictions to updated with random values
-    node_confidence : float
-        Confidence limit for assigning the probability values. Defaults to 0.5
-    edge_confidence : float
-        Confidence limit for assigning the probability values. Defaults to 0.1
+    node_uncertainty : float
+        Confidence limit for assigning the probability values.
+        Accepts values ranging from (0.0, 0.5]. Defaults to 0.5
+    edge_uncertainty : float
+        Confidence limit for assigning the probability values.
+        Accepts values ranging from (0.0, 0.5]. Defaults to 0.1
 
     Returns
     -------
-    None
+    None (modifies the input graph in-place)
 
     Notes
     -----
     - Modifies the graph in place.
-    - Only motifs with the same object identity will be linked.
+    - The 'uncertainty' parameter separates the distributions of predictions
+        for the respective classes, e.g. 0.5 will produce a distribution of
+        attribute values for TN between [0.0, 0.5) & TP between (0.5, 1.0]
+        which are very close, whilst 0.1 will force larger separation between
+        them, i.e. TN between [0.0, 0.1) & TP between (0.9, 1.0].
+    - Only motifs with the same object identity should be linked (TODO)
     """
+    # Make sure that the uncertainties range within the expected threshold:
+    mn, mx = 0.0, 1.0
+    if not (mn <= node_uncertainty <= mx):
+        raise ValueError(
+            "Node uncertainty value must be between "
+            f"{mn} and {mx}, but got {node_uncertainty}"
+        )
+    if not (mn <= edge_uncertainty <= mx):
+        raise ValueError(
+            "Edge uncertainty value must be between "
+            f"{mn} and {mx}, but got {edge_uncertainty}"
+        )
 
-    # Make sure all objects are labelled according to object identity:
+    # Make sure all objects have their GT label in some form:
     nodes = list(G.nodes.data())
-    obj_identity = ["object_idx" in node for _, node in nodes]
-    assert all(obj_identity)
+    obj_identity = ["object_idx" in n and "label" in n for _, n in nodes]
+    lbl_identity = [GraphAttrs.NODE_GROUND_TRUTH in n for _, n in nodes]
+    assert all(obj_identity) or all(lbl_identity)
 
+    # Iterate through all the nodes:
     for _, node in nodes:
-        pd = np.random.random() * node_confidence
-        if node["label"] > 0:
-            node[GraphAttrs.NODE_PREDICTION] = pd
-        else:
-            node[GraphAttrs.NODE_PREDICTION] = 1 - pd
+        pd = np.random.random() * node_uncertainty
 
+        if all(obj_identity):
+            # true positive node:
+            if node["label"] > 0:
+                pred = Prediction(np.array([pd, 1 - pd, 0.0]))
+            else:
+                pred = Prediction(np.array([1 - pd, pd, 0.0]))
+            node[GraphAttrs.NODE_PREDICTION] = pred
+
+        if all(lbl_identity):
+            # true positive node:
+            if node[GraphAttrs.NODE_GROUND_TRUTH] == Annotation.TRUE_POSITIVE:
+                pred = Prediction(np.array([pd, 1 - pd, 0.0]))
+            else:
+                pred = Prediction(np.array([1 - pd, pd, 0.0]))
+            node[GraphAttrs.NODE_PREDICTION] = pred
+
+    # Iterate through all the edges:
     for edge in G.edges.data():
-        pd = np.random.random() * edge_confidence
+        pd = np.random.random() * edge_uncertainty
         _, e_i = nodes[edge[0]]
         _, e_j = nodes[edge[1]]
 
-        if e_i["object_idx"] == e_j["object_idx"] and e_i["label"] > 0:
-            edge[2][GraphAttrs.EDGE_PREDICTION] = 1 - pd
-        else:
-            edge[2][GraphAttrs.EDGE_PREDICTION] = pd
+        if all(obj_identity):
+            # true positive edge:
+            if e_i["object_idx"] == e_j["object_idx"] and e_i["label"] > 0:
+                pred = Prediction(np.array([pd, 1 - pd, 0.0]))
+            else:
+                pred = Prediction(np.array([1 - pd, pd, 0.0]))
+            edge[-1][GraphAttrs.EDGE_PREDICTION] = pred
+
+        if all(lbl_identity):
+            # true positive edge:
+            if (
+                edge[-1][GraphAttrs.EDGE_GROUND_TRUTH]
+                == Annotation.TRUE_POSITIVE
+            ):
+                pred = Prediction(np.array([pd, 1 - pd, 0.0]))
+            else:
+                pred = Prediction(np.array([1 - pd, pd, 0.0]))
+            edge[-1][GraphAttrs.EDGE_PREDICTION] = pred
 
 
 def _remove_edges_from_ObjectIndex(GT_graph: nx.Graph) -> None:
@@ -135,38 +183,12 @@ def assume_annotations_from_dummy_predictions(G: nx.Graph) -> None:
     """Translates between dummy predictions & GT labels."""
 
     for _, node in G.nodes(data=True):
-        if node[GraphAttrs.NODE_PREDICTION] >= 0.5:
-            node[GraphAttrs.NODE_GROUND_TRUTH] = 1
-        else:
-            node[GraphAttrs.NODE_GROUND_TRUTH] = 0
+        pred_label = node[GraphAttrs.NODE_PREDICTION].label
+        node[GraphAttrs.NODE_GROUND_TRUTH] = Annotation(pred_label)
 
     for _, _, edge in G.edges(data=True):
-        if edge[GraphAttrs.EDGE_PREDICTION] >= 0.5:
-            edge[GraphAttrs.EDGE_GROUND_TRUTH] = 1
-        else:
-            edge[GraphAttrs.EDGE_GROUND_TRUTH] = 0
-
-
-def assume_dummy_predictions_from_annotations(G: nx.Graph) -> None:
-    """Translates between GT labels & dummy predictions.
-
-    - Effectively a useless fn as update_dummy... fn does the same.
-    TODO: This code doesn't account for UNKNOWN annotations.
-    """
-
-    for _, node in G.nodes(data=True):
-        pd = np.random.random() * 0.5
-        if node[GraphAttrs.NODE_GROUND_TRUTH] == 1:
-            node[GraphAttrs.NODE_PREDICTION] = 1 - pd
-        else:
-            node[GraphAttrs.NODE_PREDICTION] = pd
-
-    for _, _, edge in G.edges(data=True):
-        pd = np.random.random() * 0.1
-        if edge[GraphAttrs.EDGE_GROUND_TRUTH] == 1:
-            edge[GraphAttrs.EDGE_PREDICTION] = 1 - pd
-        else:
-            edge[GraphAttrs.EDGE_PREDICTION] = pd
+        pred_label = node[GraphAttrs.NODE_PREDICTION].label
+        edge[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation(pred_label)
 
 
 def add_and_remove_random_edges(
@@ -220,9 +242,7 @@ def _add_random_edges(
     )
     edges_to_add = [possible_edges[e] for e in edges_to_add]
     for node1, node2 in edges_to_add:
-        # if not G.has_edge(node1, node2):
         G.add_edge(node1, node2)
-        # HACK: Check if this makes sense!
         G[node1][node2][
             GraphAttrs.EDGE_GROUND_TRUTH
         ] = Annotation.TRUE_POSITIVE
