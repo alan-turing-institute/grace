@@ -10,6 +10,13 @@ import matplotlib
 import numpy.typing as npt
 
 from skimage.util import montage
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    roc_auc_score,
+    RocCurveDisplay,
+    average_precision_score,
+    PrecisionRecallDisplay,
+)
 
 
 def plot_simple_graph(
@@ -172,24 +179,129 @@ def display_image_and_grace_annotation(
     plt.close()
 
 
-def visualise_prediction_probs_hist(G: nx.Graph) -> None:
+def plot_confusion_matrix_tiles(
+    node_pred: npt.NDArray,
+    edge_pred: npt.NDArray,
+    node_true: npt.NDArray,
+    edge_true: npt.NDArray,
+    *,
+    figsize: tuple[int, int] = (10, 10),
+    cmap: str = "copper",
+) -> None:
+    # Prep:
+    confusion_matrix_plotting_data = [
+        [node_pred, node_true, "nodes"],
+        [edge_pred, edge_true, "edges"],
+    ]
+
+    # Plot:
+    fig, axs = plt.subplots(2, 2, figsize=figsize)
+
+    for d, matrix_data in enumerate(confusion_matrix_plotting_data):
+        if len(np.unique(matrix_data[1])) < 2:
+            continue
+
+        for n, nrm in enumerate([None, "true"]):
+            ConfusionMatrixDisplay.from_predictions(
+                y_pred=matrix_data[0],
+                y_true=matrix_data[1],
+                normalize=nrm,
+                ax=axs[d, n],
+                cmap=cmap,
+                display_labels=["TN", "TP"],
+                text_kw={"fontsize": "large"},
+            )
+
+            flag = "Raw Counts" if nrm is None else "Normalised"
+            text = f"{matrix_data[2].capitalize()} | {flag} Values"
+            axs[d, n].set_title(text)
+
+    plt.tight_layout()
+    return fig
+
+
+def plot_areas_under_curves(
+    node_pred: npt.NDArray,
+    edge_pred: npt.NDArray,
+    node_true: npt.NDArray,
+    edge_true: npt.NDArray,
+    figsize: tuple[int] = (10, 4),
+) -> plt.figure:
+    # Instantiate the figure
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=figsize)
+
+    # Area under ROC:
+    roc_score_nodes = roc_auc_score(y_true=node_true, y_score=node_pred)
+    RocCurveDisplay.from_predictions(
+        y_true=node_true,
+        y_pred=node_pred,
+        color="dodgerblue",
+        lw=3,
+        label=f"Nodes = {roc_score_nodes:.4f}",
+        ax=axes[0],
+    )
+
+    roc_score_edges = roc_auc_score(y_true=edge_true, y_score=edge_pred)
+    RocCurveDisplay.from_predictions(
+        y_true=edge_true,
+        y_pred=edge_pred,
+        color="forestgreen",
+        lw=3,
+        label=f"Edges = {roc_score_edges:.4f}",
+        ax=axes[0],
+    )
+
+    # Average Precision:
+    prc_score_nodes = average_precision_score(
+        y_true=node_true, y_score=node_pred
+    )
+    PrecisionRecallDisplay.from_predictions(
+        y_true=node_true,
+        y_pred=node_pred,
+        color="dodgerblue",
+        lw=3,
+        label=f"Nodes = {prc_score_nodes:.4f}",
+        ax=axes[1],
+    )
+
+    prc_score_edges = average_precision_score(
+        y_true=edge_true, y_score=edge_pred
+    )
+    PrecisionRecallDisplay.from_predictions(
+        y_true=edge_true,
+        y_pred=edge_pred,
+        color="forestgreen",
+        lw=3,
+        label=f"Edges = {prc_score_edges:.4f}",
+        ax=axes[1],
+    )
+
+    # Annotate the figure:
+    axes[0].plot([0, 1], [0, 1], ls="dashed", lw=1, color="lightgrey")
+    axes[1].plot([0, 1], [0.5, 0.5], ls="dashed", lw=1, color="lightgrey")
+    axes[1].plot([0.5, 0.5], [0, 1], ls="dashed", lw=1, color="lightgrey")
+
+    axes[0].set_title("Area under ROC")
+    axes[1].set_title("Average Precision Score")
+
+    plt.tight_layout()
+    return fig
+
+
+def plot_prediction_probabilities_hist(
+    node_pred: npt.NDArray,
+    edge_pred: npt.NDArray,
+    node_true: npt.NDArray,
+    edge_true: npt.NDArray,
+    *,
+    figsize: tuple[int] = (10, 4),
+) -> None:
     """Plot the prediction probabilities colour-coded by their GT label."""
 
-    # Process the true & pred values:
-    n_true, n_pred = [], []
-    for _, node in G.nodes(data=True):
-        n_pred.append(node[GraphAttrs.NODE_PREDICTION][1][1])
-        n_true.append(node[GraphAttrs.NODE_GROUND_TRUTH])
-
-    e_true, e_pred = [], []
-    for _, _, edge in G.edges(data=True):
-        e_pred.append(edge[GraphAttrs.EDGE_PREDICTION][1][1])
-        e_true.append(edge[GraphAttrs.EDGE_GROUND_TRUTH])
-
     # Plot the node & edge histogram by label:
-    _, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 4))
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=figsize)
     for i, (pred, true, att) in enumerate(
-        zip([n_pred, e_pred], [n_true, e_true], ["nodes", "edges"])
+        zip([node_pred, edge_pred], [node_true, edge_true], ["nodes", "edges"])
     ):
         for lab_idx in np.unique(true):
             preds = [p for p, t in zip(pred, true) if t == lab_idx]
@@ -201,8 +313,41 @@ def visualise_prediction_probs_hist(G: nx.Graph) -> None:
             axes[i].legend()
 
     axes[0].set_ylabel("Attribute count")
-    plt.show()
-    plt.close()
+    plt.tight_layout()
+    return fig
+
+
+# def visualise_prediction_probs_hist(G: nx.Graph) -> None:
+#     """Plot the prediction probabilities colour-coded by their GT label."""
+
+#     # Process the true & pred values:
+#     n_true, n_pred = [], []
+#     for _, node in G.nodes(data=True):
+#         n_pred.append(node[GraphAttrs.NODE_PREDICTION][1][1])
+#         n_true.append(node[GraphAttrs.NODE_GROUND_TRUTH])
+
+#     e_true, e_pred = [], []
+#     for _, _, edge in G.edges(data=True):
+#         e_pred.append(edge[GraphAttrs.EDGE_PREDICTION][1][1])
+#         e_true.append(edge[GraphAttrs.EDGE_GROUND_TRUTH])
+
+#     # Plot the node & edge histogram by label:
+#     _, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 4))
+#     for i, (pred, true, att) in enumerate(
+#         zip([n_pred, e_pred], [n_true, e_true], ["nodes", "edges"])
+#     ):
+#         for lab_idx in np.unique(true):
+#             preds = [p for p, t in zip(pred, true) if t == lab_idx]
+#             axes[i].hist(
+#                 preds, alpha=0.7, label=f"GT = {lab_idx} | {len(preds)} {att}"
+#             )
+#             axes[i].set_title(f"Inferred predictions -> TP {att}")
+#             axes[i].set_xlabel("Predicted softmax probability")
+#             axes[i].legend()
+
+#     axes[0].set_ylabel("Attribute count")
+#     plt.show()
+#     plt.close()
 
 
 def visualise_node_and_edge_probabilities(G: nx.Graph) -> None:
