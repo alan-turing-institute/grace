@@ -37,11 +37,27 @@ class Annotation(enum.IntEnum):
 
 @dataclasses.dataclass
 class Prediction:
-    """Values of predicted label, i.e. argmax of the predictions."""
+    """Value of predicted label (argmax) of all
+    normalised class probabilities (softmax).
 
-    LABEL: int = "predicted class label (argmax)"
-    PROB_TN: float = "probability of true negative detection (softmax)"
-    PROB_TP: float = "probability of true positive detection (softmax)"
+    Parameters
+    ----------
+    LABEL : int
+        Predicted class label (argmax)
+    PROB_TN : float
+        Probability of true negative detection (softmax)
+    PROB_TP : float
+        Probability of true positive detection (softmax)
+
+    Notes
+    -----
+    - Normalised probabilities of all classes must sum up to 1.
+    - LABEL is the index of the highest softmax label probability.
+    """
+
+    LABEL: int
+    PROB_TN: float
+    PROB_TP: float
 
 
 def _map_annotation(annotation: int | Annotation) -> Annotation:
