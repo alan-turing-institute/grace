@@ -1,6 +1,6 @@
 import numpy as np
 
-from grace.base import GraphAttrs, Prediction
+from grace.base import GraphAttrs
 
 from grace.evaluation.process import (
     update_graph_with_dummy_predictions,
@@ -16,16 +16,16 @@ def test_update_dummy_graph_predictions(default_rng):
     update_graph_with_dummy_predictions(graph)
 
     for _, node in graph.nodes(data=True):
-        lbl = node[GraphAttrs.NODE_PREDICTION][Prediction.LABEL]
+        lbl = node[GraphAttrs.NODE_PREDICTION].label
         assert isinstance(lbl, int)
 
-        logits = np.array(
+        probabs = np.array(
             [
-                node[GraphAttrs.NODE_PREDICTION][Prediction.PROB_TN],
-                node[GraphAttrs.NODE_PREDICTION][Prediction.PROB_TP],
+                node[GraphAttrs.NODE_PREDICTION].prob_TN,
+                node[GraphAttrs.NODE_PREDICTION].prob_TP,
             ]
         )
-        assert np.sum(logits) == 1
+        assert np.sum(probabs) == 1
 
-        arg = np.argmax(logits)
+        arg = np.argmax(probabs)
         assert arg == lbl
