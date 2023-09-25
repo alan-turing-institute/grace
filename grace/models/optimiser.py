@@ -1,12 +1,12 @@
 import dataclasses
 import enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import networkx as nx
 from cvxopt import matrix, spmatrix
 from cvxopt.glpk import ilp
 
-from grace.base import GraphAttrs, Prediction
+from grace.base import GraphAttrs
 
 # options for the GLPK optimiser
 OPTIMIZER_OPTIONS = {
@@ -48,9 +48,9 @@ class Hypothesis:
 
 
 def _build_matrices(
-    hypotheses: List[Hypothesis],
+    hypotheses: list[Hypothesis],
     N: int,
-) -> Tuple[spmatrix, matrix]:
+) -> tuple[spmatrix, matrix]:
     """Build the constraints matrix.
 
     Returns
@@ -91,7 +91,7 @@ def _build_matrices(
 def optimise_graph(
     graph: nx.Graph,
     *,
-    options: Dict[str, Any] = OPTIMIZER_OPTIONS,
+    options: dict[str, Any] = OPTIMIZER_OPTIONS,
 ) -> nx.Graph:
     """Optimise a graph to split into objects.
 
@@ -133,7 +133,7 @@ def optimise_graph(
                 b is a constraint that is set to include all detections
 
     """
-    hypotheses: List[Hypothesis] = []
+    hypotheses: list[Hypothesis] = []
 
     # the number of detections (or vertices) in the graph
     n_detections = graph.number_of_nodes()
@@ -144,14 +144,14 @@ def optimise_graph(
             Hypothesis(
                 i=i,
                 j=None,
-                rho=n_dict[GraphAttrs.NODE_PREDICTION][Prediction.PROB_TN],
+                rho=n_dict[GraphAttrs.NODE_PREDICTION].prob_TN,
             )
         )
         hypotheses.append(
             Hypothesis(
                 i=None,
                 j=i,
-                rho=n_dict[GraphAttrs.NODE_PREDICTION][Prediction.PROB_TN],
+                rho=n_dict[GraphAttrs.NODE_PREDICTION].prob_TN,
             )
         )
     # build a set of link hypotheses
@@ -160,7 +160,7 @@ def optimise_graph(
             Hypothesis(
                 i=i,
                 j=j,
-                rho=e_dict[GraphAttrs.EDGE_PREDICTION][Prediction.PROB_TP],
+                rho=e_dict[GraphAttrs.EDGE_PREDICTION].prob_TP,
             )
         )
 
