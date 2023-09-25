@@ -7,11 +7,8 @@ import matplotlib.pyplot as plt
 
 from sklearn.metrics import (
     accuracy_score,
+    precision_recall_fscore_support,
     confusion_matrix,
-    roc_auc_score,
-    RocCurveDisplay,
-    average_precision_score,
-    PrecisionRecallDisplay,
 )
 
 
@@ -35,6 +32,28 @@ def accuracy_metric(
     )
 
     return float(node_acc), float(edge_acc)
+
+
+def f1_score_metric(
+    node_pred: torch.Tensor,
+    edge_pred: torch.Tensor,
+    node_true: torch.Tensor,
+    edge_true: torch.Tensor,
+) -> tuple[float]:
+    # Calculate the accuracy, with/out weights:
+    # TODO: Implement / calculate class weighting:
+    node_f1s = precision_recall_fscore_support(
+        y_pred=node_pred,
+        y_true=node_true,
+        average="binary",
+    )[2]
+    edge_f1s = precision_recall_fscore_support(
+        y_pred=edge_pred,
+        y_true=edge_true,
+        average="binary",
+    )[2]
+
+    return float(node_f1s), float(edge_f1s)
 
 
 def confusion_matrix_metric(
@@ -87,75 +106,9 @@ def confusion_matrix_metric(
     return fig_node, fig_edge
 
 
-def areas_under_curves_metrics(
-    node_pred: torch.tensor,
-    edge_pred: torch.tensor,
-    node_true: torch.tensor,
-    edge_true: torch.tensor,
-    figsize: tuple[int] = (20, 7),
-) -> tuple[plt.figure]:
-    # Instantiate the figure
-    _, axes = plt.subplots(nrows=1, ncols=2, figsize=figsize)
-
-    # Area under ROC:
-    roc_score_nodes = roc_auc_score(y_true=node_true, y_score=node_pred)
-    RocCurveDisplay.from_predictions(
-        y_true=node_true,
-        y_pred=node_pred,
-        color="dodgerblue",
-        lw=3,
-        label=f"Nodes = {roc_score_nodes:.4f}",
-        ax=axes[0],
-    )
-
-    roc_score_edges = roc_auc_score(y_true=edge_true, y_score=edge_pred)
-    RocCurveDisplay.from_predictions(
-        y_true=edge_true,
-        y_pred=edge_pred,
-        color="forestgreen",
-        lw=3,
-        label=f"Edges = {roc_score_edges:.4f}",
-        ax=axes[0],
-    )
-
-    # Average Precision:
-    prc_score_nodes = average_precision_score(
-        y_true=node_true, y_score=node_pred
-    )
-    PrecisionRecallDisplay.from_predictions(
-        y_true=node_true,
-        y_pred=node_pred,
-        color="dodgerblue",
-        lw=3,
-        label=f"Nodes = {prc_score_nodes:.4f}",
-        ax=axes[1],
-    )
-
-    prc_score_edges = average_precision_score(
-        y_true=edge_true, y_score=edge_pred
-    )
-    PrecisionRecallDisplay.from_predictions(
-        y_true=edge_true,
-        y_pred=edge_pred,
-        color="forestgreen",
-        lw=3,
-        label=f"Edges = {prc_score_edges:.4f}",
-        ax=axes[1],
-    )
-
-    # Annotate the figure:
-    axes[0].plot([0, 1], [0, 1], ls="dashed", lw=1, color="lightgrey")
-    axes[1].plot([0, 1], [0.5, 0.5], ls="dashed", lw=1, color="lightgrey")
-    axes[1].plot([0.5, 0.5], [0, 1], ls="dashed", lw=1, color="lightgrey")
-
-    axes[0].set_title("Area under ROC")
-    axes[1].set_title("Average Precision Score")
-    plt.tight_layout()
-    return axes
-
-
 METRICS = {
     "accuracy": accuracy_metric,
+    "f1_score": f1_score_metric,
     "confusion_matrix": confusion_matrix_metric,
 }
 
