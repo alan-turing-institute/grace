@@ -23,8 +23,10 @@ def test_update_dummy_graph_predictions(default_rng):
             [
                 node[GraphAttrs.NODE_PREDICTION].prob_TN,
                 node[GraphAttrs.NODE_PREDICTION].prob_TP,
+                node[GraphAttrs.NODE_PREDICTION].prob_UNKNOWN,
             ]
         )
+        assert probabs[2] == 0
         assert np.sum(probabs) == 1
 
         arg = np.argmax(probabs)
