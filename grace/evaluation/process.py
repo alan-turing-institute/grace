@@ -63,33 +63,17 @@ def update_graph_with_dummy_predictions(
         if all(obj_identity):
             # true positive node:
             if node["label"] > 0:
-                pred = {
-                    Prediction.LABEL: 1,
-                    Prediction.PROB_TN: pd,
-                    Prediction.PROB_TP: 1 - pd,
-                }
+                pred = Prediction(np.array([pd, 1 - pd]))
             else:
-                pred = {
-                    Prediction.LABEL: 0,
-                    Prediction.PROB_TN: 1 - pd,
-                    Prediction.PROB_TP: pd,
-                }
+                pred = Prediction(np.array([1 - pd, pd]))
             node[GraphAttrs.NODE_PREDICTION] = pred
 
         if all(lbl_identity):
             # true positive node:
             if node[GraphAttrs.NODE_GROUND_TRUTH] == Annotation.TRUE_POSITIVE:
-                pred = {
-                    Prediction.LABEL: 1,
-                    Prediction.PROB_TN: pd,
-                    Prediction.PROB_TP: 1 - pd,
-                }
+                pred = Prediction(np.array([pd, 1 - pd]))
             else:
-                pred = {
-                    Prediction.LABEL: 0,
-                    Prediction.PROB_TN: 1 - pd,
-                    Prediction.PROB_TP: pd,
-                }
+                pred = Prediction(np.array([1 - pd, pd]))
             node[GraphAttrs.NODE_PREDICTION] = pred
 
     # Iterate through all the edges:
@@ -101,17 +85,9 @@ def update_graph_with_dummy_predictions(
         if all(obj_identity):
             # true positive edge:
             if e_i["object_idx"] == e_j["object_idx"] and e_i["label"] > 0:
-                pred = {
-                    Prediction.LABEL: 1,
-                    Prediction.PROB_TN: pd,
-                    Prediction.PROB_TP: 1 - pd,
-                }
+                pred = Prediction(np.array([pd, 1 - pd]))
             else:
-                pred = {
-                    Prediction.LABEL: 0,
-                    Prediction.PROB_TN: 1 - pd,
-                    Prediction.PROB_TP: pd,
-                }
+                pred = Prediction(np.array([1 - pd, pd]))
             edge[-1][GraphAttrs.EDGE_PREDICTION] = pred
 
         if all(lbl_identity):
@@ -120,17 +96,9 @@ def update_graph_with_dummy_predictions(
                 edge[-1][GraphAttrs.EDGE_GROUND_TRUTH]
                 == Annotation.TRUE_POSITIVE
             ):
-                pred = {
-                    Prediction.LABEL: 1,
-                    Prediction.PROB_TN: pd,
-                    Prediction.PROB_TP: 1 - pd,
-                }
+                pred = Prediction(np.array([pd, 1 - pd]))
             else:
-                pred = {
-                    Prediction.LABEL: 1,
-                    Prediction.PROB_TN: 1 - pd,
-                    Prediction.PROB_TP: pd,
-                }
+                pred = Prediction(np.array([1 - pd, pd]))
             edge[-1][GraphAttrs.EDGE_PREDICTION] = pred
 
 
@@ -215,11 +183,11 @@ def assume_annotations_from_dummy_predictions(G: nx.Graph) -> None:
     """Translates between dummy predictions & GT labels."""
 
     for _, node in G.nodes(data=True):
-        pred_label = node[GraphAttrs.NODE_PREDICTION][Prediction.LABEL]
+        pred_label = node[GraphAttrs.NODE_PREDICTION].label()
         node[GraphAttrs.NODE_GROUND_TRUTH] = Annotation(pred_label)
 
     for _, _, edge in G.edges(data=True):
-        pred_label = edge[GraphAttrs.EDGE_PREDICTION][Prediction.LABEL]
+        pred_label = node[GraphAttrs.NODE_PREDICTION].label()
         edge[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation(pred_label)
 
 
@@ -274,9 +242,7 @@ def _add_random_edges(
     )
     edges_to_add = [possible_edges[e] for e in edges_to_add]
     for node1, node2 in edges_to_add:
-        # if not G.has_edge(node1, node2):
         G.add_edge(node1, node2)
-        # HACK: Check if this makes sense!
         G[node1][node2][
             GraphAttrs.EDGE_GROUND_TRUTH
         ] = Annotation.TRUE_POSITIVE
