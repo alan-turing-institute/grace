@@ -63,35 +63,34 @@ def plot_local_node_geometry(
             for e in sub_graph.edges(data=True)
         ]
     )
-
-    # Optional: node & edge predictions:
-    node_pred_labels = [
-        n[-1][GraphAttrs.NODE_PREDICTION][0]
-        if GraphAttrs.NODE_PREDICTION in n[-1]
-        else None
-        for n in sub_graph.nodes(data=True)
-    ]
-    if all([v is None for v in node_pred_labels]):
-        node_pred_labels = None
-    else:
-        node_pred_labels = np.stack(node_pred_labels)
-        assert node_pred_labels.shape == node_true_labels.shape
-
-    edge_pred_labels = [
-        e[-1][GraphAttrs.EDGE_PREDICTION][0]
-        if GraphAttrs.EDGE_PREDICTION in e[-1]
-        else None
-        for e in sub_graph.edges(data=True)
-    ]
-    if all([v is None for v in edge_pred_labels]):
-        edge_pred_labels = None
-    else:
-        edge_pred_labels = np.stack(edge_pred_labels)
-        assert edge_pred_labels.shape == edge_true_labels.shape
-
     # Perform dimensionality checks:
     assert node_positions.shape[0] == len(node_true_labels)
     assert edge_indices.shape[-1] == len(edge_true_labels)
+
+    # Optional: node & edge predictions:
+    sample_node_data = list(sub_graph.nodes(data=True))[0][1]
+
+    if GraphAttrs.NODE_PREDICTION not in sample_node_data:
+        # Assume graph doesn't hold any predictions:
+        node_pred_labels = None
+        edge_pred_labels = None
+    else:
+        # Process node predictions:
+        node_pred_labels = np.stack(
+            [
+                node[GraphAttrs.NODE_PREDICTION].label
+                for _, node in sub_graph.nodes(data=True)
+            ]
+        )
+        assert node_pred_labels.shape == node_true_labels.shape
+
+        edge_pred_labels = np.stack(
+            [
+                edge[GraphAttrs.EDGE_PREDICTION].label
+                for _, _, edge in sub_graph.edges(data=True)
+            ]
+        )
+        assert edge_pred_labels.shape == edge_true_labels.shape
 
     # Plot the subgraph:
     ax = plot_subgraph_coordinates(
