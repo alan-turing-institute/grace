@@ -22,7 +22,7 @@ from grace.visualisation.plotting import (
     plot_confusion_matrix_tiles,
     plot_areas_under_curves,
     plot_prediction_probabilities_hist,
-    # visualise_node_and_edge_probabilities,
+    visualise_node_and_edge_probabilities,
 )
 
 
@@ -108,6 +108,13 @@ class GraphLabelPredictor(object):
         for e_idx, edge in enumerate(G.edges(data=True)):
             prediction = Prediction(np.append(e_probs[e_idx], 0.0))
             edge[-1][GraphAttrs.EDGE_PREDICTION] = prediction
+
+    def visualise_prediction_probs_on_graph(self, G: nx.Graph) -> None:
+        """Visualise predictions as shaded points (nodes) / lines (edges)."""
+        assert all(GraphAttrs.NODE_PREDICTION in G.nodes[n] for n in G.nodes)
+        assert all(GraphAttrs.EDGE_PREDICTION in G.edges[e] for e in G.edges)
+        fig = visualise_node_and_edge_probabilities(G=G)
+        return fig
 
     def get_predictions_for_entire_batch(
         self,
@@ -200,6 +207,11 @@ class GraphLabelPredictor(object):
             "Batch avg precision (edges)"
         ] = average_precision_score(y_true=e_true, y_score=e_prob)
 
+        # Check all metric outputs are floats & return
+        assert all(
+            isinstance(item, float)
+            for item in inference_batch_metrics.values()
+        )
         return inference_batch_metrics
 
     def visualise_model_performance_on_entire_batch(
@@ -250,5 +262,3 @@ class GraphLabelPredictor(object):
         if show_figures is True:
             plt.show()
         plt.close()
-
-        # TODO: Instance IoU histogram
