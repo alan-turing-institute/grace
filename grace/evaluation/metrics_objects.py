@@ -1,7 +1,9 @@
 import numpy as np
 import numpy.typing as npt
 import networkx as nx
+import matplotlib.pyplot as plt
 
+from pathlib import Path
 from scipy.ndimage import label
 
 from sklearn.metrics import (
@@ -208,23 +210,44 @@ class ExactMetricsComputer(object):
 
         return results_dict
 
-    def visualise(self) -> None:
+    def visualise(
+        self,
+        save_path: str = None,
+        file_name: str = None,
+        save_figures: bool = False,
+        show_figures: bool = False,
+    ) -> None:
         # Calculate the metrics:
         metric_dict = self.metrics()
 
+        if save_figures is True:
+            if isinstance(save_path, str):
+                save_path = Path(save_path)
+                assert save_path.is_dir()
+
         # Confusion matrices:
-        self.plot_confusion_matrix()
+        # self.plot_confusion_matrix()
 
         # IoU scores histogram:
         plot_iou_histogram(
             iou_per_object=metric_dict["Instance IoU [list]"],
             iou_semantic=metric_dict["Semantic IoU"],
         )
+        if save_figures is True:
+            plt.savefig(save_path / f"{file_name}-Object_IoU_Histogram.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
 
         # Plot bbox overlap on mask:
         visualise_bounding_boxes_on_graph(
             self.graph, self.pred_graph, self.true_graph, display_image=None
         )
+        if save_figures is True:
+            plt.savefig(save_path / f"{file_name}-Object_Bounding_Boxes.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
 
 
 class ApproxMetricsComputer(object):

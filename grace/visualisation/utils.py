@@ -327,7 +327,7 @@ def plot_iou_histogram(
     figsize: tuple[int, int] = (10, 3),
 ) -> None:
     # Instantiate a figure
-    plt.figure(figsize=figsize)
+    fig = plt.figure(figsize=figsize)
 
     # Plot the histogram + boundaries
     plt.hist(iou_per_object, color="grey", label="Individual objects IoU")
@@ -368,8 +368,9 @@ def plot_iou_histogram(
         f"Intersection over union across {len(iou_per_object)} overlapping objects"
     )
     plt.legend()
-    plt.show()
-    plt.close()
+    return fig
+    # plt.show()
+    # plt.close()
 
 
 def show_object_bounding_boxes_on_graph(
@@ -382,7 +383,7 @@ def show_object_bounding_boxes_on_graph(
     """TODO: Fill in."""
 
     # Create figure and axes
-    _, ax = plt.subplots(figsize=figsize)
+    fig, ax = plt.subplots(figsize=figsize)
 
     # Plot the faded annotation under the graph
     if annotation is not None:
@@ -417,8 +418,9 @@ def show_object_bounding_boxes_on_graph(
 
     ax.set_axis_on()
     ax.set_title("IoU metric illustration on per-object level")
-    plt.show()
-    plt.close()
+    return fig
+    # plt.show()
+    # plt.close()
 
 
 def visualise_bounding_boxes_on_graph(
