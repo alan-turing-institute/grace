@@ -11,6 +11,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
 )
 
+from grace.visualisation.plotting import plot_optimised_objects_from_graphs
 from grace.visualisation.utils import (
     intersection_over_union,
     list_real_connected_components,
@@ -208,6 +209,13 @@ class ExactMetricsComputer(object):
         results_dict.update(table)
         results_dict["Instance IoU [list]"] = iou_per_object
 
+        # Turn all values into floats where appropriate:
+        for key, value in results_dict.items():
+            if isinstance(value, float):
+                results_dict[key] = float(value)
+            elif isinstance(value, list):
+                results_dict[key] = [float(v) for v in value]
+
         return results_dict
 
     def visualise(
@@ -245,6 +253,18 @@ class ExactMetricsComputer(object):
         )
         if save_figures is True:
             plt.savefig(save_path / f"{file_name}-Object_Bounding_Boxes.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
+
+        # Save out the connected components figure:
+        plot_optimised_objects_from_graphs(
+            triangulated_graph=self.graph,
+            true_graph=self.true_graph,
+            pred_graph=self.pred_graph,
+        )
+        if save_figures is True:
+            plt.savefig(save_path / f"{file_name}-Optimised_Components.png")
         if show_figures is True:
             plt.show()
         plt.close()
