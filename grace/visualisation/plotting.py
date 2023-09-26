@@ -22,9 +22,14 @@ from sklearn.metrics import (
 def plot_simple_graph(
     G: nx.Graph,
     title: str = "",
+    *,
     ax: matplotlib.axes = None,
-) -> None:
+    **kwargs,
+) -> matplotlib.axes:
     """Plots a simple graph with black nodes and edges."""
+    # Make sure some axis to plot onto is defined:
+    if ax is None:
+        _, ax = plt.subplots(1, 1, **kwargs)
 
     # Read node positions:
     pos = {
@@ -50,12 +55,17 @@ def plot_simple_graph(
 def plot_connected_components(
     G: nx.Graph,
     title: str = "",
+    *,
     ax: matplotlib.axes = None,
-) -> None:
+    **kwargs,
+) -> matplotlib.axes:
     """Colour-codes the connected components (individual objects)
     & plots them onto a simple graph with black nodes & edges.
     Connected component (subgraph) must contain at least one edge.
     """
+    # Make sure some axis to plot onto is defined:
+    if ax is None:
+        _, ax = plt.subplots(1, 1, **kwargs)
 
     # Read node positions:
     pos = {
