@@ -5,15 +5,12 @@ import random
 import torch
 import torch_geometric
 
-import matplotlib.pyplot as plt
-
 from torch_geometric.loader import DataLoader
 
 from grace.base import Annotation
 from grace.styling import LOGGER
 from grace.evaluation.metrics_classifier import get_metric
 from grace.evaluation.inference import GraphLabelPredictor
-from grace.visualisation.plotting import visualise_node_and_edge_probabilities
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -212,7 +209,8 @@ def train_model(
                             f"{metric_name} (edge)", metric_out["edge"], epoch
                         )
 
-                elif isinstance(node_value, plt.Figure):
+                # elif isinstance(node_value, plt.Figure):
+                else:
                     if epoch % tensorboard_update_frequency == 0:
                         writer.add_figure(
                             f"{metric_name} (node)", metric_out["node"], epoch
@@ -226,7 +224,7 @@ def train_model(
 
         # At chosen epochs, visualise the prediction probabs for whole graph:
         if epoch % valid_graph_ploter_frequency == 0:
-            # Instantiate the model with frozen weights:
+            # Instantiate the model with frozen weights from current epoch:
             GLP = GraphLabelPredictor(model)
 
             # Iterate through all validation graphs & predict nodes / edges:
@@ -235,14 +233,20 @@ def train_model(
 
                 # Filename:
                 valid_name = valid_target["metadata"]["image_filename"]
-                valid_name = f"{valid_name}-Epoch_{epoch}.png"
+                valid_name = f"{valid_name}-Epoch_{epoch}"
 
                 # Update probabs & visualise the graph:
                 GLP.set_node_and_edge_probabilities(G=valid_graph)
-                visualise_node_and_edge_probabilities(G=valid_graph)
+                GLP.visualise_prediction_probs_on_graph(
+                    G=valid_graph,
+                    graph_filename=valid_name,
+                    save_figure=log_dir / "valid",
+                    show_figure=False,
+                )
 
-                plt.savefig(log_dir / "valid" / valid_name)
-                plt.close()
+                # Save the graph out & clear figure:
+                # plt.savefig(log_dir / "valid" / valid_name)
+                # plt.close()
 
     # Clear & close the tensorboard writer:
     writer.flush()
