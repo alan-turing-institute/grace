@@ -1,6 +1,6 @@
 import torch
 
-from grace.training.run import run_grace
+from grace.run import run_grace
 from grace.training.config import Config, write_config_file
 
 
