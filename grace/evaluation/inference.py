@@ -10,12 +10,6 @@ import torch
 from torch_geometric.data import Data
 
 from sklearn.metrics import (
-    precision_recall_fscore_support,
-    roc_auc_score,
-    average_precision_score,
-)
-
-from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
     roc_auc_score,
@@ -57,16 +51,18 @@ class GraphLabelPredictor(object):
 
     def __init__(
         self,
-        model: str | torch.nn.Module,
+        model: str | Path | torch.nn.Module,
     ) -> None:
         super().__init__()
 
         if isinstance(model, str):
             assert Path(model).is_file()
+            model = torch.load(model)
         elif isinstance(model, Path):
             assert model.is_file()
+            model = torch.load(model)
 
-        self.pretrained_gcn = torch.load(model)
+        self.pretrained_gcn = model
         self.pretrained_gcn.eval()
 
     def infer_graph_predictions(
@@ -125,12 +121,37 @@ class GraphLabelPredictor(object):
             prediction = Prediction(np.append(e_probs[e_idx], 0.0))
             edge[-1][GraphAttrs.EDGE_PREDICTION] = prediction
 
-    def visualise_prediction_probs_on_graph(self, G: nx.Graph) -> None:
+    def visualise_prediction_probs_on_graph(
+        self,
+        G: nx.Graph,
+        *,
+        graph_filename: str = "Graph",
+        save_figure: str | Path = None,
+        show_figure: bool = False,
+    ) -> None:
         """Visualise predictions as shaded points (nodes) / lines (edges)."""
         assert all(GraphAttrs.NODE_PREDICTION in G.nodes[n] for n in G.nodes)
         assert all(GraphAttrs.EDGE_PREDICTION in G.edges[e] for e in G.edges)
-        fig = visualise_node_and_edge_probabilities(G=G)
-        return fig
+
+        # Create the save path:
+        if save_figure is not None:
+            save_path = save_figure
+            if isinstance(save_path, str):
+                save_path = Path(save_path)
+            assert save_path.is_dir()
+            save_figure = True
+        else:
+            save_figure = False
+
+        # Plot the thing:
+        visualise_node_and_edge_probabilities(G=G)
+        if save_figure is True:
+            plt.savefig(
+                save_path / f"{graph_filename}-Whole_Graph_Visualisation.png"
+            )
+        if show_figure is True:
+            plt.show()
+        plt.close()
 
     def get_predictions_for_entire_batch(
         self,
@@ -171,7 +192,7 @@ class GraphLabelPredictor(object):
         n_true, n_pred, n_prob, e_true, e_pred, e_prob = data
         return n_true, n_pred, n_prob, e_true, e_pred, e_prob
 
-    def calculate_numerical_results(
+    def calculate_numerical_results_on_entire_batch(
         self,
         infer_target_list: list[dict[str]],
         verbose: bool = False,
@@ -204,8 +225,8 @@ class GraphLabelPredictor(object):
         inference_batch_metrics["Batch precision (edges)"] = prf1_edges[0]
         inference_batch_metrics["Batch recall (nodes)"] = prf1_nodes[1]
         inference_batch_metrics["Batch recall (edges)"] = prf1_edges[1]
-        inference_batch_metrics["Batch f1-score (nodes)"] = prf1_nodes[2]
-        inference_batch_metrics["Batch f1-score (edges)"] = prf1_edges[2]
+        inference_batch_metrics["Batch F1-score (nodes)"] = prf1_nodes[2]
+        inference_batch_metrics["Batch F1-score (edges)"] = prf1_edges[2]
 
         # AUC scores:
         inference_batch_metrics["Batch AUROC (nodes)"] = roc_auc_score(
@@ -224,6 +245,9 @@ class GraphLabelPredictor(object):
         ] = average_precision_score(y_true=e_true, y_score=e_prob)
 
         # Check all metric outputs are floats & return
+        inference_batch_metrics = {
+            k: float(v) for k, v in inference_batch_metrics.items()
+        }
         assert all(
             isinstance(item, float)
             for item in inference_batch_metrics.values()
@@ -274,7 +298,9 @@ class GraphLabelPredictor(object):
         # Predicted probs hist:
         plot_prediction_probabilities_hist(n_pred, e_pred, n_true, e_true)
         if save_figures is True:
-            plt.savefig(save_path / "Batch_Dataset-Prediction_Probs_Hist.png")
+            plt.savefig(
+                save_path / "Batch_Dataset-Histogram_Prediction_Probs.png"
+            )
         if show_figures is True:
             plt.show()
         plt.close()
