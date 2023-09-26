@@ -1,0 +1,33 @@
+image_dir: /path/to/your/images
+grace_dir: /path/to/your/annotations
+log_dir: /path/to/your/classifier/runs
+extractor_fn: /path/to/your/extractor/resnet152.pt
+filetype: mrc
+keep_node_unknown_labels: False
+keep_edge_unknown_labels: False
+normalise:
+  - False
+  - False
+img_graph_augs: []
+img_graph_aug_params: []
+patch_augs: []
+patch_aug_params: []
+patch_size:
+  - 224
+  - 224
+keep_patch_fraction: 1.0
+feature_dim: 2048
+num_node_classes: 2
+num_edge_classes: 2
+epochs: 5
+hidden_channels:
+  - 512
+  - 128
+  - 32
+metrics:
+  - accuracy
+  - confusion_matrix
+dropout: 0.0
+batch_size: 512
+learning_rate: 0.05
+tensorboard_update_frequency: 1
