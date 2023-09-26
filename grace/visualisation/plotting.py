@@ -350,22 +350,24 @@ def plot_prediction_probabilities_hist(
 #     plt.close()
 
 
-def visualise_node_and_edge_probabilities(G: nx.Graph) -> None:
+def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
     """Visualise per-node & per-edge predictions on color-coded
     graph of TP attribute probabilities independently for
     nodes, independently for edges & in overlay of both.
     """
 
     # Create a figure and axes
-    nrows, ncols = 1, 3
-    _, axes = plt.subplots(nrows, ncols, figsize=(15, 4))
+    ncols = 3
+    fig, axes = plt.subplots(1, ncols, figsize=(ncols * 5, ncols + 1))
     cmap = plt.cm.ScalarMappable(cmap="coolwarm")
 
     # JUST THE NODES:
     nodes = list(G.nodes(data=True))
     x_coords = [node[GraphAttrs.NODE_X] for _, node in nodes]
     y_coords = [node[GraphAttrs.NODE_Y] for _, node in nodes]
-    node_preds = [node[GraphAttrs.NODE_PREDICTION][1][1] for _, node in nodes]
+    node_preds = [
+        node[GraphAttrs.NODE_PREDICTION].prob_TP for _, node in nodes
+    ]
 
     # Plot nodes:
     axes[0].scatter(
@@ -399,7 +401,7 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> None:
             nodes[dst][1][GraphAttrs.NODE_X],
             nodes[dst][1][GraphAttrs.NODE_Y],
         )
-        edge_pred = edge[GraphAttrs.EDGE_PREDICTION][1][1]
+        edge_pred = edge[GraphAttrs.EDGE_PREDICTION].prob_TP
 
         axes[1].plot(
             [e_st_x, e_en_x],
@@ -429,9 +431,9 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> None:
     [axes[i].get_xaxis().set_visible(False) for i in range(ncols)]
     [axes[i].get_yaxis().set_visible(False) for i in range(ncols)]
 
+    # Format & return:
     plt.tight_layout()
-    plt.show()
-    plt.close()
+    return fig
 
 
 def read_patch_stack_by_label(
