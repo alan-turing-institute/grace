@@ -157,10 +157,17 @@ class GraphLabelPredictor(object):
         self,
         infer_target_list: list[dict[str]],
         verbose: bool = False,
-    ) -> tuple[npt.NDArray]:
+    ) -> dict[str, npt.NDArray]:
         """Processes predictions for list of graph targets."""
 
-        data = [[] for _ in range(6)]
+        predictions_data = {
+            "n_true": [],
+            "n_pred": [],
+            "n_prob": [],
+            "e_true": [],
+            "e_pred": [],
+            "e_prob": [],
+        }
 
         for target in tqdm(infer_target_list, disable=not verbose):
             # Read & update the graph:
@@ -172,25 +179,43 @@ class GraphLabelPredictor(object):
                 label = n[GraphAttrs.NODE_GROUND_TRUTH]
                 if label == Annotation.UNKNOWN:
                     continue
-                data[0].append(label)
-                data[1].append(n[GraphAttrs.NODE_PREDICTION].label)
-                data[2].append(n[GraphAttrs.NODE_PREDICTION].prob_TP)
+                predictions_data["n_true"].append(label)
+                predictions_data["n_pred"].append(
+                    n[GraphAttrs.NODE_PREDICTION].label
+                )
+                predictions_data["n_prob"].append(
+                    n[GraphAttrs.NODE_PREDICTION].prob_TP
+                )
 
             for _, _, e in G.edges(data=True):
                 label = e[GraphAttrs.EDGE_GROUND_TRUTH]
                 if label == Annotation.UNKNOWN:
                     continue
-                data[3].append(label)
-                data[4].append(e[GraphAttrs.EDGE_PREDICTION].label)
-                data[5].append(e[GraphAttrs.EDGE_PREDICTION].prob_TP)
+                predictions_data["e_true"].append(label)
+                predictions_data["e_pred"].append(
+                    e[GraphAttrs.EDGE_PREDICTION].label
+                )
+                predictions_data["e_prob"].append(
+                    e[GraphAttrs.EDGE_PREDICTION].prob_TP
+                )
 
         # Sanity checks:
-        assert len(data[0]) == len(data[1]) == len(data[2])
-        assert len(data[3]) == len(data[4]) == len(data[5])
-        data = [np.array(item) for item in data]
+        assert (
+            len(predictions_data["n_true"])
+            == len(predictions_data["n_pred"])
+            == len(predictions_data["n_prob"])
+        )
+        assert (
+            len(predictions_data["e_true"])
+            == len(predictions_data["e_pred"])
+            == len(predictions_data["e_prob"])
+        )
 
-        n_true, n_pred, n_prob, e_true, e_pred, e_prob = data
-        return n_true, n_pred, n_prob, e_true, e_pred, e_prob
+        # Return as dict[str, np.NDArray]:
+        predictions_data = {
+            key: np.array(value) for key, value in predictions_data.items()
+        }
+        return predictions_data
 
     def calculate_numerical_results_on_entire_batch(
         self,
@@ -199,27 +224,38 @@ class GraphLabelPredictor(object):
     ) -> dict[str, float]:
         """Calculates & return dictionary of numerical metrics for batch."""
         # Get the batch probs & predictions:
-        data = self.get_predictions_for_entire_batch(
+        predictions_data = self.get_predictions_for_entire_batch(
             infer_target_list=infer_target_list, verbose=verbose
         )
-        n_true, n_pred, n_prob, e_true, e_pred, e_prob = data
 
         inference_batch_metrics = {}
 
         # Accuracy:
         inference_batch_metrics["Batch accuracy (nodes)"] = accuracy_score(
-            y_pred=n_pred, y_true=n_true, normalize=True
+            y_pred=predictions_data["n_pred"],
+            y_true=predictions_data["n_true"],
+            normalize=True,
         )
         inference_batch_metrics["Batch accuracy (edges)"] = accuracy_score(
-            y_pred=e_pred, y_true=e_true, normalize=True
+            y_pred=predictions_data["e_pred"],
+            y_true=predictions_data["e_true"],
+            normalize=True,
         )
 
         # PRF1:
         prf1_nodes = precision_recall_fscore_support(
-            y_pred=n_pred, y_true=n_true, average="binary"
+            y_pred=predictions_data["n_pred"],
+            y_true=predictions_data["n_true"],
+            average="weighted",
+            beta=1.0,
+            zero_division=0.0,
         )
         prf1_edges = precision_recall_fscore_support(
-            y_pred=e_pred, y_true=e_true, average="binary"
+            y_pred=predictions_data["e_pred"],
+            y_true=predictions_data["e_true"],
+            average="weighted",
+            beta=1.0,
+            zero_division=0.0,
         )
         inference_batch_metrics["Batch precision (nodes)"] = prf1_nodes[0]
         inference_batch_metrics["Batch precision (edges)"] = prf1_edges[0]
@@ -230,28 +266,32 @@ class GraphLabelPredictor(object):
 
         # AUC scores:
         inference_batch_metrics["Batch AUROC (nodes)"] = roc_auc_score(
-            y_true=n_true, y_score=n_prob
+            y_true=predictions_data["n_true"],
+            y_score=predictions_data["n_prob"],
         )
         inference_batch_metrics["Batch AUROC (edges)"] = roc_auc_score(
-            y_true=e_true, y_score=e_prob
+            y_true=predictions_data["e_true"],
+            y_score=predictions_data["e_prob"],
         )
 
         # AP scores:
         inference_batch_metrics[
             "Batch avg precision (nodes)"
-        ] = average_precision_score(y_true=n_true, y_score=n_prob)
+        ] = average_precision_score(
+            y_true=predictions_data["n_true"],
+            y_score=predictions_data["n_prob"],
+        )
         inference_batch_metrics[
             "Batch avg precision (edges)"
-        ] = average_precision_score(y_true=e_true, y_score=e_prob)
+        ] = average_precision_score(
+            y_true=predictions_data["e_true"],
+            y_score=predictions_data["e_prob"],
+        )
 
         # Check all metric outputs are floats & return
         inference_batch_metrics = {
-            k: float(v) for k, v in inference_batch_metrics.items()
+            key: float(value) for key, value in inference_batch_metrics.items()
         }
-        assert all(
-            isinstance(item, float)
-            for item in inference_batch_metrics.values()
-        )
         return inference_batch_metrics
 
     def visualise_model_performance_on_entire_batch(
@@ -274,13 +314,17 @@ class GraphLabelPredictor(object):
             save_figures = False
 
         # Process batch data predictions:
-        data = self.get_predictions_for_entire_batch(
+        predictions_data = self.get_predictions_for_entire_batch(
             infer_target_list=infer_target_list, verbose=verbose
         )
-        n_true, n_pred, n_prob, e_true, e_pred, e_prob = data
 
         # Confusion matrix tiles:
-        plot_confusion_matrix_tiles(n_pred, e_pred, n_true, e_true)
+        plot_confusion_matrix_tiles(
+            node_pred=predictions_data["n_pred"],
+            edge_pred=predictions_data["e_pred"],
+            node_true=predictions_data["n_true"],
+            edge_true=predictions_data["e_true"],
+        )
         if save_figures is True:
             plt.savefig(save_path / "Batch_Dataset-Confusion_Matrix_Tiles.png")
         if show_figures is True:
@@ -288,7 +332,12 @@ class GraphLabelPredictor(object):
         plt.close()
 
         # Areas under curves:
-        plot_areas_under_curves(n_prob, e_prob, n_true, e_true)
+        plot_areas_under_curves(
+            node_pred=predictions_data["n_pred"],
+            edge_pred=predictions_data["e_pred"],
+            node_true=predictions_data["n_true"],
+            edge_true=predictions_data["e_true"],
+        )
         if save_figures is True:
             plt.savefig(save_path / "Batch_Dataset-Areas_Under_Curves.png")
         if show_figures is True:
@@ -296,7 +345,12 @@ class GraphLabelPredictor(object):
         plt.close()
 
         # Predicted probs hist:
-        plot_prediction_probabilities_hist(n_pred, e_pred, n_true, e_true)
+        plot_prediction_probabilities_hist(
+            node_pred=predictions_data["n_pred"],
+            edge_pred=predictions_data["e_pred"],
+            node_true=predictions_data["n_true"],
+            edge_true=predictions_data["e_true"],
+        )
         if save_figures is True:
             plt.savefig(
                 save_path / "Batch_Dataset-Histogram_Prediction_Probs.png"
