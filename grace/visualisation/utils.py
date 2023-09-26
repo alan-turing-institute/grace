@@ -326,7 +326,7 @@ def plot_confusion_matrix_tiles(
 def plot_iou_histogram(
     iou_per_object: list | npt.NDArray,
     iou_semantic: float = None,
-    figsize: tuple[int, int] = (10, 3),
+    figsize: tuple[int, int] = (10, 4),
 ) -> None:
     # Instantiate a figure
     fig = plt.figure(figsize=figsize)
