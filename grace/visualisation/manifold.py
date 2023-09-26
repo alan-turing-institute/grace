@@ -103,7 +103,6 @@ class TSNEManifoldProjection(object):
         self,
         node_GT_label: npt.NDArray,
         node_features: npt.NDArray,
-        ax: matplotlib.axes,
         *,
         n_components: int = 2,
         title: str = "",
