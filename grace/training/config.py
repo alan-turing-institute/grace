@@ -52,7 +52,7 @@ class Config:
     epochs: int = 100
     hidden_channels: list[int] = field(default_factory=lambda: [1024, 256, 64])
     metrics_classifier: list[str] = field(
-        default_factory=lambda: ["accuracy", "confusion_matrix"]
+        default_factory=lambda: ["accuracy", "f1_score", "confusion_matrix"]
     )
     metrics_objects: list[str] = field(
         default_factory=lambda: ["exact", "approx"]
@@ -64,6 +64,7 @@ class Config:
     valid_graph_ploter_frequency: int = 1
     animate_valid_progress: bool = False
     visualise_tsne_manifold: bool = False
+    # saving_file_suffix: str = "yaml"
 
 
 def load_config_params(params_file: Union[str, Path]) -> Config:
@@ -151,6 +152,16 @@ def validate_required_config_hparams(config: Config) -> None:
     if not config.extractor_fn.is_file():
         raise PathNotDefinedError(path_name=dr)
 
+    # Define which metrics to calculate:
+    for i in range(len(config.metrics_objects)):
+        m = config.metrics_objects[i].upper()
+        if m == "APPROXIMATE":
+            m = "APPROX"
+        config.metrics_objects[i] = m
+
+    # Make sure saving file suffix is expected:
+    # assert config.saving_file_suffix in {"yaml", "json"}
+
     # HACK: not automated yet:
     if config.animate_valid_progress is True:
         LOGGER.warning("WARNING; auto-animation not implemented yet")
@@ -169,42 +180,36 @@ def write_config_file(
     filetype: str = "json",
 ) -> None:
     """Record hyperparameters of a training run."""
-    if filetype not in ["json", "yaml"]:
-        raise ValueError(
-            "Config must be saved as either a .json or .yaml file."
-        )
-
-    """params = {}
-
-    for attr in config.__dict__:
-
-        value = getattr(config, attr)
-        if isinstance(value, function):
-            value = []
-
-        params[attr] = str(value)"""
-
     params = {attr: str(getattr(config, attr)) for attr in config.__dict__}
 
     if isinstance(config.run_dir, str):
         setattr(config, "run_dir", Path(config.run_dir))
 
     fn = config.run_dir / f"config_hyperparams.{filetype}"
+    write_params_as_file_with_suffix(params, fn)
 
-    if filetype == "json":
-        write_json_file(params, fn)
+
+def write_params_as_file_with_suffix(
+    parameters_dict: dict[str], filename: str | Path
+) -> None:
+    if isinstance(filename, str):
+        filename = Path(filename)
+
+    if filename.suffix == ".json":
+        with open(filename, "w") as outfile:
+            json.dump(parameters_dict, outfile, indent=4)
+
+    elif filename.suffix == ".yaml":
+        with open(filename, "w") as outfile:
+            yaml.dump(
+                parameters_dict,
+                outfile,
+                default_flow_style=False,
+                allow_unicode=True,
+            )
+
     else:
-        write_yaml_file(params, fn)
-
-
-def write_json_file(parameters_dict: dict[str], filename: str | Path) -> None:
-    with open(filename, "w") as outfile:
-        json.dump(parameters_dict, outfile, indent=4)
-
-
-def write_yaml_file(parameters_dict: dict[str], filename: str | Path) -> None:
-    with open(filename, "w") as outfile:
-        yaml.dump(parameters_dict, outfile)
+        ValueError("Filetype suffix must be 'json' or 'yaml'.")
 
 
 class PathNotDefinedError(Exception):
