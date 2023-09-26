@@ -4,7 +4,7 @@ image_dir: /path/to/your/images
 grace_dir: /path/to/your/annotations
 log_dir: /path/to/your/classifier/runs
 
-# Data file type & annotations:
+# Data image file type & graph annotations:
 filetype: mrc
 keep_node_unknown_labels: False     # relabels UNKNOWN nodes to TRUE_NEGATIVE
 keep_edge_unknown_labels: False     # relabels UNKNOWN edges to TRUE_NEGATIVE
