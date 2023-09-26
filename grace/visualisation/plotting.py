@@ -317,39 +317,6 @@ def plot_prediction_probabilities_hist(
     return fig
 
 
-# def visualise_prediction_probs_hist(G: nx.Graph) -> None:
-#     """Plot the prediction probabilities colour-coded by their GT label."""
-
-#     # Process the true & pred values:
-#     n_true, n_pred = [], []
-#     for _, node in G.nodes(data=True):
-#         n_pred.append(node[GraphAttrs.NODE_PREDICTION][1][1])
-#         n_true.append(node[GraphAttrs.NODE_GROUND_TRUTH])
-
-#     e_true, e_pred = [], []
-#     for _, _, edge in G.edges(data=True):
-#         e_pred.append(edge[GraphAttrs.EDGE_PREDICTION][1][1])
-#         e_true.append(edge[GraphAttrs.EDGE_GROUND_TRUTH])
-
-#     # Plot the node & edge histogram by label:
-#     _, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 4))
-#     for i, (pred, true, att) in enumerate(
-#         zip([n_pred, e_pred], [n_true, e_true], ["nodes", "edges"])
-#     ):
-#         for lab_idx in np.unique(true):
-#             preds = [p for p, t in zip(pred, true) if t == lab_idx]
-#             axes[i].hist(
-#                 preds, alpha=0.7, label=f"GT = {lab_idx} | {len(preds)} {att}"
-#             )
-#             axes[i].set_title(f"Inferred predictions -> TP {att}")
-#             axes[i].set_xlabel("Predicted softmax probability")
-#             axes[i].legend()
-
-#     axes[0].set_ylabel("Attribute count")
-#     plt.show()
-#     plt.close()
-
-
 def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
     """Visualise per-node & per-edge predictions on color-coded
     graph of TP attribute probabilities independently for
