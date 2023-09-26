@@ -106,6 +106,27 @@ def plot_connected_components(
     return ax
 
 
+def plot_optimised_objects_from_graphs(
+    triangulated_graph: nx.Graph,
+    true_graph: nx.Graph,
+    pred_graph: nx.Graph,
+    *,
+    figsize: tuple[int] = (15, 5),
+) -> plt.figure:
+    fig, axes = plt.subplots(1, 3, figsize=figsize)
+
+    plot_simple_graph(
+        triangulated_graph, title="Triangulated graph", ax=axes[0]
+    )
+    plot_connected_components(
+        true_graph, title="Ground truth graph", ax=axes[1]
+    )
+    plot_connected_components(pred_graph, title="Optimised graph", ax=axes[2])
+
+    plt.tight_layout()
+    return fig
+
+
 def plot_confusion_matrix_tiles(
     node_pred: npt.NDArray,
     edge_pred: npt.NDArray,
@@ -113,8 +134,8 @@ def plot_confusion_matrix_tiles(
     edge_true: npt.NDArray,
     *,
     figsize: tuple[int, int] = (10, 10),
-    cmap: str = "copper",
-) -> None:
+    cmap: str = COLORMAPS["conf_matrix"],
+) -> plt.figure:
     # Prep:
     confusion_matrix_plotting_data = [
         [node_pred, node_true, "nodes"],
@@ -222,7 +243,7 @@ def plot_prediction_probabilities_hist(
     edge_true: npt.NDArray,
     *,
     figsize: tuple[int] = (10, 4),
-) -> None:
+) -> plt.figure:
     """Plot the prediction probabilities colour-coded by their GT label."""
 
     # Plot the node & edge histogram by label:
@@ -246,7 +267,10 @@ def plot_prediction_probabilities_hist(
     return fig
 
 
-def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
+def visualise_node_and_edge_probabilities(
+    G: nx.Graph,
+    cmap: str = COLORMAPS["classifier"],
+) -> plt.figure:
     """Visualise per-node & per-edge predictions on color-coded
     graph of TP attribute probabilities independently for
     nodes, independently for edges & in overlay of both.
@@ -255,7 +279,7 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
     # Create a figure and axes
     ncols = 3
     fig, axes = plt.subplots(1, ncols, figsize=(ncols * 5, ncols + 1))
-    cmap = plt.cm.ScalarMappable(cmap="coolwarm")
+    color_map = plt.cm.ScalarMappable(cmap=cmap)
 
     # JUST THE NODES:
     nodes = list(G.nodes(data=True))
@@ -324,8 +348,10 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
     axes[1].set_title("Probability of 'edgeness'")
     axes[2].set_title("Merged graph predictions")
 
-    [axes[i].get_xaxis().set_visible(False) for i in range(ncols)]
-    [axes[i].get_yaxis().set_visible(False) for i in range(ncols)]
+    for i in range(ncols):
+        axes[i].invert_yaxis()
+        axes[i].get_xaxis().set_visible(False)
+        axes[i].get_yaxis().set_visible(False)
 
     # Format & return:
     plt.tight_layout()
