@@ -21,14 +21,15 @@
     "classifier_type": "GCN",
     "num_node_classes": "2",
     "num_edge_classes": "2",
-    "epochs": "5",
-    "hidden_channels": "[128, ]",
-    "metrics_classifier": "['accuracy', 'confusion_matrix']",
+    "epochs": "500",
+    "hidden_channels": "[512, 128, 32]",
+    "metrics_classifier": "['accuracy', 'f1_score', 'confusion_matrix']",
     "metrics_objects": "['exact', 'approx']",
     "dropout": "0.0",
     "batch_size": "512",
-    "learning_rate": "0.01",
+    "learning_rate": "0.05",
     "tensorboard_update_frequency": "1",
-    "valid_graph_ploter_frequency": "5",
-    "animate_valid_progress": "True"
+    "valid_graph_ploter_frequency": "20",
+    "animate_valid_progress": "False",
+    "visualise_tsne_manifold": "False"
 }

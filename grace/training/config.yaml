@@ -1,7 +1,11 @@
 # Paths to data:
 
-image_dir: /path/to/your/images
-grace_dir: /path/to/your/annotations
+train_image_dir: /path/to/your/train/images
+train_grace_dir: /path/to/your/train/annotations
+valid_image_dir: /path/to/your/valid/images
+valid_grace_dir: /path/to/your/valid/annotations
+infer_image_dir: /path/to/your/infer/images
+infer_grace_dir: /path/to/your/infer/annotations
 log_dir: /path/to/your/classifier/runs
 
 # Data image file type & graph annotations:
@@ -27,6 +31,7 @@ patch_aug_params: []
 keep_patch_fraction: 1.0    # original patch image ration to include in training
 
 # Classifier architecture setup
+classifier_type: GCN
 num_node_classes: 2
 num_edge_classes: 2
 hidden_channels:
@@ -35,13 +40,24 @@ hidden_channels:
   - 32
 
 # Training run hyperparameters
-epochs: 5
+epochs: 500
 dropout: 0.0
 batch_size: 512
 learning_rate: 0.05
 
-# Performance Tensorboard logging:
-metrics:
+# Training Tensorboard logging:
+metrics_classifier:
   - accuracy
+  - f1_score
   - confusion_matrix
 tensorboard_update_frequency: 1  # stores loss / metrics output every x epochs
+
+# Validation monitoring:
+valid_graph_ploter_frequency: 20
+animate_valid_progress: False
+visualise_tsne_manifold: False
+
+# Optimisation evaluation:
+metrics_objects:
+  - exact
+  - approx
