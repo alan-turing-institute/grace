@@ -4,38 +4,29 @@ from functools import partial
 import os
 import click
 import torch
-import matplotlib.pyplot as plt
 from datetime import datetime
 from tqdm.auto import tqdm
 
 from grace.styling import LOGGER
 from grace.io.image_dataset import ImageGraphDataset
-from grace.training.train import train_model
-from grace.models.datasets import dataset_from_graph
 
+from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import GNNClassifier
 from grace.models.feature_extractor import FeatureExtractor
 from grace.models.optimiser import optimise_graph
+
+from grace.training.train import train_model
 from grace.training.config import (
     validate_required_config_hparams,
     load_config_params,
     write_config_file,
-    write_json_file,
+    write_params_as_file_with_suffix,
 )
 from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
 from grace.evaluation.process import generate_ground_truth_graph
-
 from grace.visualisation.animation import animate_entire_valid_set
-from grace.visualisation.utils import plot_iou_histogram
-from grace.visualisation.plotting import (
-    plot_simple_graph,
-    plot_connected_components,
-)
-from grace.evaluation.metrics_objects import (
-    ExactMetricsComputer,
-    ApproxMetricsComputer,
-)
+from grace.evaluation.metrics_objects import ExactMetricsComputer
 
 
 def run_grace(config_file: Union[str, os.PathLike]) -> None:
@@ -59,6 +50,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = config.log_dir / current_time
     setattr(config, "run_dir", run_dir)
+    # suffix = config.saving_file_suffix
 
     # Create subdirectory to save out plots:
     for subfolder in ["valid", "infer"]:
@@ -172,11 +164,12 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     # Save the trained model:
     model_save_fn = run_dir / "classifier.pt"
     torch.save(classifier, model_save_fn)
-    write_config_file(config)
+    write_config_file(config, filetype="json")
+    write_config_file(config, filetype="yaml")
 
     # Project the TSNE manifold:
     if config.visualise_tsne_manifold is True:
-        # TODO: Visualise & save out the figure:
+        # TODO: Implement
         pass
 
     # Animate the validation outputs:
@@ -187,98 +180,74 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     GLP = GraphLabelPredictor(model_save_fn)
 
     # Process entire batch & save the results:
-    inference_metrics = GLP.batch_process_infer_dataset(
+    inference_metrics = GLP.calculate_numerical_results_on_entire_batch(
         infer_target_list,
-        save_path=run_dir / "infer",
-        save_figures=True,
-        show_figures=False,
     )
     # Log inference metrics:
-    LOGGER.info(f"Inference batch dataset metrics: {inference_metrics}")
+    LOGGER.info(f"Inference dataset batch metrics: {inference_metrics}")
 
     # Write out the batch metrics:
-    batch_metrics_fn = (
-        run_dir / "infer" / "Inference_Dataset-Batch_Metrics.json"
+    batch_metrics_fn = run_dir / "infer" / "Batch_Dataset-Metrics.json"
+    write_params_as_file_with_suffix(inference_metrics, batch_metrics_fn)
+    batch_metrics_fn = run_dir / "infer" / "Batch_Dataset-Metrics.yaml"
+    write_params_as_file_with_suffix(inference_metrics, batch_metrics_fn)
+
+    # Save out the inference batch performance figures:
+    GLP.visualise_model_performance_on_entire_batch(
+        infer_target_list, save_figures=run_dir / "infer", show_figures=False
     )
-    write_json_file(inference_metrics, batch_metrics_fn)
 
-    # Define which metrics to calculate:
-    metrics = [m.upper() for m in config.metrics_objects]
+    # Process each inference batch file individually:
+    for i, graph_data in enumerate(infer_target_list):
+        progress = f"[{i+1} / {len(infer_target_list)}]"
+        fn = graph_data["metadata"]["image_filename"]
+        LOGGER.info(f"{progress} Processing file: '{fn}'")
 
-    # Process each file individually:
-    desc = "Measuring inference metrics on images... "
-    for graph_data in tqdm(infer_target_list, desc=desc):
-        file_name = graph_data["metadata"]["image_filename"]
-        LOGGER.info(f"Processing file: {file_name}")
-
-        GLP.visualise_model_performance_on_graph(
-            graph_data,
-            save_path=run_dir / "infer",
-            save_figures=True,
-            show_figures=False,
+        infer_graph = graph_data["graph"]
+        GLP.set_node_and_edge_probabilities(G=infer_graph)
+        GLP.visualise_prediction_probs_on_graph(
+            G=infer_graph,
+            graph_filename=fn,
+            save_figure=run_dir / "infer",
+            show_figure=False,
         )
 
         # Generate GT & optimised graphs:
-        graph = graph_data["graph"]
-        GLP.set_node_and_edge_probabilities(graph)
+        true_graph = generate_ground_truth_graph(infer_graph)
+        pred_graph = optimise_graph(infer_graph)
 
-        true_graph = generate_ground_truth_graph(graph)
-        pred_graph = optimise_graph(graph)
-
-        # Save out the connected components figure:
-        # shape = 5
-        _, axes = plt.subplots(1, 3, figsize=(15, 5))
-
-        plot_simple_graph(graph, title="Triangulated graph", ax=axes[0])
-        plot_connected_components(
-            true_graph, title="Ground truth graph", ax=axes[1]
-        )
-        plot_connected_components(
-            pred_graph, title="Optimised graph", ax=axes[2]
-        )
-
-        plt.tight_layout()
-        plt.savefig(
-            run_dir / "infer" / f"{file_name}-Graph_Connected_Components.png"
-        )
-        # plt.show()
-
-        if "EXACT" in metrics:
+        # EXACT metrics per image:
+        if "EXACT" in config.metrics_objects:
             EMC = ExactMetricsComputer(
-                G=graph,
+                G=infer_graph,
                 pred_optimised_graph=pred_graph,
                 true_annotated_graph=true_graph,
             )
-            results_dict = EMC.metrics()
-            LOGGER.info(f"'EXACT' metrics: {file_name} | {results_dict}")
-            save_fn = run_dir / "infer" / f"{file_name}-Metrics.json"
-            write_json_file(results_dict, save_fn)
+
+            # Compute EXACT numerical metrics & write them out as file:
+            EMC_metrics = EMC.metrics()
+            LOGGER.info(f"{progress} Exact metrics: {fn} | {EMC_metrics}")
+
+            EMC_fn = run_dir / "infer" / f"{fn}-Metrics.json"
+            write_params_as_file_with_suffix(EMC_metrics, EMC_fn)
+            EMC_fn = run_dir / "infer" / f"{fn}-Metrics.yaml"
+            write_params_as_file_with_suffix(EMC_metrics, EMC_fn)
 
             EMC.visualise(
                 save_path=run_dir / "infer",
-                file_name=file_name,
+                file_name=fn,
                 save_figures=True,
                 show_figures=False,
             )
 
-            # Append IoUs:
-            if "Object IoUs" not in inference_metrics:
-                inference_metrics["Object IoUs"] = []
-            file_instance_ious = results_dict["Instance IoU [list]"]
-            inference_metrics["Object IoUs"].extend(file_instance_ious)
-
-        # Plot overal IoUs:
-        plot_iou_histogram(iou_per_object=inference_metrics["Object IoUs"])
-        plt.savefig(
-            run_dir / "infer" / "Inference_Dataset-Object_IoU_Histogram.png"
-        )
-        plt.close()
-
-        if "APPROX" in metrics:
-            LOGGER.warning("WARNING; 'APPROX' metrics not implemented yet")
+        # APPROX metrics per image:
+        if "APPROX" in config.metrics_objects:
+            LOGGER.warning(
+                f"{progress} WARNING; 'APPROX' metrics not implemented yet"
+            )
 
             # TODO: Implement:
-            ApproxMetricsComputer
+            pass
 
     # Close the run:
     LOGGER.info("Run complete... Done!")
