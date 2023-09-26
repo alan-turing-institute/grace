@@ -1,6 +1,8 @@
 import logging
 
+# import warnings
 # import matplotlib.pyplot as plt
+
 
 LOGGER = logging
 LOGGER.basicConfig(
@@ -8,6 +10,8 @@ LOGGER.basicConfig(
     format="%(asctime)s %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S %p",
 )
+
+# warnings.filterwarnings('ignore')
 
 # font = {'family' : 'normal',
 #         'weight' : 'bold',
@@ -25,4 +29,5 @@ COLORMAPS = {
     "conf_matrix": "copper",
     "manifold": "rainbow",
     "patches": "binary_r",
+    "mask": "binary_r",
 }
