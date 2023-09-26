@@ -18,7 +18,7 @@ This README.md contains instructions on how to write a config file to train a cl
 
 The following classifier is based on [graph convolutional network](https://arxiv.org/abs/1609.02907 "GCN seminal paper") architecture. To run the model training, you need to create a configuration (config) file where hyperparameters of the GCN model (or, potentially, other classifiers) and many other specs are specified:
 
-The `config_file` should be structured as specified in the `config.json` file, or as follows:
+The `config_file` should be structured as specified in the `config.json` or `config.yaml` file. See the templates & descriptions of the hyperparameters here:
 
 ```
 {
@@ -103,7 +103,7 @@ python3 grace/training/run.py --config_file="/absolute/path/to/the/config/file/c
 
 To launch `Tensorboard`, run this command in the command line:
 ```sh
-tensorboard --logdir="/path/to/all/your/runs/"
+tensorboard --logdir=/path/to/all/your/runs/
 ```
 
 ...and copy the `http://localhost:6006/` to your browser.
