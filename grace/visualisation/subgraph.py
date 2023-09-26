@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
 import matplotlib
@@ -117,7 +118,12 @@ def plot_subgraph_coordinates(
     color_mapping: dict[int, str] = None,
     style_mapping: dict[int, str] = None,
     ax: matplotlib.axes = None,
+    **kwargs,
 ) -> matplotlib.axes:
+    # Make sure some axis to plot onto is defined:
+    if ax is None:
+        _, ax = plt.subplots(1, 1, **kwargs)
+
     # Define color mapping & plot:
     color_mapping = (
         color_mapping if color_mapping is not None else COLOR_MAPPING
