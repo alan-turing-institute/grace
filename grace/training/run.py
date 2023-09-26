@@ -13,17 +13,12 @@ from grace.io.image_dataset import ImageGraphDataset
 from grace.training.train import train_model
 from grace.models.datasets import dataset_from_graph
 
-# from grace.models.classifier import GCN
 from grace.models.classifier import GNNClassifier
 from grace.models.feature_extractor import FeatureExtractor
 from grace.training.config import write_config_file, load_config_params
 from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
 from grace.visualisation.animation import animate_entire_valid_set
-from grace.visualisation.plotting import (
-    visualise_node_and_edge_probabilities,
-    visualise_prediction_probs_hist,
-)
 
 
 def run_grace(config_file: Union[str, os.PathLike]) -> None:
@@ -95,7 +90,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         )
 
         # Process the (sub)graph data into torch_geometric dataset:
-        target_list, dataset = [], []
+        target_list, subgraph_dataset = [], []
         desc = "Extracting patch features from images... "
         for _, target in tqdm(input_data, desc=desc, disable=not verbose):
             file_name = target["metadata"]["image_filename"]
@@ -106,9 +101,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
             # Chop graph into subgraphs & store:
             graphs = dataset_from_graph(target["graph"], mode=graph_processing)
-            dataset.extend(graphs)
+            subgraph_dataset.extend(graphs)
 
-        return target_list, dataset
+        return target_list, subgraph_dataset
 
     # Create a transform function with frozen 'in_train_mode' parameter:
     transform_train_mode = partial(transform, in_train_mode=True)
@@ -132,7 +127,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     )
 
     # Define the GNN classifier model:
-    # TODO: Instantiate a classifier which will nominate the GNN
     classifier = GNNClassifier().get_model(
         config.gnn_classifier_type,
         input_channels=config.feature_dim,
@@ -165,35 +159,33 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     # Animate the validation outputs:
     animate_entire_valid_set(run_dir / "valid", verbose=False)
 
-    # TODO: Run inference on the final, trained model on unseen data:
-    # Instantiate the model with frozen weights:
+    # Run inference on the final, trained model on unseen data:
     GLP = GraphLabelPredictor(model_save_fn)
 
-    # Iterate through all validation graphs & predict nodes / edges:
-    for infer_target in infer_target_list:
-        infer_graph = infer_target["graph"]
+    # Process entire batch & save the results:
+    inference_metrics = GLP.batch_process_infer_dataset(
+        infer_target_list,
+        save_path=run_dir / "infer",
+        save_figures=True,
+        show_figures=False,
+    )
 
-        # Filename:
-        infer_name = infer_target["metadata"]["image_filename"]
+    # Process each file individually:
+    desc = "Measuring inference metrics on images... "
+    for graph_data in tqdm(infer_target_list, desc=desc):
+        file_name = graph_data["metadata"]["image_filename"]
+        LOGGER.info(f"Processing file: {file_name}")
 
-        # Update probabs & visualise the graph:
-        GLP.set_node_and_edge_probabilities(G=infer_graph)
-        # TODO: Re-implement when plotting issues are solved:
-
-        # GLP.visualise_model_performance_on_graph(
-        #     G=infer_graph,
-        #     filename=infer_path / f"{infer_name}-Areas_under_Curves.png"
-        # )
-
-        # HACK: Save out at least two plots:
-        visualise_node_and_edge_probabilities(
-            G=infer_graph,
-            filename=run_dir / "infer" / f"{infer_name}-Inference_Graph.png",
+        GLP.visualise_model_performance_on_graph(
+            graph_data,
+            save_path=run_dir / "infer",
+            save_figures=True,
+            show_figures=False,
         )
-        visualise_prediction_probs_hist(
-            G=infer_graph,
-            filename=run_dir / "infer" / f"{infer_name}-Prediction_Hist.png",
-        )
+
+    # Log inference metrics:
+    # TODO: Write out more:
+    LOGGER.info(f"Inference metrics: {inference_metrics}")
 
     # Close the run:
     LOGGER.info("Run complete... Done!")
