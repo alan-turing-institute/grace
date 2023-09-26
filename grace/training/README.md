@@ -18,52 +18,8 @@ This README.md contains instructions on how to write a config file to train a cl
 
 The following classifier is based on [graph convolutional network](https://arxiv.org/abs/1609.02907 "GCN seminal paper") architecture. To run the model training, you need to create a configuration (config) file where hyperparameters of the GCN model (or, potentially, other classifiers) and many other specs are specified:
 
-The `config_file` should be structured as specified in the `config.json` or `config.yaml` file. See the templates & descriptions of the hyperparameters here:
+The `config_file` should be structured as specified in the `config.json` or `config.yaml` file. See the [templates](./config.yaml) for detailed descriptions of the hyperparameters.
 
-```
-{
-    # Paths to data:
-    "image_dir": "/absolute/path/to/your/images/",
-    "grace_dir": "--same--as--above--",
-    "run_dir": "/absolute/path/to/where/runs/will/be/saved/",
-    "log_dir": "--same--as--above--",
-
-    # Feature extractor:
-    "extractor_fn": "/path/to/your/feature/extractor/resnet152.pt",
-    "feature_dim": "2048", -> if using ResNet 50 / 101 / 152,
-                   "512" if using ResNet 18 / 34; = input channels into the classifier
-
-    # Patch data specs:
-    "normalize": "(False, False)", -> [0-1] standardise patches before & after augmentations
-    "patch_size": "(224, 224)", -> size of the patch to crop & feed to feature extractor
-    "keep_patch_fraction": "1.0", -> required fraction of the image not to be excluded
-    "keep_node_unknown_labels": "False",
-    "keep_edge_unknown_labels": "False",
-        -> if False, all graph components (nodes & edges) with `Annotation.UNKNOWN` label
-        will be re-labelled to an `Annotation.TRUE_NEGATIVE`; good for exhaustive annotation
-
-    # Groups of augmentations [see [table](table) below]:
-    # see 'grace.utils/augment_graph.py' for full option list
-    "img_graph_augs": "['random_edge_addition_and_removal', 'random_xy_translation']",
-    "img_graph_aug_params": "[{'p_add': 0.2}, {'max_shift': 15.0}]",
-
-    # see 'grace.utils/augment_image.py' for full option list
-    "patch_augs": "[]",
-    "patch_aug_params": "[]",
-
-    # Classifier model training:
-    "train_to_valid_split": "0.85",
-    "epochs": "10",
-    "num_node_classes": "2",
-    "num_edge_classes": "2",
-    "hidden_channels": "[512, 128, 32]",
-    "metrics": "['accuracy', 'confusion_matrix']",
-    "dropout": "0.5",
-    "batch_size": 64,
-    "learning_rate": "0.001",
-    "tensorboard_update_frequency": 1,
-}
-```
 
 ### Downloading the feature extractor:
 
