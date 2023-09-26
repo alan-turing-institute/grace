@@ -11,7 +11,7 @@ def animate_valid_graph_plots(
     LOGGER.info(f"Animation for file {plots_file} launched...")
 
     # # Define the output video file name
-    video_filename = plots_path / f"{plots_file}-Animation.mp4"
+    video_filename = plots_path / f"Animation-{plots_file}.mp4"
 
     # Get a list of all the image files in the folder
     images = [

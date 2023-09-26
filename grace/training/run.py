@@ -162,11 +162,10 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     torch.save(classifier, model_save_fn)
     write_config_file(config)
 
-    # Animate the validations:
+    # Animate the validation outputs:
     animate_entire_valid_set(run_dir / "valid", verbose=False)
 
     # TODO: Run inference on the final, trained model on unseen data:
-
     # Instantiate the model with frozen weights:
     GLP = GraphLabelPredictor(model_save_fn)
 

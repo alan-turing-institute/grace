@@ -103,8 +103,7 @@ class GraphLabelPredictor(object):
         )
 
     def set_node_and_edge_probabilities(self, G: nx.Graph) -> None:
-        """Update predicted node / edge probs by Prediction in-place."""
-
+        # Process graph into torch_geometric.data:
         data_batch = dataset_from_graph(
             graph=G, mode="whole", in_train_mode=False
         )
