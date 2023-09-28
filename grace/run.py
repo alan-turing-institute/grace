@@ -50,7 +50,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = config.log_dir / current_time
     setattr(config, "run_dir", run_dir)
-    # suffix = config.saving_file_suffix
 
     # Create subdirectory to save out plots:
     for subfolder in ["valid", "infer"]:
