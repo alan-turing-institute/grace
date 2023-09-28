@@ -127,7 +127,11 @@ class ExactMetricsComputer(object):
         # Accuracy, precision, recall, f1, support scores:
         accuracy = accuracy_score(y_pred=y_pred, y_true=y_true, normalize=True)
         prec_recall_f1score = precision_recall_fscore_support(
-            y_pred=y_pred, y_true=y_true, average="binary"
+            y_pred=y_pred,
+            y_true=y_true,
+            average="weighted",
+            beta=1.0,
+            zero_division=0.0,
         )
         return accuracy, prec_recall_f1score
 
