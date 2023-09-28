@@ -10,7 +10,7 @@ import mrcfile
 
 from grace.io import read_graph
 from grace.base import GraphAttrs, Annotation
-from grace.logger import LOGGER
+from grace.styling import LOGGER
 
 import torch
 from torch.utils.data import Dataset

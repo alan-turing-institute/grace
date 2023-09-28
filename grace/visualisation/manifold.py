@@ -11,8 +11,7 @@ import matplotlib
 from sklearn.manifold import TSNE
 
 from grace.models.datasets import dataset_from_graph
-
-from grace.logger import LOGGER
+from grace.styling import LOGGER, COLORMAPS
 
 
 def drop_linear_layers_from_model(
@@ -104,10 +103,11 @@ class TSNEManifoldProjection(object):
         self,
         node_GT_label: npt.NDArray,
         node_features: npt.NDArray,
-        ax: matplotlib.axes,
         *,
         n_components: int = 2,
         title: str = "",
+        cmap: str = COLORMAPS["manifold"],
+        ax: matplotlib.axes = None,
     ) -> matplotlib.axes:
         # Shapes must agree:
         assert len(node_GT_label) == len(node_features)
@@ -117,9 +117,7 @@ class TSNEManifoldProjection(object):
         # Plot the TSNE manifold:
         title = f"TSNE of Patch Features\n{title}"
         umap1, umap2 = node_embed[:, 0], node_embed[:, 1]
-        scatter = ax.scatter(
-            x=umap1, y=umap2, c=node_GT_label, cmap="coolwarm"
-        )
+        scatter = ax.scatter(x=umap1, y=umap2, c=node_GT_label, cmap=cmap)
         cbar = plt.colorbar(scatter)
         cbar.ax.get_yaxis().labelpad = 15
         cbar.ax.set_ylabel("Ground Truth Node Label", rotation=270)

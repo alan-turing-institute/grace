@@ -39,18 +39,26 @@ def f1_score_metric(
     edge_pred: torch.Tensor,
     node_true: torch.Tensor,
     edge_true: torch.Tensor,
+    *,
+    beta: float = 1.0,
+    zero_division: float = 0.0,
 ) -> tuple[float]:
-    # Calculate the accuracy, with/out weights:
-    # TODO: Implement / calculate class weighting:
+    # Calculate the F1 score, alongside others:
     node_f1s = precision_recall_fscore_support(
         y_pred=node_pred,
         y_true=node_true,
-        average="binary",
+        # average="micro",
+        average="weighted",
+        beta=beta,
+        zero_division=zero_division,
     )[2]
     edge_f1s = precision_recall_fscore_support(
         y_pred=edge_pred,
         y_true=edge_true,
-        average="binary",
+        # average="micro",
+        average="weighted",
+        beta=beta,
+        zero_division=zero_division,
     )[2]
 
     return float(node_f1s), float(edge_f1s)

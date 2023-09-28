@@ -7,8 +7,10 @@ import matplotlib.patches as patches
 
 from matplotlib.colors import to_rgb
 from scipy.ndimage import label
+from sklearn.metrics import ConfusionMatrixDisplay
 
 from grace.base import GraphAttrs
+from grace.styling import COLORMAPS
 
 
 COLOR_LIST = ["limegreen", "gold", "dodgerblue"]
@@ -280,13 +282,54 @@ def _legend_without_duplicate_labels(ax):
     ax.legend(*zip(*unique))
 
 
+def plot_confusion_matrix_tiles(
+    node_pred: npt.NDArray,
+    edge_pred: npt.NDArray,
+    node_true: npt.NDArray,
+    edge_true: npt.NDArray,
+    *,
+    figsize: tuple[int, int] = (10, 10),
+    cmap: str = COLORMAPS["conf_matrix"],
+) -> None:
+    # Prep:
+    confusion_matrix_plotting_data = [
+        [node_pred, node_true, "nodes"],
+        [edge_pred, edge_true, "edges"],
+    ]
+
+    # Plot:
+    fig, axs = plt.subplots(2, 2, figsize=figsize)
+
+    for d, matrix_data in enumerate(confusion_matrix_plotting_data):
+        if len(np.unique(matrix_data[1])) < 2:
+            continue
+
+        for n, nrm in enumerate([None, "true"]):
+            ConfusionMatrixDisplay.from_predictions(
+                y_pred=matrix_data[0],
+                y_true=matrix_data[1],
+                normalize=nrm,
+                ax=axs[d, n],
+                cmap=cmap,
+                display_labels=["TN", "TP"],
+                text_kw={"fontsize": "large"},
+            )
+
+            flag = "Raw Counts" if nrm is None else "Normalised"
+            text = f"{matrix_data[2].capitalize()} | {flag} Values"
+            axs[d, n].set_title(text)
+
+    plt.tight_layout()
+    return fig
+
+
 def plot_iou_histogram(
     iou_per_object: list | npt.NDArray,
-    iou_semantic: float,
-    figsize: tuple[int, int] = (10, 3),
+    iou_semantic: float = None,
+    figsize: tuple[int, int] = (10, 4),
 ) -> None:
     # Instantiate a figure
-    plt.figure(figsize=figsize)
+    fig = plt.figure(figsize=figsize)
 
     # Plot the histogram + boundaries
     plt.hist(iou_per_object, color="grey", label="Individual objects IoU")
@@ -294,13 +337,14 @@ def plot_iou_histogram(
     mn, std = np.mean(iou_per_object), np.std(iou_per_object)
 
     # Add vertical lines
-    plt.axvline(
-        x=iou_semantic,
-        color="cyan",
-        linestyle="dashed",
-        linewidth=2,
-        label=f"IoU semantic: {iou_semantic:.4f}",
-    )
+    if isinstance(iou_semantic, float):
+        plt.axvline(
+            x=iou_semantic,
+            color="cyan",
+            linestyle="dashed",
+            linewidth=2,
+            label=f"IoU semantic: {iou_semantic:.4f}",
+        )
     plt.axvline(
         x=mn,
         color="purple",
@@ -327,8 +371,7 @@ def plot_iou_histogram(
         f"Intersection over union across {len(iou_per_object)} overlapping objects"
     )
     plt.legend()
-    plt.show()
-    plt.close()
+    return fig
 
 
 def show_object_bounding_boxes_on_graph(
@@ -337,15 +380,16 @@ def show_object_bounding_boxes_on_graph(
     legend_handle: dict[str, str],
     annotation: npt.NDArray = None,
     figsize: tuple[int] = (10, 10),
+    cmap: str = COLORMAPS["patches"],
 ) -> None:
     """TODO: Fill in."""
 
     # Create figure and axes
-    _, ax = plt.subplots(figsize=figsize)
+    fig, ax = plt.subplots(figsize=figsize)
 
     # Plot the faded annotation under the graph
     if annotation is not None:
-        ax.imshow(annotation, alpha=0.5, cmap="gray", interpolation="none")
+        ax.imshow(annotation, alpha=0.5, cmap=cmap, interpolation="none")
 
     # Display the graph node positions
     pos = {
@@ -376,8 +420,7 @@ def show_object_bounding_boxes_on_graph(
 
     ax.set_axis_on()
     ax.set_title("IoU metric illustration on per-object level")
-    plt.show()
-    plt.close()
+    return fig
 
 
 def visualise_bounding_boxes_on_graph(

@@ -1,6 +1,6 @@
 import torch
 
-from grace.training.run import run_grace
+from grace.run import run_grace
 from grace.training.config import Config, write_config_file
 
 
@@ -12,8 +12,12 @@ def test_run_grace(mrc_image_and_annotations_dir, simple_extractor):
     torch.save(simple_extractor, extractor_fn)
 
     config = Config(
-        image_dir=tmp_data_dir,
-        grace_dir=tmp_data_dir,
+        train_image_dir=tmp_data_dir,
+        train_grace_dir=tmp_data_dir,
+        valid_image_dir=tmp_data_dir,
+        valid_grace_dir=tmp_data_dir,
+        infer_image_dir=tmp_data_dir,
+        infer_grace_dir=tmp_data_dir,
         log_dir=tmp_data_dir,
         run_dir=tmp_data_dir,
         extractor_fn=extractor_fn,

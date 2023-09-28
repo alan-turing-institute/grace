@@ -76,7 +76,8 @@ def _build_matrices(
             A[h.i, idx] = 1
         if h.j is not None:
             A[int(h.j + N), idx] = 1
-        rho[idx] = h.rho
+        # Must be of in-built type float or np.float64:
+        rho[idx] = h.rho.astype(float)
 
     # # some sanity checks while debugging
     # assert len(rows) == len(cols)

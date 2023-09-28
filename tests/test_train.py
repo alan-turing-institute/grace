@@ -1,4 +1,3 @@
-import os
 import pytest
 
 from grace.base import GraphAttrs, Annotation
@@ -34,9 +33,16 @@ class TestTraining:
                 for src, dst in graph.edges
             ]
         )
+        target = {"graph": graph, "metadata": {"image_filename": "filename"}}
         dataset = dataset_from_graph(graph, mode="sub")
 
-        return dataset, model
+        return (
+            dataset,
+            model,
+            [
+                target,
+            ],
+        )
 
     @pytest.mark.parametrize(
         "metrics",
@@ -46,15 +52,18 @@ class TestTraining:
         ],
     )
     def test_logger_file_exists(self, tmpdir, metrics, data_and_model):
-        dataset, model = data_and_model
+        dataset, model, graph_list = data_and_model
 
         train_model(
             model=model,
-            dataset=dataset,
+            train_dataset=dataset,
+            valid_dataset=dataset,
+            valid_target_list=graph_list,
             batch_size=5,
             metrics=metrics,
             log_dir=tmpdir,
             epochs=1,
+            valid_graph_ploter_frequency=5,
         )
 
-        assert os.path.exists(tmpdir)
+        assert tmpdir.exists()

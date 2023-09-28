@@ -1,6 +1,5 @@
 from grace.base import GraphAttrs, Annotation
-from grace.napari.utils import EdgeColor
-from collections import Counter
+from grace.styling import COLORMAPS
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -107,86 +106,25 @@ def plot_connected_components(
     return ax
 
 
-def display_image_and_grace_annotation(
-    image: npt.NDArray,
-    target: dict[str],
-) -> None:
-    """Overlays the annotation image (binary mask) with annotated graph,
-        colour-coding the true positive (TP), true negative (TN), and
-        unannotated elements of the graph (nodes & edges).
+def plot_optimised_objects_from_graphs(
+    triangulated_graph: nx.Graph,
+    true_graph: nx.Graph,
+    pred_graph: nx.Graph,
+    *,
+    figsize: tuple[int] = (15, 5),
+) -> plt.figure:
+    fig, axes = plt.subplots(1, 3, figsize=figsize)
 
-    Parameters
-    ----------
-    image : npt.NDArray
-        Raw image array
-    target : dict[str]
-        Dictionary containing keys:
-            'graph' : nx.Graph
-                annotated graph with node & edge attributes
-            'annotation' : npt.NDArray
-                binary annotated image mask
-            'metadata' : str
-                'image_filename', etc.
-    """
-
-    annotation = target["annotation"]
-    assert image.shape == annotation.shape
-
-    # Simple image data plot - side by side:
-    plt.figure(figsize=(15, 7))
-    names = ["Raw image data", "GRACE annotation"]
-
-    for i, image in enumerate([image, annotation]):
-        plt.subplot(1, 2, i + 1)
-        plt.imshow(image, cmap=plt.cm.turbo, interpolation="none")
-        plt.colorbar(fraction=0.045)
-        plt.title(f"{names[i]}: {target['metadata']['image_filename']}")
-    plt.show()
-
-    # Read the annotated graph & count the nodes:
-    graph = target["graph"]
-    node_GT_counter = Counter(
-        [
-            node[GraphAttrs.NODE_GROUND_TRUTH]
-            for _, node in graph.nodes(data=True)
-        ]
+    plot_simple_graph(
+        triangulated_graph, title="Triangulated graph", ax=axes[0]
     )
-
-    # Fancy annotation plot
-    _, ax = plt.subplots(figsize=(16, 16))
-
-    # node positions
-    pos = {
-        idx: (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
-        for idx, node in graph.nodes(data=True)
-    }
-    # edge annotations
-    edge_gt = [
-        graph[u][v][GraphAttrs.EDGE_GROUND_TRUTH] for u, v in graph.edges
-    ]
-    edge_colors = [EdgeColor[gt.name].value for gt in edge_gt]
-
-    node_colors = [
-        EdgeColor[node_attrs[GraphAttrs.NODE_GROUND_TRUTH].name].value
-        for _, node_attrs in graph.nodes(data=True)
-    ]
-
-    ax.imshow(annotation, cmap=plt.cm.turbo, interpolation="none")
-
-    # draw all nodes/vertices in the graph:
-    nx.draw_networkx(
-        graph,
-        ax=ax,
-        pos=pos,
-        with_labels=False,
-        node_size=32,
-        edge_color=edge_colors,
-        node_color=node_colors,
+    plot_connected_components(
+        true_graph, title="Ground truth graph", ax=axes[1]
     )
+    plot_connected_components(pred_graph, title="Optimised graph", ax=axes[2])
 
-    ax.set_title(f"{target['metadata']['image_filename']}\n{node_GT_counter}")
-    plt.show()
-    plt.close()
+    plt.tight_layout()
+    return fig
 
 
 def plot_confusion_matrix_tiles(
@@ -196,8 +134,8 @@ def plot_confusion_matrix_tiles(
     edge_true: npt.NDArray,
     *,
     figsize: tuple[int, int] = (10, 10),
-    cmap: str = "copper",
-) -> None:
+    cmap: str = COLORMAPS["conf_matrix"],
+) -> plt.figure:
     # Prep:
     confusion_matrix_plotting_data = [
         [node_pred, node_true, "nodes"],
@@ -305,7 +243,7 @@ def plot_prediction_probabilities_hist(
     edge_true: npt.NDArray,
     *,
     figsize: tuple[int] = (10, 4),
-) -> None:
+) -> plt.figure:
     """Plot the prediction probabilities colour-coded by their GT label."""
 
     # Plot the node & edge histogram by label:
@@ -323,11 +261,16 @@ def plot_prediction_probabilities_hist(
             axes[i].legend()
 
     axes[0].set_ylabel("Attribute count")
+
+    # Style & return:
     plt.tight_layout()
     return fig
 
 
-def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
+def visualise_node_and_edge_probabilities(
+    G: nx.Graph,
+    cmap: str = COLORMAPS["classifier"],
+) -> plt.figure:
     """Visualise per-node & per-edge predictions on color-coded
     graph of TP attribute probabilities independently for
     nodes, independently for edges & in overlay of both.
@@ -336,7 +279,7 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
     # Create a figure and axes
     ncols = 3
     fig, axes = plt.subplots(1, ncols, figsize=(ncols * 5, ncols + 1))
-    cmap = plt.cm.ScalarMappable(cmap="coolwarm")
+    color_map = plt.cm.ScalarMappable(cmap=cmap)
 
     # JUST THE NODES:
     nodes = list(G.nodes(data=True))
@@ -351,7 +294,7 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
         x=x_coords,
         y=y_coords,
         c=node_preds,
-        cmap="coolwarm",
+        cmap=cmap,
         vmin=0.0,
         vmax=1.0,
     )
@@ -359,13 +302,13 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
         x=x_coords,
         y=y_coords,
         c=node_preds,
-        cmap="coolwarm",
+        cmap=cmap,
         vmin=0.0,
         vmax=1.0,
     )
 
     # Add colorbar:
-    cbar = plt.colorbar(cmap, ax=axes[0])
+    cbar = plt.colorbar(color_map, ax=axes[0])
     cbar.set_label("Node Probability")
 
     # JUST THE EDGES:
@@ -383,30 +326,32 @@ def visualise_node_and_edge_probabilities(G: nx.Graph) -> plt.figure:
         axes[1].plot(
             [e_st_x, e_en_x],
             [e_st_y, e_en_y],
-            color=cmap.to_rgba(edge_pred),
+            color=color_map.to_rgba(edge_pred),
             marker="",
         )
         axes[2].plot(
             [e_st_x, e_en_x],
             [e_st_y, e_en_y],
-            color=cmap.to_rgba(edge_pred),
+            color=color_map.to_rgba(edge_pred),
             marker="",
         )
 
     # Add colorbar
-    cbar = plt.colorbar(cmap, ax=axes[1])
+    cbar = plt.colorbar(color_map, ax=axes[1])
     cbar.set_label("Edge Probability")
 
     # Annotate & display:
-    cbar = plt.colorbar(cmap, ax=axes[2])
+    cbar = plt.colorbar(color_map, ax=axes[2])
     cbar.set_label("TP Probability")
 
     axes[0].set_title("Probability of 'nodeness'")
     axes[1].set_title("Probability of 'edgeness'")
     axes[2].set_title("Merged graph predictions")
 
-    [axes[i].get_xaxis().set_visible(False) for i in range(ncols)]
-    [axes[i].get_yaxis().set_visible(False) for i in range(ncols)]
+    for i in range(ncols):
+        axes[i].invert_yaxis()
+        axes[i].get_xaxis().set_visible(False)
+        axes[i].get_yaxis().set_visible(False)
 
     # Format & return:
     plt.tight_layout()
@@ -464,7 +409,10 @@ def read_patch_stack_by_label(
     return crops
 
 
-def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
+def montage_from_image_patches(
+    crops: list[npt.NDArray],
+    cmap: str = COLORMAPS["patches"],
+) -> None:
     """Visualise the few random patches per class as a montage.
 
     Parameters
@@ -494,7 +442,7 @@ def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
         )
         # Plot a few patches
         plt.subplot(1, len(crops), c + 1)
-        plt.imshow(mont, cmap="binary_r", vmin=mn, vmax=mx)
+        plt.imshow(mont, cmap=cmap, vmin=mn, vmax=mx)
         plt.colorbar(fraction=0.045)
         plt.title(f"Montage of patches\nwith 'node_label' = {c}")
         plt.axis("off")
@@ -502,7 +450,10 @@ def montage_from_image_patches(crops: list[npt.NDArray]) -> None:
     plt.close()
 
 
-def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
+def overlay_from_image_patches(
+    crops: list[npt.NDArray],
+    cmap: str = COLORMAPS["patches"],
+) -> None:
     """Visualise the average patch from stack per each class.
 
     Parameters
@@ -517,7 +468,7 @@ def overlay_from_image_patches(crops: list[npt.NDArray]) -> None:
             continue
         stack = np.mean(patches, axis=0)
         plt.subplot(1, len(crops), c + 1)
-        plt.imshow(stack, cmap="binary_r")
+        plt.imshow(stack, cmap=cmap)
         plt.colorbar(fraction=0.045)
         plt.title(f"Montage of patches\nwith 'node_label' = {c}")
         plt.axis("off")

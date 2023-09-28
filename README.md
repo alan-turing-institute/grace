@@ -161,17 +161,20 @@ More details about how this type of graph representation analysis could be appli
 
 ## Contributors
 
-**Dataset generation (The University of Bristol):**
+**Methodology / software development:**
 
-+ 👨‍🔬 [Marston Bradshaw](https://research-information.bris.ac.uk/en/persons/marston-bradshaw "Marston Bradshaw")
-+ 👩‍🔬 [Danielle Paul](https://www.turing.ac.uk/people/researchers/danielle-paul "Danielle Paul")
++ 👩‍💻 [Kristina Ulicna](https://github.com/KristinaUlicna "KristinaUlicna"), The Alan Turing Institute
++ 👨‍💻 [Christorpher J Soelistyo](https://github.com/chris-soelistyo "chris-soelistyo"), The Alan Turing Institute
++ 👩‍💻 [Camila Rangel Smith](https://github.com/crangelsmith "crangelsmith"), The Alan Turing Institute
++ 👨‍💻 [Alan R Lowe](https://github.com/quantumjot "quantumjot"), The Alan Turing Institute
 
-**Software development (The Alan Turing Institute):**
 
-+ 👩‍💻 [Beatriz Costa Gomes](https://github.com/mooniean "mooniean")
-+ 👩‍💻 [Kristina Ulicna](https://github.com/KristinaUlicna "KristinaUlicna")
-+ 👨‍💻 [Christorpher J Soelistyo](https://github.com/chris-soelistyo "chris-soelistyo")
-+ 👨‍💻 [Alan R Lowe](https://github.com/quantumjot "quantumjot")
+**Dataset generation / processing:**
+
++ 👨‍🔬 [Marston Bradshaw](https://research-information.bris.ac.uk/en/persons/marston-bradshaw "Marston Bradshaw"), The University of Bristol
++ 👩‍🔬 [Danielle Paul](https://www.turing.ac.uk/people/researchers/danielle-paul "Danielle Paul"), The University of Bristol
++ 👩‍💻 [Beatriz Costa Gomes](https://github.com/mooniean "mooniean"), The Alan Turing Institute
+
 
 ...and many others...
 

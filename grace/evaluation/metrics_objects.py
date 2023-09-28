@@ -1,7 +1,9 @@
 import numpy as np
 import numpy.typing as npt
 import networkx as nx
+import matplotlib.pyplot as plt
 
+from pathlib import Path
 from scipy.ndimage import label
 
 from sklearn.metrics import (
@@ -9,6 +11,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
 )
 
+from grace.visualisation.plotting import plot_optimised_objects_from_graphs
 from grace.visualisation.utils import (
     intersection_over_union,
     list_real_connected_components,
@@ -124,7 +127,11 @@ class ExactMetricsComputer(object):
         # Accuracy, precision, recall, f1, support scores:
         accuracy = accuracy_score(y_pred=y_pred, y_true=y_true, normalize=True)
         prec_recall_f1score = precision_recall_fscore_support(
-            y_pred=y_pred, y_true=y_true, average="binary"
+            y_pred=y_pred,
+            y_true=y_true,
+            average="weighted",
+            beta=1.0,
+            zero_division=0.0,
         )
         return accuracy, prec_recall_f1score
 
@@ -206,25 +213,65 @@ class ExactMetricsComputer(object):
         results_dict.update(table)
         results_dict["Instance IoU [list]"] = iou_per_object
 
+        # Turn all values into floats where appropriate:
+        for key, value in results_dict.items():
+            if isinstance(value, float):
+                results_dict[key] = float(value)
+            elif isinstance(value, list):
+                results_dict[key] = [float(v) for v in value]
+
         return results_dict
 
-    def visualise(self) -> None:
+    def visualise(
+        self,
+        save_path: str = None,
+        file_name: str = None,
+        save_figures: bool = False,
+        show_figures: bool = False,
+    ) -> None:
         # Calculate the metrics:
         metric_dict = self.metrics()
 
+        if save_figures is True:
+            if isinstance(save_path, str):
+                save_path = Path(save_path)
+                assert save_path.is_dir()
+
         # Confusion matrices:
-        self.plot_confusion_matrix()
+        # self.plot_confusion_matrix()
 
         # IoU scores histogram:
         plot_iou_histogram(
             iou_per_object=metric_dict["Instance IoU [list]"],
             iou_semantic=metric_dict["Semantic IoU"],
         )
+        if save_figures is True:
+            plt.savefig(save_path / f"{file_name}-Object_IoU_Histogram.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
 
         # Plot bbox overlap on mask:
         visualise_bounding_boxes_on_graph(
             self.graph, self.pred_graph, self.true_graph, display_image=None
         )
+        if save_figures is True:
+            plt.savefig(save_path / f"{file_name}-Object_Bounding_Boxes.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
+
+        # Save out the connected components figure:
+        plot_optimised_objects_from_graphs(
+            triangulated_graph=self.graph,
+            true_graph=self.true_graph,
+            pred_graph=self.pred_graph,
+        )
+        if save_figures is True:
+            plt.savefig(save_path / f"{file_name}-Optimised_Components.png")
+        if show_figures is True:
+            plt.show()
+        plt.close()
 
 
 class ApproxMetricsComputer(object):
