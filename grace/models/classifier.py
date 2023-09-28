@@ -6,8 +6,8 @@ from torch.nn import Linear, ModuleList
 from torch_geometric.nn import GCNConv
 
 
-class GNNClassifier(torch.nn.Module):
-    """Wrapper object to return the correct instance of the GNN classifier."""
+class Classifier(torch.nn.Module):
+    """Wrapper object to return the correct instance of the (GNN) classifier."""
 
     def __init__(self) -> None:
         self.models = {
@@ -20,7 +20,7 @@ class GNNClassifier(torch.nn.Module):
 
         if classifier_type not in self.models:
             raise NotImplementedError(
-                f"GNN Classifier '{classifier_type}' not implemented."
+                f"(GNN) Classifier '{classifier_type}' not implemented."
             )
         else:
             model_class = self.models[classifier_type]
