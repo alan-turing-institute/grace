@@ -65,8 +65,3 @@ tensorboard --logdir=/path/to/all/your/runs/
 ...and copy the `http://localhost:6006/` to your browser.
 
 *Note:* If you desire to visualise multiple training run statistics, point the `logdir` to the directory one level above the run timestamp.
-
-
-### [WIP] 🚧 Candidates for improvements:
-
-+ specify which model you want to run: "gcn", "gat", "linear classifier", etc.
