@@ -169,6 +169,10 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Project the TSNE manifold:
     if config.visualise_tsne_manifold is True:
+        LOGGER.warning(
+            "WARNING; TSNE manifold visualisation not implemented yet"
+        )
+
         # TODO: Implement
         pass
 
