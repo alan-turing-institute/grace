@@ -64,7 +64,6 @@ class Config:
     valid_graph_ploter_frequency: int = 1
     animate_valid_progress: bool = False
     visualise_tsne_manifold: bool = False
-    # saving_file_suffix: str = "yaml"
 
 
 def load_config_params(params_file: Union[str, Path]) -> Config:
@@ -160,7 +159,6 @@ def validate_required_config_hparams(config: Config) -> None:
         config.metrics_objects[i] = m
 
     # Make sure saving file suffix is expected:
-    # assert config.saving_file_suffix in {"yaml", "json"}
 
     # HACK: not automated yet:
     if config.animate_valid_progress is True:
@@ -175,12 +173,9 @@ def validate_required_config_hparams(config: Config) -> None:
         # TODO: implemented, but can't be run from run.py yet
 
 
-def write_config_file(
-    config: Config,
-    filetype: str = "json",
-) -> None:
+def write_config_file(config: Config, filetype: str = "json") -> None:
     """Record hyperparameters of a training run."""
-    params = {attr: str(getattr(config, attr)) for attr in config.__dict__}
+    params = {attr: getattr(config, attr) for attr in config.__dict__}
 
     if isinstance(config.run_dir, str):
         setattr(config, "run_dir", Path(config.run_dir))
@@ -190,16 +185,33 @@ def write_config_file(
 
 
 def write_params_as_file_with_suffix(
-    parameters_dict: dict[str], filename: str | Path
+    parameters_dict: dict[Any], filename: str | Path
 ) -> None:
     if isinstance(filename, str):
         filename = Path(filename)
 
     if filename.suffix == ".json":
+        # Convert all params to strings:
+        for attr, param in parameters_dict.items():
+            parameters_dict[attr] = str(param)
+        # Write the file out:
         with open(filename, "w") as outfile:
-            json.dump(parameters_dict, outfile, indent=4)
+            json.dump(
+                parameters_dict,
+                outfile,
+                indent=4,
+            )
 
     elif filename.suffix == ".yaml":
+        # Convert all params to yaml-parsable types:
+        for attr, param in parameters_dict.items():
+            if isinstance(param, Path):
+                parameters_dict[attr] = str(param)
+            elif isinstance(param, tuple):
+                parameters_dict[attr] = list(param)
+            else:
+                parameters_dict[attr] = param
+        # Write the file out in human-readable form:
         with open(filename, "w") as outfile:
             yaml.dump(
                 parameters_dict,
