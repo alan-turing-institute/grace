@@ -9,7 +9,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
 )
 
-from grace.evaluation.utils import (
+from grace.visualisation.utils import (
     intersection_over_union,
     list_real_connected_components,
     find_matching_pairs,

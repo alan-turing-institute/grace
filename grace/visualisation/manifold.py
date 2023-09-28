@@ -29,7 +29,7 @@ def drop_linear_layers_from_model(
     return node_emb_extractor
 
 
-class TSNEDimensionalityReduction(object):
+class TSNEManifoldProjection(object):
     def __init__(
         self,
         graph: nx.Graph,
@@ -104,10 +104,10 @@ class TSNEDimensionalityReduction(object):
         self,
         node_GT_label: npt.NDArray,
         node_features: npt.NDArray,
+        ax: matplotlib.axes,
         *,
         n_components: int = 2,
         title: str = "",
-        ax: matplotlib.axes = None,
     ) -> matplotlib.axes:
         # Shapes must agree:
         assert len(node_GT_label) == len(node_features)
@@ -131,7 +131,7 @@ class TSNEDimensionalityReduction(object):
     def plot_TSNE_before_and_after_GCN(self, **kwargs) -> None:
         # Plot the subplots:
         size = 5
-        _, axes = plt.subplots(1, 2, figsize=(size * 2 + 2, size * 1))
+        fig, axes = plt.subplots(1, 2, figsize=(size * 2 + 2, size * 1))
 
         # Get the embeddings:
         for p, (plot_name, method) in enumerate(
@@ -149,5 +149,4 @@ class TSNEDimensionalityReduction(object):
 
         # Annotate & display:
         plt.tight_layout()
-        plt.show()
-        plt.close()
+        return fig

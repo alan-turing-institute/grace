@@ -86,8 +86,10 @@ def load_config_params(params_file: Union[str, Path]) -> Config:
 
     if params_file.suffix == ".json":
         params_dict = json.load(open(params_file))
+
     elif params_file.suffix == ".yaml":
         params_dict = yaml.safe_load(open(params_file))
+
     else:
         raise ValueError("Params file must be either a .json or .yaml file.")
 
@@ -96,19 +98,18 @@ def load_config_params(params_file: Union[str, Path]) -> Config:
             default_value = getattr(config, attr)
             value = params_dict[attr]
 
-            if attr.endswith("_dir"):
+            if attr.endswith("_dir") or attr.endswith("_fn"):
                 value = Path(value)
-            elif default_value is None:
-                value = value
-            elif isinstance(default_value, (bool, list, tuple)):
-                value = eval(value)
-            else:
-                value = type(default_value)(value)
+
+            if params_file.suffix == ".json":
+                if default_value is None:
+                    value = value
+                elif isinstance(default_value, (bool, list, tuple)):
+                    value = eval(value)
+                else:
+                    value = type(default_value)(value)
 
             setattr(config, attr, value)
-
-        else:
-            continue
 
     return config
 

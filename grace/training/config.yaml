@@ -1,0 +1,47 @@
+# Paths to data:
+
+image_dir: /path/to/your/images
+grace_dir: /path/to/your/annotations
+log_dir: /path/to/your/classifier/runs
+
+# Data image file type & graph annotations:
+filetype: mrc
+keep_node_unknown_labels: False     # relabels UNKNOWN nodes to TRUE_NEGATIVE
+keep_edge_unknown_labels: False     # relabels UNKNOWN edges to TRUE_NEGATIVE
+
+# Feature extractor path & patch normalization:
+extractor_fn: /path/to/your/extractor/resnet152.pt
+patch_size:           # input dimensionality: 2D patch shape
+  - 224
+  - 224
+feature_dim: 2048     # output dimensionality: 1D feature vector
+normalise:            # [0-1] image patch standardisation
+  - False             # before augmentations
+  - False             # after augmentations
+
+# Patch & graph augmentations specs:
+img_graph_augs: []          # see 'grace.utils/augment_graph.py' for full option list
+img_graph_aug_params: []
+patch_augs: []              # see 'grace.utils/augment_image.py' for full option list
+patch_aug_params: []
+keep_patch_fraction: 1.0    # original patch image ration to include in training
+
+# Classifier architecture setup
+num_node_classes: 2
+num_edge_classes: 2
+hidden_channels:
+  - 512
+  - 128
+  - 32
+
+# Training run hyperparameters
+epochs: 5
+dropout: 0.0
+batch_size: 512
+learning_rate: 0.05
+
+# Performance Tensorboard logging:
+metrics:
+  - accuracy
+  - confusion_matrix
+tensorboard_update_frequency: 1  # stores loss / metrics output every x epochs
