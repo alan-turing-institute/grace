@@ -11,7 +11,7 @@ from grace.styling import LOGGER
 from grace.io.image_dataset import ImageGraphDataset
 
 from grace.models.datasets import dataset_from_graph
-from grace.models.classifier import GNNClassifier
+from grace.models.classifier import Classifier
 from grace.models.feature_extractor import FeatureExtractor
 from grace.models.optimiser import optimise_graph
 
@@ -135,8 +135,8 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         transform_valid_mode,
     )
 
-    # Define the GNN classifier model:
-    classifier = GNNClassifier().get_model(
+    # Define the Classifier model:
+    classifier = Classifier().get_model(
         config.classifier_type,
         input_channels=config.feature_dim,
         hidden_channels=config.hidden_channels,
