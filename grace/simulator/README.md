@@ -29,4 +29,12 @@ DRAWING = "squares"   # type of modification of the patch (extends to 'circles' 
 PADDING = (112, 112)   # padding of the image in case boundary nodes & their patches need to be modified, too - otherwise nodes lying too close to the boundary will be left untouched
 ```
 
+## Storing the node features directly in the graph:
+
+If you want to perform a hyperparameter grid search for GNN training and you know that the (node) features of your graph dataset won't change, you can run this script to make sure you append the resnet-extracted features to your dataset graphs once and for all. It takes ~30-40 seconds per single image to get processed, so this significantly saves time if launching multiple runs on your (otherwise constant) dataset.
+
+```sh
+python3 grace/simulator/store_features.py --data_path=/Users/kulicna/Desktop/dataset/playground/infer/ --extractor_fn=/Users/kulicna/Desktop/classifier/extractor/resnet152.pt
+```
+
 Happy simulating :-)
