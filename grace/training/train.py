@@ -24,10 +24,10 @@ def train_model(
     epochs: int = 100,
     batch_size: int = 64,
     learning_rate: float = 0.001,
+    weight_decay: float = 0.0,
     scheduler_type: str = "none",
     scheduler_step: int = 1,
     scheduler_gamma: float = 1.0,
-    weight_decay: float = 0.0,
     node_masked_class: Annotation = Annotation.UNKNOWN,
     edge_masked_class: Annotation = Annotation.UNKNOWN,
     log_dir: Optional[str] = None,
@@ -52,7 +52,15 @@ def train_model(
     batch_size : int
         Batch size
     learning_rate : float
-        Learning rate to use during training
+        (Base) learning rate to use during training
+    weight_decay : float
+        Weight decay (L2 penalty) (default: 0.0)
+    scheduler_type : str
+        Learning rate scheduler (default: "none")
+    scheduler_step: int
+        Period of learning rate decay in epochs.
+    scheduler_gamma : float
+        Multiplicative factor of learning rate decay (default: 1.0)
     node_masked_class : Annotation
         Target node class for which to set the loss to 0
     edge_masked_class : Annotation
@@ -84,7 +92,6 @@ def train_model(
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=learning_rate,
-        # weight_decay=5e-4,
         weight_decay=weight_decay,
     )
 
