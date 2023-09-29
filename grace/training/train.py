@@ -216,7 +216,7 @@ def train_model(
 
         # Log the loss & metrics data:
         logger_string = f"Epoch: {epoch:03d} | "
-        logger_string += f"Learning rate: {current_lr} | "
+        logger_string += f"Learning rate: {current_lr:.8f} | "
         logger_string += f"Scheduler type: {scheduler_type} | "
 
         for metric in train_metrics:
