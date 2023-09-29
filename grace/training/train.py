@@ -24,7 +24,7 @@ def train_model(
     epochs: int = 100,
     batch_size: int = 64,
     learning_rate: float = 0.001,
-    scheduler_type: str = None,
+    scheduler_type: str = "none",
     scheduler_step: int = 1,
     scheduler_gamma: float = 1.0,
     weight_decay: float = 0.0,
@@ -89,7 +89,7 @@ def train_model(
     )
 
     # Define the scheduler:
-    if scheduler_type is not None:
+    if scheduler_type != "none":
         if scheduler_type == "step":
             scheduler = torch.optim.lr_scheduler.StepLR(
                 optimizer,
@@ -200,7 +200,7 @@ def train_model(
         current_lr = optimizer.param_groups[0]["lr"]
 
         # Call the scheduler step after each epoch
-        if scheduler_type is not None:
+        if scheduler_type != "none":
             scheduler.step()
 
         # Loss & metrics on both Dataloaders:
