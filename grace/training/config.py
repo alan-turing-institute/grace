@@ -11,17 +11,28 @@ from grace.styling import LOGGER
 
 @dataclass
 class Config:
+    # Paths to inputs & outputs:
     train_image_dir: Optional[os.PathLike] = None
     train_grace_dir: Optional[os.PathLike] = None
     valid_image_dir: Optional[os.PathLike] = None
     valid_grace_dir: Optional[os.PathLike] = None
     infer_image_dir: Optional[os.PathLike] = None
     infer_grace_dir: Optional[os.PathLike] = None
-    extractor_fn: Optional[os.PathLike] = None
     log_dir: Optional[os.PathLike] = None
     run_dir: Optional[os.PathLike] = log_dir
+
+    # Feature extraction:
     filetype: str = "mrc"
+    keep_node_unknown_labels: bool = False
+    keep_edge_unknown_labels: bool = False
+
+    # Feature extraction:
+    extractor_fn: Optional[os.PathLike] = None
+    patch_size: tuple[int] = (224, 224)
+    feature_dim: int = 2048
     normalize: tuple[bool] = (False, False)
+
+    # Augmentations:
     img_graph_augs: list[str] = field(
         default_factory=lambda: [
             "random_edge_addition_and_removal",
@@ -40,26 +51,35 @@ class Config:
     patch_aug_params: list[dict[str, Any]] = field(
         default_factory=lambda: [{}]
     )
-    patch_size: tuple[int] = (224, 224)
     keep_patch_fraction: float = 1.0
-    keep_node_unknown_labels: bool = False
-    keep_edge_unknown_labels: bool = False
-    feature_dim: int = 2048
 
+    # Classifier architecture setup
     classifier_type: str = "GCN"
     num_node_classes: int = 2
     num_edge_classes: int = 2
-    epochs: int = 100
     hidden_channels: list[int] = field(default_factory=lambda: [1024, 256, 64])
+
+    # Training run hyperparameters:
+    batch_size: int = 64
+    epochs: int = 100
+    dropout: float = 0.2
+    learning_rate: float = 0.001
+    weight_decay: float = 0.0
+
+    # Learning rate scheduler:
+    scheduler_type: str = None
+    scheduler_step: int = 1
+    scheduler_gamma: float = 1.0
+
+    # Performance evaluation:
     metrics_classifier: list[str] = field(
         default_factory=lambda: ["accuracy", "f1_score", "confusion_matrix"]
     )
     metrics_objects: list[str] = field(
         default_factory=lambda: ["exact", "approx"]
     )
-    dropout: float = 0.2
-    batch_size: int = 64
-    learning_rate: float = 0.001
+
+    # Validation & visualisation:
     tensorboard_update_frequency: int = 1
     valid_graph_ploter_frequency: int = 1
     animate_valid_progress: bool = False
@@ -151,14 +171,25 @@ def validate_required_config_hparams(config: Config) -> None:
     if not config.extractor_fn.is_file():
         raise PathNotDefinedError(path_name=dr)
 
-    # Define which metrics to calculate:
-    for i in range(len(config.metrics_objects)):
-        m = config.metrics_objects[i].upper()
-        if m == "APPROXIMATE":
-            m = "APPROX"
-        config.metrics_objects[i] = m
+    # Validate the learning rate schedule is implemented:
+    assert config.scheduler_type in {"step", "expo"}
 
-    # Make sure saving file suffix is expected:
+    # Define which object metrics to calculate:
+    for i in range(len(config.metrics_classifier)):
+        m = config.metrics_classifier[i].lower()
+        config.metrics_classifier[i] = m
+    assert all(
+        m in {"accuracy", "f1_score", "confusion_matrix"}
+        for m in config.metrics_classifier
+    )
+
+    # Define which object metrics to calculate:
+    for i in range(len(config.metrics_objects)):
+        m = config.metrics_objects[i].lower()
+        if m == "approximate":
+            m = "approx"
+        config.metrics_objects[i] = m
+    assert all(m in {"exact", "approx"} for m in config.metrics_objects)
 
     # HACK: not automated yet:
     if config.animate_valid_progress is True:
