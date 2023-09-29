@@ -44,20 +44,24 @@ epochs: 500
 dropout: 0.0
 batch_size: 512
 learning_rate: 0.05
+weight_decay: 0.0
 
-# Training Tensorboard logging:
-metrics_classifier:
-  - accuracy
-  - f1_score
-  - confusion_matrix
-tensorboard_update_frequency: 1  # stores loss / metrics output every x epochs
+# Learning rate scheduler:
+scheduler_type: step
+scheduler_step: 5
+scheduler_gamma: 0.9
 
 # Validation monitoring:
+tensorboard_update_frequency: 1  # stores loss / metrics output every X epochs
 valid_graph_ploter_frequency: 20
 animate_valid_progress: False
 visualise_tsne_manifold: False
 
-# Optimisation evaluation:
+# Performance metrics evaluation:
+metrics_classifier:
+  - accuracy
+  - f1_score
+  - confusion_matrix
 metrics_objects:
   - exact
   - approx
