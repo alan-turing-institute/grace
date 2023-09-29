@@ -19,11 +19,15 @@ def train_model(
     model: torch.nn.Module,
     train_dataset: list[torch_geometric.data.Data],
     valid_dataset: list[torch_geometric.data.Data],
-    valid_target_list: list[nx.Graph],
     *,
+    valid_target_list: list[nx.Graph] = None,
     epochs: int = 100,
     batch_size: int = 64,
     learning_rate: float = 0.001,
+    scheduler_type: str = None,
+    scheduler_step: int = 1,
+    scheduler_gamma: float = 1.0,
+    weight_decay: float = 0.0,
     node_masked_class: Annotation = Annotation.UNKNOWN,
     edge_masked_class: Annotation = Annotation.UNKNOWN,
     log_dir: Optional[str] = None,
@@ -81,7 +85,26 @@ def train_model(
         model.parameters(),
         lr=learning_rate,
         # weight_decay=5e-4,
+        weight_decay=weight_decay,
     )
+
+    # Define the scheduler:
+    if scheduler_type is not None:
+        if scheduler_type == "step":
+            scheduler = torch.optim.lr_scheduler.StepLR(
+                optimizer,
+                step_size=scheduler_step,
+                gamma=scheduler_gamma,
+            )
+        elif scheduler_type == "expo":
+            scheduler = torch.optim.lr_scheduler.ExponentialLR(
+                optimizer,
+                gamma=scheduler_gamma,
+            )
+        else:
+            raise NotImplementedError(
+                f"Scheduler type '{scheduler_type}' is not implemented."
+            )
 
     # Specify node & edge criterion:
     # TODO: Implement class weighting
@@ -170,14 +193,28 @@ def train_model(
 
     # Iterate over all epochs:
     for epoch in range(1, epochs + 1):
-        train(train_loader)  # computes loss, backprops grads, updates params
+        # Computes loss, backprop grads, update params:
+        train(train_loader)
+
+        # Get the current learning rate from the optimizer
+        current_lr = optimizer.param_groups[0]["lr"]
+
+        # Call the scheduler step after each epoch
+        if scheduler_type is not None:
+            scheduler.step()
+
+        # Loss & metrics on both Dataloaders:
         train_metrics = valid(train_loader)
         valid_metrics = valid(valid_loader)
 
         # Log the loss & metrics data:
         logger_string = f"Epoch: {epoch:03d} | "
+        logger_string += f"Learning rate: {current_lr} | "
+        logger_string += f"Scheduler type: {scheduler_type} | "
 
         for metric in train_metrics:
+            logger_string += "\n\t"
+
             for regime, metric_dict in [
                 ("train", train_metrics),
                 ("valid", valid_metrics),
@@ -190,9 +227,11 @@ def train_model(
                     "edge": edge_value,
                 }
 
+                # Combine node & edge losses:
                 if len(metric_dict[metric]) == 3:
                     metric_out["total"] = metric_dict[metric][2]
 
+                # Record floating point values (loss & numerical metrics):
                 if isinstance(node_value, float):
                     logger_string += (
                         f"{metric_name} (node): " f"{node_value:.4f} | "
@@ -209,7 +248,7 @@ def train_model(
                             f"{metric_name} (edge)", metric_out["edge"], epoch
                         )
 
-                # elif isinstance(node_value, plt.Figure):
+                # Upload a figure to Tensorboard (confusion matrix):
                 else:
                     if epoch % tensorboard_update_frequency == 0:
                         writer.add_figure(
@@ -222,31 +261,29 @@ def train_model(
         # Print out the logging string:
         LOGGER.info(logger_string)
 
-        # At chosen epochs, visualise the prediction probabs for whole graph:
-        if epoch % valid_graph_ploter_frequency == 0:
-            # Instantiate the model with frozen weights from current epoch:
-            GLP = GraphLabelPredictor(model)
+        # Choose whether to visualise the valudation progress or not:
+        if valid_target_list is not None:
+            # At chosen epochs, visualise the prediction probabs for whole graph:
+            if epoch % valid_graph_ploter_frequency == 0:
+                # Instantiate the model with frozen weights from current epoch:
+                GLP = GraphLabelPredictor(model)
 
-            # Iterate through all validation graphs & predict nodes / edges:
-            for valid_target in valid_target_list:
-                valid_graph = valid_target["graph"]
+                # Iterate through all validation graphs & predict nodes / edges:
+                for valid_target in valid_target_list:
+                    valid_graph = valid_target["graph"]
 
-                # Filename:
-                valid_name = valid_target["metadata"]["image_filename"]
-                valid_name = f"{valid_name}-Epoch_{epoch}"
+                    # Filename:
+                    valid_name = valid_target["metadata"]["image_filename"]
+                    valid_name = f"{valid_name}-Epoch_{epoch}"
 
-                # Update probabs & visualise the graph:
-                GLP.set_node_and_edge_probabilities(G=valid_graph)
-                GLP.visualise_prediction_probs_on_graph(
-                    G=valid_graph,
-                    graph_filename=valid_name,
-                    save_figure=log_dir / "valid",
-                    show_figure=False,
-                )
-
-                # Save the graph out & clear figure:
-                # plt.savefig(log_dir / "valid" / valid_name)
-                # plt.close()
+                    # Update probabs & visualise the graph:
+                    GLP.set_node_and_edge_probabilities(G=valid_graph)
+                    GLP.visualise_prediction_probs_on_graph(
+                        G=valid_graph,
+                        graph_filename=valid_name,
+                        save_figure=log_dir / "valid",
+                        show_figure=False,
+                    )
 
     # Clear & close the tensorboard writer:
     writer.flush()
