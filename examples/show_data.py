@@ -1,62 +1,52 @@
-import click
 import napari
 
 import pandas as pd
 import numpy as np
 
+from grace.base import GraphAttrs
+from grace.io.image_dataset import mrc_reader
 from pathlib import Path
 
-from grace.base import GraphAttrs
-from grace.io.image_dataset import FILETYPES
 
+# Expects the image data & H5 node positions in the same folder.
+# Use identical naming convention for files & specify whole path to mrc file:
+# e.g. /Users/kulicna/Desktop/dataset/shape_squares/MRC_Synthetic_File_000.mrc
 
-# Define a click command to input the file name directly:
-@click.command(name="Napari Annotator")
-@click.option("--image_path", type=click.Path(exists=True))
-def run_napari_annotator(image_path=str) -> None:
-    # Expects the image data & H5 node positions in the same folder.
-    # Use identical naming convention for files & specify whole path to mrc file:
-    # e.g. /Users/kulicna/Desktop/dataset/shape_squares/MRC_Synthetic_File_000.mrc
-
-    # Process the image data + load nodes:
-    suffix = image_path.split(".")[-1]
-    assert suffix in FILETYPES, f"Choose these filetypes: {FILETYPES.keys()}"
-
-    image_reader = FILETYPES[suffix]
-    image_data = image_reader(Path(image_path))
-
-    nodes_path = image_path.replace(".mrc", ".h5")
-    nodes_data = pd.read_hdf(Path(nodes_path))
-
-    data_name = f"{Path(image_path).stem}"
-
-    # Start a napari window:
-    viewer = napari.Viewer()
-    mn, mx = np.min(image_data), np.max(image_data)
-    viewer.add_image(image_data, name=data_name, contrast_limits=(mn, mx))
-
-    # Locate the nodes as points:
-    points = np.asarray(
-        nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]]
+IMAGE_PATH = Path(
+    input(
+        "Enter absolute path to your file "
+        "(e.g. /Users/path/to/your/data/image.mrc, omit ''): "
     )
-    # Process the features information - TSNE:
-    # features = {
-    #     GraphAttrs.NODE_FEATURES:
-    #     [np.squeeze(f.numpy()) for f in nodes_data.loc[:, "features"]]
-    # }
-    features = None
+)
+NODES_PATH = Path(str(IMAGE_PATH).replace(".mrc", ".h5"))
 
-    viewer.add_points(
-        points, features=features, size=32, name=f"nodes_{data_name}"
-    )
+image_data = mrc_reader(IMAGE_PATH)
+nodes_data = pd.read_hdf(NODES_PATH)
 
-    viewer.window.add_plugin_dock_widget(
-        plugin_name="grace", widget_name="GRACE"
-    )
-    napari.run()
+points = np.asarray(nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]])
+# features = {
+#     GraphAttrs.NODE_FEATURES:
+#     [np.squeeze(f.numpy()) for f in nodes_data.loc[:, "features"]]
+# }
+features = None
+data_name = f"{IMAGE_PATH.stem}"
 
+mn, mx = np.min(image_data), np.max(image_data)
+
+viewer = napari.Viewer()
+img_layer = viewer.add_image(
+    image_data, name=data_name, contrast_limits=(mn, mx)
+)
+pts_layer = viewer.add_points(
+    points, features=features, size=32, name=f"nodes_{data_name}"
+)
+
+
+_, widget = viewer.window.add_plugin_dock_widget(
+    plugin_name="grace", widget_name="GRACE"
+)
 
 if __name__ == "__main__":
     # The napari event loop needs to be run under here to allow the window
     # to be spawned from a Python script
-    run_napari_annotator()
+    napari.run()
