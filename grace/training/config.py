@@ -67,7 +67,7 @@ class Config:
     weight_decay: float = 0.0
 
     # Learning rate scheduler:
-    scheduler_type: str = None
+    scheduler_type: str = "none"
     scheduler_step: int = 1
     scheduler_gamma: float = 1.0
 
@@ -172,7 +172,7 @@ def validate_required_config_hparams(config: Config) -> None:
         raise PathNotDefinedError(path_name=dr)
 
     # Validate the learning rate schedule is implemented:
-    assert config.scheduler_type in {"step", "expo"}
+    assert config.scheduler_type in {"none", "step", "expo"}
 
     # Define which object metrics to calculate:
     for i in range(len(config.metrics_classifier)):
