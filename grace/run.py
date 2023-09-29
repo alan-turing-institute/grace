@@ -56,32 +56,28 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         subfolder_path = run_dir / subfolder
         subfolder_path.mkdir(parents=True, exist_ok=True)
 
-    # Augmentations, if any:
-    img_patch_augs = get_transforms(config, "patch")
-    img_graph_augs = get_transforms(config, "graph")
-
     # Prepare the feature extractor:
-    if config.extractor_fn is not None:
-        # Feature extractor:
-        extractor_model = torch.load(config.extractor_fn)
-        feature_extractor = FeatureExtractor(
-            model=extractor_model,
-            augmentations=img_patch_augs,
-            normalize=config.normalize,
-            bbox_size=config.patch_size,
-            keep_patch_fraction=config.keep_patch_fraction,
-        )
-    else:
-        feature_extractor = lambda x, g: (x, g)
+    extractor_model = torch.load(config.extractor_fn)
+    patch_augs = get_transforms(config, "patch")
+    img_graph_augs = get_transforms(config, "graph")
+    feature_extractor = FeatureExtractor(
+        model=extractor_model,
+        augmentations=patch_augs,
+        normalize=config.normalize,
+        bbox_size=config.patch_size,
+        keep_patch_fraction=config.keep_patch_fraction,
+    )
 
     # Condition the augmentations to train mode only:
     def transform(
         image: torch.Tensor, graph: dict, *, in_train_mode: bool = True
     ) -> Callable:
         # Ensure augmentations are only run on train data:
-        if in_train_mode is True:
-            image, graph = img_graph_augs(image, graph)
-        return feature_extractor(image, graph)
+        if in_train_mode:
+            image_aug, graph_aug = img_graph_augs(image, graph)
+            return feature_extractor(image_aug, graph_aug)
+        else:
+            return feature_extractor(image, graph)
 
     # Process the datasets as desired:
     def prepare_dataset(
@@ -93,7 +89,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         verbose: bool = True,
     ) -> tuple[list]:
         # Read the data & terate through images & extract node features:
-        print(transform_method)
         input_data = ImageGraphDataset(
             image_dir=image_dir,
             grace_dir=grace_dir,
