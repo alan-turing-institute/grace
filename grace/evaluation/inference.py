@@ -62,8 +62,8 @@ class GraphLabelPredictor(object):
             assert model.is_file()
             model = torch.load(model)
 
-        self.pretrained_gcn = model
-        self.pretrained_gcn.eval()
+        self.pretrained_model = model
+        self.pretrained_model.eval()
 
     def infer_graph_predictions(
         self, data_batches: list[Data], verbose: bool = False
@@ -84,7 +84,7 @@ class GraphLabelPredictor(object):
             edge_labels.extend(data.edge_label)
 
             # Get the model predictions:
-            node_x, edge_x = self.pretrained_gcn.predict(
+            node_x, edge_x = self.pretrained_model.predict(
                 x=data.x, edge_index=data.edge_index
             )
 
