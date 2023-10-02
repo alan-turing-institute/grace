@@ -221,11 +221,11 @@ def write_config_file(config: Config, filetype: str = "json") -> None:
     if isinstance(config.run_dir, str):
         setattr(config, "run_dir", Path(config.run_dir))
 
-    fn = config.run_dir / f"config_hyperparams.{filetype}"
-    write_params_as_file_with_suffix(params, fn)
+    fn = config.run_dir / "model" / f"config_hyperparams.{filetype}"
+    write_file_with_suffix(params, fn)
 
 
-def write_params_as_file_with_suffix(
+def write_file_with_suffix(
     parameters_dict: dict[Any], filename: str | Path
 ) -> None:
     if isinstance(filename, str):
