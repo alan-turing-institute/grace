@@ -17,15 +17,3 @@ class ModelArchiver:
             }
             architecture[name] = layer_info
         return architecture
-
-
-#     # def save_to_json(self, filename):
-#     #     with open(filename, "w") as json_file:
-#     #         json.dump(self.architecture, json_file, indent=4)
-
-# # Example usage:
-# # Create and initialize your custom model
-# model_archiver = ModelArchiver(model)
-
-# # Save the model architecture to a JSON file
-# model_archiver.save_to_json("model_architecture.json")
