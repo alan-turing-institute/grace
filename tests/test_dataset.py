@@ -1,6 +1,6 @@
 import pytest
 
-from grace.io.core import GraphAttrs, Annotation
+from grace.base import GraphAttrs, Annotation
 from grace.io.image_dataset import ImageGraphDataset
 from grace.models.datasets import dataset_from_graph
 

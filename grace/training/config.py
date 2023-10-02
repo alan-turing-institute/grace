@@ -221,20 +221,23 @@ def write_config_file(config: Config, filetype: str = "json") -> None:
     if isinstance(config.run_dir, str):
         setattr(config, "run_dir", Path(config.run_dir))
 
-    fn = config.run_dir / "model" / f"config_hyperparams.{filetype}"
+    fn = config.run_dir / f"config_hyperparams.{filetype}"
     write_file_with_suffix(params, fn)
 
 
 def write_file_with_suffix(
-    parameters_dict: dict[Any], filename: str | Path
+    parameters_dict: dict[Any],
+    filename: str | Path,
+    convert_types: bool = True,
 ) -> None:
     if isinstance(filename, str):
         filename = Path(filename)
 
     if filename.suffix == ".json":
-        # Convert all params to strings:
-        for attr, param in parameters_dict.items():
-            parameters_dict[attr] = str(param)
+        if convert_types is True:
+            # Convert all params to strings:
+            for attr, param in parameters_dict.items():
+                parameters_dict[attr] = str(param)
         # Write the file out:
         with open(filename, "w") as outfile:
             json.dump(
@@ -244,14 +247,15 @@ def write_file_with_suffix(
             )
 
     elif filename.suffix == ".yaml":
-        # Convert all params to yaml-parsable types:
-        for attr, param in parameters_dict.items():
-            if isinstance(param, Path):
-                parameters_dict[attr] = str(param)
-            elif isinstance(param, tuple):
-                parameters_dict[attr] = list(param)
-            else:
-                parameters_dict[attr] = param
+        if convert_types is True:
+            # Convert all params to yaml-parsable types:
+            for attr, param in parameters_dict.items():
+                if isinstance(param, Path):
+                    parameters_dict[attr] = str(param)
+                elif isinstance(param, tuple):
+                    parameters_dict[attr] = list(param)
+                else:
+                    parameters_dict[attr] = param
         # Write the file out in human-readable form:
         with open(filename, "w") as outfile:
             yaml.dump(

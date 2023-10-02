@@ -49,6 +49,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Define where you'll save the outputs:
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # run_dir = config.log_dir / current_time / "model"
     run_dir = config.log_dir / current_time
     setattr(config, "run_dir", run_dir)
 
@@ -175,31 +176,26 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     )
 
     # Save the trained model:
-    model_save_fn = run_dir / "model" / "classifier.pt"
+    config.run_dir = run_dir / "model"
+    model_save_fn = config.run_dir / "classifier.pt"
     torch.save(classifier, model_save_fn)
+
+    # Save the training hyperparameters:
     write_config_file(config, filetype="json")
     write_config_file(config, filetype="yaml")
 
     # Archive the model architecture:
     model_architecture = ModelArchiver(classifier).architecture
-    import json
-    import yaml
-
-    architecture_fn = run_dir / "model" / "summary_architecture.json"
-    with open(architecture_fn, "w") as outfile:
-        json.dump(model_architecture, outfile, indent=4)
-
-    # write_file_with_suffix(model_architecture, architecture_fn)
-    architecture_fn = run_dir / "model" / "summary_architecture.yaml"
-    with open(architecture_fn, "w") as outfile:
-        yaml.dump(
-            model_architecture,
-            outfile,
-            default_flow_style=False,
-            allow_unicode=True,
-        )
-
-    # write_file_with_suffix(model_architecture, architecture_fn)
+    write_file_with_suffix(
+        model_architecture,
+        config.run_dir / "summary_architecture.json",
+        convert_types=False,
+    )
+    write_file_with_suffix(
+        model_architecture,
+        config.run_dir / "summary_architecture.yaml",
+        convert_types=False,
+    )
 
     # Project the TSNE manifold:
     if config.visualise_tsne_manifold is True:
