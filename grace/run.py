@@ -15,12 +15,13 @@ from grace.models.classifier import Classifier
 from grace.models.feature_extractor import FeatureExtractor
 from grace.models.optimiser import optimise_graph
 
+from grace.training.archiver import ModelArchiver
 from grace.training.train import train_model
 from grace.training.config import (
     validate_required_config_hparams,
     load_config_params,
     write_config_file,
-    write_params_as_file_with_suffix,
+    write_file_with_suffix,
 )
 from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
@@ -52,7 +53,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     setattr(config, "run_dir", run_dir)
 
     # Create subdirectory to save out plots:
-    for subfolder in ["valid", "infer"]:
+    for subfolder in ["model", "valid", "infer"]:
         subfolder_path = run_dir / subfolder
         subfolder_path.mkdir(parents=True, exist_ok=True)
 
@@ -173,10 +174,17 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     )
 
     # Save the trained model:
-    model_save_fn = run_dir / "classifier.pt"
+    model_save_fn = run_dir / "model" / "classifier.pt"
     torch.save(classifier, model_save_fn)
     write_config_file(config, filetype="json")
     write_config_file(config, filetype="yaml")
+
+    # Archive the model architecture:
+    model_architecture = ModelArchiver(classifier).get_model_architecture()
+    architecture_fn = run_dir / "model" / "summary_architecture.json"
+    write_file_with_suffix(model_architecture, architecture_fn)
+    architecture_fn = run_dir / "model" / "summary_architecture.yaml"
+    write_file_with_suffix(model_architecture, architecture_fn)
 
     # Project the TSNE manifold:
     if config.visualise_tsne_manifold is True:
@@ -203,9 +211,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Write out the batch metrics:
     batch_metrics_fn = run_dir / "infer" / "Batch_Dataset-Metrics.json"
-    write_params_as_file_with_suffix(inference_metrics, batch_metrics_fn)
+    write_file_with_suffix(inference_metrics, batch_metrics_fn)
     batch_metrics_fn = run_dir / "infer" / "Batch_Dataset-Metrics.yaml"
-    write_params_as_file_with_suffix(inference_metrics, batch_metrics_fn)
+    write_file_with_suffix(inference_metrics, batch_metrics_fn)
 
     # Save out the inference batch performance figures:
     GLP.visualise_model_performance_on_entire_batch(
@@ -244,9 +252,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             LOGGER.info(f"{progress} Exact metrics: {fn} | {EMC_metrics}")
 
             EMC_fn = run_dir / "infer" / f"{fn}-Metrics.json"
-            write_params_as_file_with_suffix(EMC_metrics, EMC_fn)
+            write_file_with_suffix(EMC_metrics, EMC_fn)
             EMC_fn = run_dir / "infer" / f"{fn}-Metrics.yaml"
-            write_params_as_file_with_suffix(EMC_metrics, EMC_fn)
+            write_file_with_suffix(EMC_metrics, EMC_fn)
 
             EMC.visualise(
                 save_path=run_dir / "infer",
