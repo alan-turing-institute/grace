@@ -181,11 +181,25 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     write_config_file(config, filetype="yaml")
 
     # Archive the model architecture:
-    model_architecture = ModelArchiver(classifier).get_model_architecture()
+    model_architecture = ModelArchiver(classifier).architecture
+    import json
+    import yaml
+
     architecture_fn = run_dir / "model" / "summary_architecture.json"
-    write_file_with_suffix(model_architecture, architecture_fn)
+    with open(architecture_fn, "w") as outfile:
+        json.dump(model_architecture, outfile, indent=4)
+
+    # write_file_with_suffix(model_architecture, architecture_fn)
     architecture_fn = run_dir / "model" / "summary_architecture.yaml"
-    write_file_with_suffix(model_architecture, architecture_fn)
+    with open(architecture_fn, "w") as outfile:
+        yaml.dump(
+            model_architecture,
+            outfile,
+            default_flow_style=False,
+            allow_unicode=True,
+        )
+
+    # write_file_with_suffix(model_architecture, architecture_fn)
 
     # Project the TSNE manifold:
     if config.visualise_tsne_manifold is True:
