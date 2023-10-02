@@ -146,7 +146,8 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     classifier = Classifier().get_model(
         config.classifier_type,
         input_channels=config.feature_dim,
-        hidden_channels=config.hidden_channels,
+        hidden_graph_channels=config.hidden_graph_channels,
+        hidden_dense_channels=config.hidden_dense_channels,
         dropout=config.dropout,
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
