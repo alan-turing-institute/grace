@@ -85,10 +85,10 @@ class GCNModel(torch.nn.Module):
 
         # Consider more than just one Linear layer to squish output:
         if not hidden_dense_channels:
-            self.node_emb_squish = None
+            self.node_dense_list = None
         else:
             hidden_channels_list.extend(hidden_dense_channels)
-            self.node_emb_squish = ModuleList(
+            self.node_dense_list = ModuleList(
                 [
                     Linear(
                         hidden_channels_list[
@@ -111,7 +111,7 @@ class GCNModel(torch.nn.Module):
         self.dropout = dropout
 
         print(self.conv_layer_list)
-        print(self.node_emb_squish)
+        print(self.node_dense_list)
         print(self.node_classifier)
         print(self.edge_classifier)
 
@@ -149,12 +149,12 @@ class GCNModel(torch.nn.Module):
                     x = x.relu()
 
         # Run through a series of graph convolutional layers:
-        if self.node_emb_squish is not None:
-            for layer in range(len(self.node_emb_squish)):
-                x = self.node_emb_squish[layer](x)
+        if self.node_dense_list is not None:
+            for layer in range(len(self.node_dense_list)):
+                x = self.node_dense_list[layer](x)
 
                 # Don't perform ReLU after the last layer:
-                if layer < len(self.node_emb_squish) - 1:
+                if layer < len(self.node_dense_list) - 1:
                     x = x.relu()
 
         # Rename (un)learned 'x' to node_embeddings:
