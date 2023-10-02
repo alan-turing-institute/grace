@@ -232,7 +232,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         pred_graph = optimise_graph(infer_graph)
 
         # EXACT metrics per image:
-        if "EXACT" in config.metrics_objects:
+        if "exact" in config.metrics_objects:
             EMC = ExactMetricsComputer(
                 G=infer_graph,
                 pred_optimised_graph=pred_graph,
@@ -256,7 +256,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             )
 
         # APPROX metrics per image:
-        if "APPROX" in config.metrics_objects:
+        if "approx" in config.metrics_objects:
             LOGGER.warning(
                 f"{progress} WARNING; 'APPROX' metrics not implemented yet"
             )
