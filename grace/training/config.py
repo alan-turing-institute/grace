@@ -57,7 +57,12 @@ class Config:
     classifier_type: str = "GCN"
     num_node_classes: int = 2
     num_edge_classes: int = 2
-    hidden_channels: list[int] = field(default_factory=lambda: [1024, 256, 64])
+    hidden_graph_channels: list[int] = field(
+        default_factory=lambda: [1024, 256, 64]
+    )
+    hidden_dense_channels: list[int] = field(
+        default_factory=lambda: [1024, 256, 64]
+    )
 
     # Training run hyperparameters:
     batch_size: int = 64
@@ -171,6 +176,10 @@ def validate_required_config_hparams(config: Config) -> None:
     if config.extractor_fn is not None:
         if not config.extractor_fn.is_file():
             raise PathNotDefinedError(path_name=dr)
+
+    # Check that hidden_channels are all integers:
+    assert all(isinstance(ch, int) for ch in config.hidden_graph_channels)
+    assert all(isinstance(ch, int) for ch in config.hidden_dense_channels)
 
     # Validate the learning rate schedule is implemented:
     assert config.scheduler_type in {"none", "step", "expo"}
