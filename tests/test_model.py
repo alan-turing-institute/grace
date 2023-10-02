@@ -1,4 +1,4 @@
-from grace.models.classifier import GCN
+from grace.models.classifier import GCNModel
 from grace.models.feature_extractor import FeatureExtractor
 
 import math
@@ -14,7 +14,8 @@ from grace.models.datasets import dataset_from_graph
 
 
 @pytest.mark.parametrize("input_channels", [1, 2])
-@pytest.mark.parametrize("hidden_channels", [[16, 4], [32, 8]])
+@pytest.mark.parametrize("hidden_graph_channels", [[16, 4], [32, 8]])
+@pytest.mark.parametrize("hidden_dense_channels", [[16, 4], [32, 8]])
 @pytest.mark.parametrize("node_output_classes", [2, 4])
 @pytest.mark.parametrize("edge_output_classes", [2, 4])
 class TestGCN:
@@ -22,13 +23,15 @@ class TestGCN:
     def gcn(
         self,
         input_channels,
-        hidden_channels,
+        hidden_graph_channels,
+        hidden_dense_channels,
         node_output_classes,
         edge_output_classes,
     ):
-        return GCN(
+        return GCNModel(
             input_channels=input_channels,
-            hidden_channels=hidden_channels,
+            hidden_graph_channels=hidden_graph_channels,
+            hidden_dense_channels=hidden_dense_channels,
             node_output_classes=node_output_classes,
             edge_output_classes=edge_output_classes,
         )
@@ -36,7 +39,8 @@ class TestGCN:
     def test_model_building(
         self,
         input_channels,
-        hidden_channels,
+        hidden_graph_channels,
+        hidden_dense_channels,
         node_output_classes,
         edge_output_classes,
         gcn,
@@ -45,17 +49,18 @@ class TestGCN:
 
         assert gcn.conv_layer_list[0].in_channels == input_channels
 
-        assert gcn.node_classifier.in_features == hidden_channels[-1]
+        assert gcn.node_classifier.in_features == hidden_dense_channels[-1]
         assert gcn.node_classifier.out_features == node_output_classes
 
-        assert gcn.edge_classifier.in_features == hidden_channels[-1] * 2
+        assert gcn.edge_classifier.in_features == hidden_dense_channels[-1] * 2
         assert gcn.edge_classifier.out_features == edge_output_classes
 
     @pytest.mark.parametrize("num_nodes", [4, 5])
     def test_output_sizes(
         self,
         input_channels,
-        hidden_channels,
+        hidden_graph_channels,
+        hidden_dense_channels,
         node_output_classes,
         edge_output_classes,
         gcn,

@@ -4,7 +4,6 @@ import networkx as nx
 import numpy as np
 
 import torch
-import torch.nn as nn
 
 from grace.base import GraphAttrs, graph_from_dataframe
 from pathlib import Path
@@ -72,11 +71,11 @@ def mrc_image_and_annotations_dir(tmp_path_factory, default_rng) -> Path:
     return tmp_data_dir
 
 
-class SimpleExtractor(nn.Module):
+class SimpleExtractor(torch.nn.Module):
     def forward(self, x):
         return torch.rand(x.size(0), 2)
 
 
 @pytest.fixture(scope="session")
-def simple_extractor() -> nn.Module:
+def simple_extractor() -> torch.nn.Module:
     return SimpleExtractor()
