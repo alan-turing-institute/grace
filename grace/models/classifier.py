@@ -11,8 +11,9 @@ class Classifier(torch.nn.Module):
 
     def __init__(self) -> None:
         self.models = {
-            # "LINEAR" : Linear,
-            "GCN": GCN,
+            # "LINEAR" : LinearModel,
+            "GCN": GCNModel,
+            # "GAT": GATModel,
         }
 
     def get_model(self, classifier_type: str, **kwargs) -> torch.nn.Module:
@@ -27,15 +28,17 @@ class Classifier(torch.nn.Module):
             return model_class(**kwargs)
 
 
-class GCN(torch.nn.Module):
+class GCNModel(torch.nn.Module):
     """A graph convolutional network for subgraph classification.
 
     Parameters
     ----------
     input_channels : int
         The dimension of the input; i.e., length of node feature vectors
-    hidden_channels : int
-        The dimension of the hidden embeddings.
+    hidden_graph_channels : list[int],
+        The dimensions of the hidden embeddings for graph convolutions.
+    hidden_dense_channels : list[int],
+        The dimension of the hidden embeddings for Linear (dense) layers.
     dropout: float
         Dropout to apply to the embeddings.
     node_output_classes : int
@@ -54,29 +57,23 @@ class GCN(torch.nn.Module):
     def __init__(
         self,
         input_channels: int,
-        hidden_channels: list[int],
+        hidden_graph_channels: list[int],
+        hidden_dense_channels: list[int],
         *,
         dropout: float = 0.0,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
     ):
-        super(GCN, self).__init__()
+        super(GCNModel, self).__init__()
 
-        # If no hidden channels are specified, train simple Linear classifier:
-        if not hidden_channels:
+        # Define how many (if any) graph conv layers are specified:
+        hidden_channels_list = [
+            input_channels,
+        ]
+        if not hidden_graph_channels:
             self.conv_layer_list = None
-            self.node_classifier = Linear(input_channels, node_output_classes)
-            self.edge_classifier = Linear(
-                input_channels * 2, edge_output_classes
-            )
-
-        # If hidden channels are specified, create dynamic num of GCN layers:
         else:
-            # Hidden channels start from input features:
-            assert isinstance(hidden_channels, list)
-            assert all([isinstance(num, int) for num in hidden_channels])
-            hidden_channels_list = [input_channels] + hidden_channels
-
+            hidden_channels_list.extend(hidden_graph_channels)
             self.conv_layer_list = ModuleList(
                 [
                     GCNConv(
@@ -85,16 +82,38 @@ class GCN(torch.nn.Module):
                     for i in range(len(hidden_channels_list) - 1)
                 ]
             )
-            self.node_classifier = Linear(
-                hidden_channels_list[-1], node_output_classes
+
+        # Consider more than just one Linear layer to squish output:
+        if not hidden_dense_channels:
+            self.node_emb_squish = None
+        else:
+            hidden_channels_list.extend(hidden_dense_channels)
+            self.node_emb_squish = ModuleList(
+                [
+                    Linear(
+                        hidden_channels_list[
+                            -len(hidden_dense_channels) + i - 1
+                        ],
+                        hidden_channels_list[-len(hidden_dense_channels) + i],
+                    )
+                    for i in range(len(hidden_dense_channels))
+                ]
             )
-            self.edge_classifier = Linear(
-                hidden_channels_list[-1] * 2, edge_output_classes
-            )
+        # Final node & edge classifier:
+        self.node_classifier = Linear(
+            hidden_channels_list[-1], node_output_classes
+        )
+        self.edge_classifier = Linear(
+            hidden_channels_list[-1] * 2, edge_output_classes
+        )
 
         # Don't forget the dropout:
-        # TODO: Implement dropout at other positions, not just before Linear
         self.dropout = dropout
+
+        print(self.conv_layer_list)
+        print(self.node_emb_squish)
+        print(self.node_classifier)
+        print(self.edge_classifier)
 
     def forward(
         self,
@@ -127,6 +146,15 @@ class GCN(torch.nn.Module):
 
                 # Don't perform ReLU after the last layer:
                 if layer < len(self.conv_layer_list) - 1:
+                    x = x.relu()
+
+        # Run through a series of graph convolutional layers:
+        if self.node_emb_squish is not None:
+            for layer in range(len(self.node_emb_squish)):
+                x = self.node_emb_squish[layer](x)
+
+                # Don't perform ReLU after the last layer:
+                if layer < len(self.node_emb_squish) - 1:
                     x = x.relu()
 
         # Rename (un)learned 'x' to node_embeddings:
