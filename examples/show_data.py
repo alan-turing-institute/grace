@@ -12,7 +12,11 @@ from grace.io.image_dataset import FILETYPES
 
 # Define a click command to input the file name directly:
 @click.command(name="Napari Annotator")
-@click.option("--image_path", type=click.Path(exists=True))
+@click.option(
+    "--image_path",
+    type=click.Path(exists=True),
+    help="Path to the image to open in napari annotator",
+)
 def run_napari_annotator(image_path=str) -> None:
     # Expects the image data & H5 node positions in the same folder.
     # Use identical naming convention for files & specify whole path to mrc file:
