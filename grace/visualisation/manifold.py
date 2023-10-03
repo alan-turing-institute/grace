@@ -44,7 +44,8 @@ class TSNEManifoldProjection(object):
     def read_graph_dataset_IO(self) -> tuple[torch.stack]:
         # Prepare GT labels:
         dataset_batches = dataset_from_graph(
-            graph=self.graph, mode="whole", in_train_mode=False
+            graph=self.graph,
+            mode="whole",
         )
         dataset_batches = dataset_batches[0]
 
