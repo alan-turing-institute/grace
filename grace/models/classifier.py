@@ -63,6 +63,7 @@ class GCNModel(torch.nn.Module):
         dropout: float = 0.0,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
+        verbose: bool = True,
     ):
         super(GCNModel, self).__init__()
 
@@ -104,21 +105,24 @@ class GCNModel(torch.nn.Module):
             hidden_channels_list[-1], node_output_classes
         )
         self.edge_classifier = Linear(
-            hidden_channels_list[-1] * 2, edge_output_classes
+            hidden_channels_list[-1] * 2 + 2, edge_output_classes
         )
 
         # Don't forget the dropout:
         self.dropout = dropout
 
-        print(self.conv_layer_list)
-        print(self.node_dense_list)
-        print(self.node_classifier)
-        print(self.edge_classifier)
+        if verbose is True:
+            print(self.conv_layer_list)
+            print(self.node_dense_list)
+            print(self.node_classifier)
+            print(self.edge_classifier)
 
     def forward(
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
+        edge_length: torch.Tensor,
+        edge_orient: torch.Tensor,
     ) -> tuple[torch.Tensor]:
         """Perform training on input data.
 
@@ -173,7 +177,12 @@ class GCNModel(torch.nn.Module):
         # TODO: Consider implementing embedding dot-product
         src, dst = edge_index
         edge_embeddings = torch.cat(
-            [node_embeddings[..., src, :], node_embeddings[..., dst, :]],
+            [
+                node_embeddings[..., src, :],
+                node_embeddings[..., dst, :],
+                edge_length[..., None],
+                edge_orient[..., None],
+            ],
             axis=-1,
         )
 
@@ -186,6 +195,8 @@ class GCNModel(torch.nn.Module):
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
+        edge_length: torch.Tensor,
+        edge_orient: torch.Tensor,
     ) -> tuple[torch.Tensor]:
         """Perform inference on input data.
 
@@ -209,6 +220,6 @@ class GCNModel(torch.nn.Module):
 
         # Forward pass through the frozen model:
         with torch.no_grad():
-            node_x, edge_x = self(x, edge_index)
+            node_x, edge_x = self(x, edge_index, edge_length, edge_orient)
 
         return node_x, edge_x
