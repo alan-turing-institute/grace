@@ -168,8 +168,9 @@ def validate_required_config_hparams(config: Config) -> None:
         raise PathNotDefinedError(path_name=dr)
 
     # Check extractor is there:
-    if not config.extractor_fn.is_file():
-        raise PathNotDefinedError(path_name=dr)
+    if config.extractor_fn is not None:
+        if not config.extractor_fn.is_file():
+            raise PathNotDefinedError(path_name=dr)
 
     # Validate the learning rate schedule is implemented:
     assert config.scheduler_type in {"none", "step", "expo"}
