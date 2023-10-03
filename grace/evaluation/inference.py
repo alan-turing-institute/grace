@@ -85,7 +85,10 @@ class GraphLabelPredictor(object):
 
             # Get the model predictions:
             node_x, edge_x = self.pretrained_model.predict(
-                x=data.x, edge_index=data.edge_index
+                x=data.x,
+                edge_index=data.edge_index,
+                edge_length=data.edge_length,
+                edge_orient=data.edge_orient,
             )
 
             # Process node probs into classes predictions:
@@ -106,9 +109,8 @@ class GraphLabelPredictor(object):
 
     def set_node_and_edge_probabilities(self, G: nx.Graph) -> None:
         # Process graph into torch_geometric.data:
-        data_batch = dataset_from_graph(
-            graph=G, mode="whole", in_train_mode=False
-        )
+        data_batch = dataset_from_graph(graph=G, mode="whole")
+
         # Process graph into torch_geometric.data:
         n_probs, e_probs, _, _ = self.infer_graph_predictions(data_batch)
 
