@@ -87,6 +87,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         if in_train_mode is True:
             image, graph = img_graph_augs(image, graph)
         return feature_extractor(image, graph)
+        if in_train_mode is True:
+            image, graph = img_graph_augs(image, graph)
+        return feature_extractor(image, graph)
 
     # Process the datasets as desired:
     def prepare_dataset(
@@ -98,6 +101,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         verbose: bool = True,
     ) -> tuple[list]:
         # Read the data & terate through images & extract node features:
+        print(transform_method)
         input_data = ImageGraphDataset(
             image_dir=image_dir,
             grace_dir=grace_dir,
