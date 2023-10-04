@@ -5,6 +5,8 @@ from torch.nn import Linear, ModuleList
 
 from torch_geometric.nn import GCNConv
 
+from grace.styling import LOGGER
+
 
 class Classifier(torch.nn.Module):
     """Wrapper object to return the correct instance of the (GNN) classifier."""
@@ -46,12 +48,14 @@ class GCNModel(torch.nn.Module):
         the classification task.
     edge_output_classes : int
         The dimension of the edge output.
+    verbose : bool
+        Whether to print out the model architecture in the logger.
 
     Notes
     -----
     The edge_classifier layer takes as input the concatenated features of
-    the source and destination nodes of each edge; hence, its input dimension
-    is equal to 2 * the number of features per node.
+    the source (src) & destination (dst) nodes of each edge; hence, its
+    input dimension is equal to 2 * the number of features per node.
     """
 
     def __init__(
@@ -63,17 +67,20 @@ class GCNModel(torch.nn.Module):
         dropout: float = 0.0,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
-        verbose: bool = True,
+        verbose: bool = False,
     ):
         super(GCNModel, self).__init__()
 
+        # Define the model attributes:
+        hidden_channels_list = [input_channels]
+        self.conv_layer_list = None
+        self.node_dense_list = None
+        self.node_classifier = None
+        self.edge_classifier = None
+        self.dropout = dropout
+
         # Define how many (if any) graph conv layers are specified:
-        hidden_channels_list = [
-            input_channels,
-        ]
-        if not hidden_graph_channels:
-            self.conv_layer_list = None
-        else:
+        if hidden_graph_channels:
             hidden_channels_list.extend(hidden_graph_channels)
             self.conv_layer_list = ModuleList(
                 [
@@ -85,9 +92,7 @@ class GCNModel(torch.nn.Module):
             )
 
         # Consider more than just one Linear layer to squish output:
-        if not hidden_dense_channels:
-            self.node_dense_list = None
-        else:
+        if hidden_dense_channels:
             hidden_channels_list.extend(hidden_dense_channels)
             self.node_dense_list = ModuleList(
                 [
@@ -108,14 +113,14 @@ class GCNModel(torch.nn.Module):
             hidden_channels_list[-1] * 2 + 2, edge_output_classes
         )
 
-        # Don't forget the dropout:
-        self.dropout = dropout
-
+        # Log the moel architecture:
         if verbose is True:
-            print(self.conv_layer_list)
-            print(self.node_dense_list)
-            print(self.node_classifier)
-            print(self.edge_classifier)
+            logger_string = "Model architecture:\n"
+            logger_string += f"Conv_layer_list: {self.conv_layer_list}\n"
+            logger_string += f"Node_dense_list: {self.node_dense_list}\n"
+            logger_string += f"Node_classifier: {self.node_classifier}\n"
+            logger_string += f"Edge_classifier: {self.edge_classifier}\n"
+            LOGGER.info(logger_string)
 
     def forward(
         self,

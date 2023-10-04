@@ -15,7 +15,7 @@ def test_load_config_file(tmp_path):
     config = Config()
     setattr(config, "feature_dim", 251)
     setattr(config, "run_dir", tmp_path)
-    write_config_file(config, "json")
+    write_config_file(config)
 
     loaded_config = load_config_params(tmp_path / "config_hyperparams.json")
 

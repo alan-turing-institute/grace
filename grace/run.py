@@ -87,6 +87,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         if in_train_mode is True:
             image, graph = img_graph_augs(image, graph)
         return feature_extractor(image, graph)
+        if in_train_mode is True:
+            image, graph = img_graph_augs(image, graph)
+        return feature_extractor(image, graph)
 
     # Process the datasets as desired:
     def prepare_dataset(
@@ -153,6 +156,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         dropout=config.dropout,
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
+        verbose=True,
     )
 
     # Perform the training:
