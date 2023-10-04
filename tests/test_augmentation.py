@@ -14,7 +14,7 @@ from grace.utils.augment_graph import (
     RandomXYTranslation,
 )
 
-from conftest import random_image_and_graph
+from _utils import random_image_and_graph
 
 
 expected_outputs_random_edge_crop = [
