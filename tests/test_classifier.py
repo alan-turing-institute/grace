@@ -104,11 +104,11 @@ class TestGCN:
         graph.update(
             edges=[
                 (
-                    s,
-                    d,
+                    src,
+                    dst,
                     {GraphAttrs.EDGE_GROUND_TRUTH: Annotation.TRUE_POSITIVE},
                 )
-                for s, d in graph.edges
+                for src, dst in graph.edges
             ]
         )
         data = dataset_from_graph(graph, mode="sub")[0]
