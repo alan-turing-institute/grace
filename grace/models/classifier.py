@@ -5,14 +5,17 @@ from torch.nn import Linear, ModuleList
 
 from torch_geometric.nn import GCNConv
 
+from grace.styling import LOGGER
+
 
 class Classifier(torch.nn.Module):
     """Wrapper object to return the correct instance of the (GNN) classifier."""
 
     def __init__(self) -> None:
         self.models = {
-            # "LINEAR" : Linear,
-            "GCN": GCN,
+            # "LINEAR" : LinearModel,
+            "GCN": GCNModel,
+            # "GAT": GATModel,
         }
 
     def get_model(self, classifier_type: str, **kwargs) -> torch.nn.Module:
@@ -27,15 +30,17 @@ class Classifier(torch.nn.Module):
             return model_class(**kwargs)
 
 
-class GCN(torch.nn.Module):
+class GCNModel(torch.nn.Module):
     """A graph convolutional network for subgraph classification.
 
     Parameters
     ----------
     input_channels : int
         The dimension of the input; i.e., length of node feature vectors
-    hidden_channels : int
-        The dimension of the hidden embeddings.
+    hidden_graph_channels : list[int],
+        The dimensions of the hidden embeddings for graph convolutions.
+    hidden_dense_channels : list[int],
+        The dimension of the hidden embeddings for Linear (dense) layers.
     dropout: float
         Dropout to apply to the embeddings.
     node_output_classes : int
@@ -43,40 +48,42 @@ class GCN(torch.nn.Module):
         the classification task.
     edge_output_classes : int
         The dimension of the edge output.
+    verbose : bool
+        Whether to print out the model architecture in the logger.
 
     Notes
     -----
     The edge_classifier layer takes as input the concatenated features of
-    the source and destination nodes of each edge; hence, its input dimension
-    is equal to 2 * the number of features per node.
+    the source (src) & destination (dst) nodes of each edge; hence, its
+    input dimension is equal to 2 * the number of features per node.
     """
 
     def __init__(
         self,
         input_channels: int,
-        hidden_channels: list[int],
+        hidden_graph_channels: list[int],
+        hidden_dense_channels: list[int],
         *,
         dropout: float = 0.0,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
+        verbose: bool = False,
     ):
-        super(GCN, self).__init__()
+        super(GCNModel, self).__init__()
 
-        # If no hidden channels are specified, train simple Linear classifier:
-        if not hidden_channels:
-            self.conv_layer_list = None
-            self.node_classifier = Linear(input_channels, node_output_classes)
-            self.edge_classifier = Linear(
-                input_channels * 2, edge_output_classes
-            )
+        # Define how many (if any) graph conv layers are specified:
+        hidden_channels_list = [
+            input_channels,
+        ]
+        self.conv_layer_list = None
+        self.node_dense_list = None
+        self.node_classifier = None
+        self.edge_classifier = None
+        self.dropout = dropout
 
-        # If hidden channels are specified, create dynamic num of GCN layers:
-        else:
-            # Hidden channels start from input features:
-            assert isinstance(hidden_channels, list)
-            assert all([isinstance(num, int) for num in hidden_channels])
-            hidden_channels_list = [input_channels] + hidden_channels
-
+        # Define how many (if any) graph conv layers are specified:
+        if hidden_graph_channels:
+            hidden_channels_list.extend(hidden_graph_channels)
             self.conv_layer_list = ModuleList(
                 [
                     GCNConv(
@@ -85,16 +92,37 @@ class GCN(torch.nn.Module):
                     for i in range(len(hidden_channels_list) - 1)
                 ]
             )
-            self.node_classifier = Linear(
-                hidden_channels_list[-1], node_output_classes
-            )
-            self.edge_classifier = Linear(
-                hidden_channels_list[-1] * 2, edge_output_classes
-            )
 
-        # Don't forget the dropout:
-        # TODO: Implement dropout at other positions, not just before Linear
-        self.dropout = dropout
+        # Consider more than just one Linear layer to squish output:
+        if hidden_dense_channels:
+            hidden_channels_list.extend(hidden_dense_channels)
+            self.node_dense_list = ModuleList(
+                [
+                    Linear(
+                        hidden_channels_list[
+                            -len(hidden_dense_channels) + i - 1
+                        ],
+                        hidden_channels_list[-len(hidden_dense_channels) + i],
+                    )
+                    for i in range(len(hidden_dense_channels))
+                ]
+            )
+        # Final node & edge classifier:
+        self.node_classifier = Linear(
+            hidden_channels_list[-1], node_output_classes
+        )
+        self.edge_classifier = Linear(
+            hidden_channels_list[-1] * 2, edge_output_classes
+        )
+
+        # Log the moel architecture:
+        if verbose is True:
+            logger_string = "Model architecture:\n"
+            logger_string += f"Conv_layer_list: {self.conv_layer_list}\n"
+            logger_string += f"Node_dense_list: {self.node_dense_list}\n"
+            logger_string += f"Node_classifier: {self.node_classifier}\n"
+            logger_string += f"Edge_classifier: {self.edge_classifier}\n"
+            LOGGER.info(logger_string)
 
     def forward(
         self,
@@ -127,6 +155,15 @@ class GCN(torch.nn.Module):
 
                 # Don't perform ReLU after the last layer:
                 if layer < len(self.conv_layer_list) - 1:
+                    x = x.relu()
+
+        # Run through a series of graph convolutional layers:
+        if self.node_dense_list is not None:
+            for layer in range(len(self.node_dense_list)):
+                x = self.node_dense_list[layer](x)
+
+                # Don't perform ReLU after the last layer:
+                if layer < len(self.node_dense_list) - 1:
                     x = x.relu()
 
         # Rename (un)learned 'x' to node_embeddings:

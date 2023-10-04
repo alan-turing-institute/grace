@@ -57,7 +57,12 @@ class Config:
     classifier_type: str = "GCN"
     num_node_classes: int = 2
     num_edge_classes: int = 2
-    hidden_channels: list[int] = field(default_factory=lambda: [1024, 256, 64])
+    hidden_graph_channels: list[int] = field(
+        default_factory=lambda: [1024, 256, 64]
+    )
+    hidden_dense_channels: list[int] = field(
+        default_factory=lambda: [1024, 256, 64]
+    )
 
     # Training run hyperparameters:
     batch_size: int = 64
@@ -172,6 +177,10 @@ def validate_required_config_hparams(config: Config) -> None:
         if not config.extractor_fn.is_file():
             raise PathNotDefinedError(path_name=dr)
 
+    # Check that hidden_channels are all integers:
+    assert all(isinstance(ch, int) for ch in config.hidden_graph_channels)
+    assert all(isinstance(ch, int) for ch in config.hidden_dense_channels)
+
     # Validate the learning rate schedule is implemented:
     assert config.scheduler_type in {"none", "step", "expo"}
 
@@ -213,19 +222,22 @@ def write_config_file(config: Config, filetype: str = "json") -> None:
         setattr(config, "run_dir", Path(config.run_dir))
 
     fn = config.run_dir / f"config_hyperparams.{filetype}"
-    write_params_as_file_with_suffix(params, fn)
+    write_file_with_suffix(params, fn)
 
 
-def write_params_as_file_with_suffix(
-    parameters_dict: dict[Any], filename: str | Path
+def write_file_with_suffix(
+    parameters_dict: dict[Any],
+    filename: str | Path,
+    convert_types: bool = True,
 ) -> None:
     if isinstance(filename, str):
         filename = Path(filename)
 
     if filename.suffix == ".json":
-        # Convert all params to strings:
-        for attr, param in parameters_dict.items():
-            parameters_dict[attr] = str(param)
+        if convert_types is True:
+            # Convert all params to strings:
+            for attr, param in parameters_dict.items():
+                parameters_dict[attr] = str(param)
         # Write the file out:
         with open(filename, "w") as outfile:
             json.dump(
@@ -235,14 +247,15 @@ def write_params_as_file_with_suffix(
             )
 
     elif filename.suffix == ".yaml":
-        # Convert all params to yaml-parsable types:
-        for attr, param in parameters_dict.items():
-            if isinstance(param, Path):
-                parameters_dict[attr] = str(param)
-            elif isinstance(param, tuple):
-                parameters_dict[attr] = list(param)
-            else:
-                parameters_dict[attr] = param
+        if convert_types is True:
+            # Convert all params to yaml-parsable types:
+            for attr, param in parameters_dict.items():
+                if isinstance(param, Path):
+                    parameters_dict[attr] = str(param)
+                elif isinstance(param, tuple):
+                    parameters_dict[attr] = list(param)
+                else:
+                    parameters_dict[attr] = param
         # Write the file out in human-readable form:
         with open(filename, "w") as outfile:
             yaml.dump(

@@ -15,12 +15,13 @@ from grace.models.classifier import Classifier
 from grace.models.feature_extractor import FeatureExtractor
 from grace.models.optimiser import optimise_graph
 
+from grace.training.archiver import ModelArchiver
 from grace.training.train import train_model
 from grace.training.config import (
     validate_required_config_hparams,
     load_config_params,
     write_config_file,
-    write_params_as_file_with_suffix,
+    write_file_with_suffix,
 )
 from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
@@ -48,11 +49,12 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Define where you'll save the outputs:
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # run_dir = config.log_dir / current_time / "model"
     run_dir = config.log_dir / current_time
     setattr(config, "run_dir", run_dir)
 
     # Create subdirectory to save out plots:
-    for subfolder in ["valid", "infer"]:
+    for subfolder in ["model", "valid", "infer"]:
         subfolder_path = run_dir / subfolder
         subfolder_path.mkdir(parents=True, exist_ok=True)
 
@@ -63,25 +65,28 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     def return_unchanged(image, graph):
         return image, graph
 
-    # Prepare the feature extractor:
-    if config.extractor_fn is not None:
-        # Feature extractor:
-        extractor_model = torch.load(config.extractor_fn)
-        feature_extractor = FeatureExtractor(
-            model=extractor_model,
-            augmentations=img_patch_augs,
-            normalize=config.normalize,
-            bbox_size=config.patch_size,
-            keep_patch_fraction=config.keep_patch_fraction,
-        )
-    else:
-        feature_extractor = return_unchanged
-
     # Condition the augmentations to train mode only:
     def transform(
         image: torch.Tensor, graph: dict, *, in_train_mode: bool = True
     ) -> Callable:
+        # Prepare the feature extractor:
+        if config.extractor_fn is not None:
+            # Feature extractor:
+            extractor_model = torch.load(config.extractor_fn)
+            feature_extractor = FeatureExtractor(
+                model=extractor_model,
+                augmentations=img_patch_augs,
+                normalize=config.normalize,
+                bbox_size=config.patch_size,
+                keep_patch_fraction=config.keep_patch_fraction,
+            )
+        else:
+            feature_extractor = return_unchanged
+
         # Ensure augmentations are only run on train data:
+        if in_train_mode is True:
+            image, graph = img_graph_augs(image, graph)
+        return feature_extractor(image, graph)
         if in_train_mode is True:
             image, graph = img_graph_augs(image, graph)
         return feature_extractor(image, graph)
@@ -96,7 +101,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         verbose: bool = True,
     ) -> tuple[list]:
         # Read the data & terate through images & extract node features:
-        print(transform_method)
         input_data = ImageGraphDataset(
             image_dir=image_dir,
             grace_dir=grace_dir,
@@ -147,10 +151,12 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     classifier = Classifier().get_model(
         config.classifier_type,
         input_channels=config.feature_dim,
-        hidden_channels=config.hidden_channels,
+        hidden_graph_channels=config.hidden_graph_channels,
+        hidden_dense_channels=config.hidden_dense_channels,
         dropout=config.dropout,
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
+        verbose=True,
     )
 
     # Perform the training:
@@ -173,10 +179,26 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     )
 
     # Save the trained model:
-    model_save_fn = run_dir / "classifier.pt"
+    config.run_dir = run_dir / "model"
+    model_save_fn = config.run_dir / "classifier.pt"
     torch.save(classifier, model_save_fn)
+
+    # Save the training hyperparameters:
     write_config_file(config, filetype="json")
     write_config_file(config, filetype="yaml")
+
+    # Archive the model architecture:
+    model_architecture = ModelArchiver(classifier).architecture
+    write_file_with_suffix(
+        model_architecture,
+        config.run_dir / "summary_architecture.json",
+        convert_types=False,
+    )
+    write_file_with_suffix(
+        model_architecture,
+        config.run_dir / "summary_architecture.yaml",
+        convert_types=False,
+    )
 
     # Project the TSNE manifold:
     if config.visualise_tsne_manifold is True:
@@ -203,9 +225,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Write out the batch metrics:
     batch_metrics_fn = run_dir / "infer" / "Batch_Dataset-Metrics.json"
-    write_params_as_file_with_suffix(inference_metrics, batch_metrics_fn)
+    write_file_with_suffix(inference_metrics, batch_metrics_fn)
     batch_metrics_fn = run_dir / "infer" / "Batch_Dataset-Metrics.yaml"
-    write_params_as_file_with_suffix(inference_metrics, batch_metrics_fn)
+    write_file_with_suffix(inference_metrics, batch_metrics_fn)
 
     # Save out the inference batch performance figures:
     GLP.visualise_model_performance_on_entire_batch(
@@ -232,7 +254,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         pred_graph = optimise_graph(infer_graph)
 
         # EXACT metrics per image:
-        if "EXACT" in config.metrics_objects:
+        if "exact" in config.metrics_objects:
             EMC = ExactMetricsComputer(
                 G=infer_graph,
                 pred_optimised_graph=pred_graph,
@@ -244,9 +266,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             LOGGER.info(f"{progress} Exact metrics: {fn} | {EMC_metrics}")
 
             EMC_fn = run_dir / "infer" / f"{fn}-Metrics.json"
-            write_params_as_file_with_suffix(EMC_metrics, EMC_fn)
+            write_file_with_suffix(EMC_metrics, EMC_fn)
             EMC_fn = run_dir / "infer" / f"{fn}-Metrics.yaml"
-            write_params_as_file_with_suffix(EMC_metrics, EMC_fn)
+            write_file_with_suffix(EMC_metrics, EMC_fn)
 
             EMC.visualise(
                 save_path=run_dir / "infer",
@@ -256,7 +278,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             )
 
         # APPROX metrics per image:
-        if "APPROX" in config.metrics_objects:
+        if "approx" in config.metrics_objects:
             LOGGER.warning(
                 f"{progress} WARNING; 'APPROX' metrics not implemented yet"
             )
