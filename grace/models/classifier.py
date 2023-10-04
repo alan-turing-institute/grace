@@ -5,6 +5,8 @@ from torch.nn import Linear, ModuleList
 
 from torch_geometric.nn import GCNConv
 
+from grace.styling import LOGGER
+
 
 class Classifier(torch.nn.Module):
     """Wrapper object to return the correct instance of the (GNN) classifier."""
@@ -63,6 +65,7 @@ class GCNModel(torch.nn.Module):
         dropout: float = 0.0,
         node_output_classes: int = 2,
         edge_output_classes: int = 2,
+        verbose: bool = False,
     ):
         super(GCNModel, self).__init__()
 
@@ -110,10 +113,14 @@ class GCNModel(torch.nn.Module):
         # Don't forget the dropout:
         self.dropout = dropout
 
-        print(self.conv_layer_list)
-        print(self.node_dense_list)
-        print(self.node_classifier)
-        print(self.edge_classifier)
+        # Log the moel architecture:
+        if verbose is True:
+            logger_string = "Model architecture:\n"
+            logger_string += f"Conv_layer_list: {self.conv_layer_list}\n"
+            logger_string += f"Node_dense_list: {self.node_dense_list}\n"
+            logger_string += f"Node_classifier: {self.node_classifier}\n"
+            logger_string += f"Edge_classifier: {self.edge_classifier}\n"
+            LOGGER.info(logger_string)
 
     def forward(
         self,
