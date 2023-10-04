@@ -17,13 +17,37 @@ from grace.io.image_dataset import FILETYPES
     type=click.Path(exists=True),
     help="Path to the image to open in napari annotator",
 )
-def run_napari_annotator(image_path=str) -> None:
-    # Expects the image data & H5 node positions in the same folder.
-    # Use identical naming convention for files & specify whole path to mrc file:
-    # e.g. /Users/kulicna/Desktop/dataset/shape_squares/MRC_Synthetic_File_000.mrc
+@click.option(
+    "--show_features",
+    type=bool,
+    default=True,
+    help="Show feature representation of individual nodes",
+)
+def run_napari_annotator(
+    image_path: str | Path,
+    show_features: bool = False,
+) -> None:
+    """Function to open an image & annotate it in napari.
 
+    Parameters
+    ----------
+    image_path : str | Path
+        Absolute filename of the image to be opened.
+        Expects the image data & H5 node positions in the same folder.
+        Use identical naming convention for these files to pair them up.
+    show_features : bool
+        Whether to display node features stored in the `h5` file.
+        Defaults to False.
+
+    Notes
+    -----
+    - expected file organisation:
+        /path/to/your/image/MRC_Synthetic_File_000.mrc
+        ...identical to...
+        /path/to/your/nodes/MRC_Synthetic_File_000.h5
+    """
     # Process the image data + load nodes:
-    suffix = image_path.split(".")[-1]
+    suffix = str(image_path).split(".")[-1]
     assert suffix in FILETYPES, f"Choose these filetypes: {FILETYPES.keys()}"
 
     image_reader = FILETYPES[suffix]
@@ -43,12 +67,16 @@ def run_napari_annotator(image_path=str) -> None:
     points = np.asarray(
         nodes_data.loc[:, [GraphAttrs.NODE_Y, GraphAttrs.NODE_X]]
     )
-    # Process the features information - TSNE:
-    # features = {
-    #     GraphAttrs.NODE_FEATURES:
-    #     [np.squeeze(f.numpy()) for f in nodes_data.loc[:, "features"]]
-    # }
-    features = None
+
+    # Process the node features:
+    if show_features is True:
+        features = {
+            "node_central_pixel_value": [
+                image_data[int(point[0]), int(point[1])] for point in points
+            ]
+        }
+    else:
+        features = None
 
     viewer.add_points(
         points, features=features, size=32, name=f"nodes_{data_name}"
