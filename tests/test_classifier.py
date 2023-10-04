@@ -12,26 +12,8 @@ from conftest import random_image_and_graph
 @pytest.mark.parametrize("input_channels", [1, 2])
 @pytest.mark.parametrize("node_output_classes", [2, 4])
 @pytest.mark.parametrize("edge_output_classes", [2, 4])
-@pytest.mark.parametrize(
-    "hidden_graph_channels",
-    [
-        [16, 4],
-        [
-            128,
-        ],
-        [],
-    ],
-)
-@pytest.mark.parametrize(
-    "hidden_dense_channels",
-    [
-        [16, 4],
-        [
-            128,
-        ],
-        [],
-    ],
-)
+@pytest.mark.parametrize("hidden_graph_channels", [[16, 4], [128], []])
+@pytest.mark.parametrize("hidden_dense_channels", [[16, 4], [128], []])
 class TestGCN:
     @pytest.fixture
     def gcn(
