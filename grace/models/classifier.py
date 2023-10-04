@@ -48,12 +48,14 @@ class GCNModel(torch.nn.Module):
         the classification task.
     edge_output_classes : int
         The dimension of the edge output.
+    verbose : bool
+        Whether to print out the model architecture in the logger.
 
     Notes
     -----
     The edge_classifier layer takes as input the concatenated features of
-    the source and destination nodes of each edge; hence, its input dimension
-    is equal to 2 * the number of features per node.
+    the source (src) & destination (dst) nodes of each edge; hence, its
+    input dimension is equal to 2 * the number of features per node.
     """
 
     def __init__(
@@ -73,9 +75,14 @@ class GCNModel(torch.nn.Module):
         hidden_channels_list = [
             input_channels,
         ]
-        if not hidden_graph_channels:
-            self.conv_layer_list = None
-        else:
+        self.conv_layer_list = None
+        self.node_dense_list = None
+        self.node_classifier = None
+        self.edge_classifier = None
+        self.dropout = dropout
+
+        # Define how many (if any) graph conv layers are specified:
+        if hidden_graph_channels:
             hidden_channels_list.extend(hidden_graph_channels)
             self.conv_layer_list = ModuleList(
                 [
@@ -87,9 +94,7 @@ class GCNModel(torch.nn.Module):
             )
 
         # Consider more than just one Linear layer to squish output:
-        if not hidden_dense_channels:
-            self.node_dense_list = None
-        else:
+        if hidden_dense_channels:
             hidden_channels_list.extend(hidden_dense_channels)
             self.node_dense_list = ModuleList(
                 [
@@ -109,9 +114,6 @@ class GCNModel(torch.nn.Module):
         self.edge_classifier = Linear(
             hidden_channels_list[-1] * 2, edge_output_classes
         )
-
-        # Don't forget the dropout:
-        self.dropout = dropout
 
         # Log the moel architecture:
         if verbose is True:
