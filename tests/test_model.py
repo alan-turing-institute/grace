@@ -7,10 +7,10 @@ import pytest
 
 import networkx as nx
 
-from _utils import random_image_and_graph
-
 from grace.base import GraphAttrs, Annotation
 from grace.models.datasets import dataset_from_graph
+
+from conftest import random_image_and_graph
 
 
 @pytest.mark.parametrize("input_channels", [1, 2])
