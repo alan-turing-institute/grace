@@ -65,25 +65,28 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     def return_unchanged(image, graph):
         return image, graph
 
-    # Prepare the feature extractor:
-    if config.extractor_fn is not None:
-        # Feature extractor:
-        extractor_model = torch.load(config.extractor_fn)
-        feature_extractor = FeatureExtractor(
-            model=extractor_model,
-            augmentations=img_patch_augs,
-            normalize=config.normalize,
-            bbox_size=config.patch_size,
-            keep_patch_fraction=config.keep_patch_fraction,
-        )
-    else:
-        feature_extractor = return_unchanged
-
     # Condition the augmentations to train mode only:
     def transform(
         image: torch.Tensor, graph: dict, *, in_train_mode: bool = True
     ) -> Callable:
+        # Prepare the feature extractor:
+        if config.extractor_fn is not None:
+            # Feature extractor:
+            extractor_model = torch.load(config.extractor_fn)
+            feature_extractor = FeatureExtractor(
+                model=extractor_model,
+                augmentations=img_patch_augs,
+                normalize=config.normalize,
+                bbox_size=config.patch_size,
+                keep_patch_fraction=config.keep_patch_fraction,
+            )
+        else:
+            feature_extractor = return_unchanged
+
         # Ensure augmentations are only run on train data:
+        if in_train_mode is True:
+            image, graph = img_graph_augs(image, graph)
+        return feature_extractor(image, graph)
         if in_train_mode is True:
             image, graph = img_graph_augs(image, graph)
         return feature_extractor(image, graph)
