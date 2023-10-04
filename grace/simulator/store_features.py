@@ -21,14 +21,14 @@ from grace.models.feature_extractor import FeatureExtractor
     help="Path to feature extractor model",
 )
 @click.option(
-    "--extractor_fn",
+    "--bbox_size",
     type=tuple[int, int],
     help="Image patch shape for feature extraction",
     default=(224, 224),
 )
 def store_node_features_in_graph(
     data_path: str | Path,
-    extractor_fn=str | Path,
+    extractor_fn: str | Path,
     bbox_size: tuple[int, int] = (224, 224),
 ) -> None:
     # Process the check the paths:
