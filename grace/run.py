@@ -101,7 +101,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         verbose: bool = True,
     ) -> tuple[list]:
         # Read the data & terate through images & extract node features:
-        print(transform_method)
         input_data = ImageGraphDataset(
             image_dir=image_dir,
             grace_dir=grace_dir,
@@ -157,6 +156,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         dropout=config.dropout,
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
+        verbose=True,
     )
 
     # Perform the training:
