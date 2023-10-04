@@ -1,9 +1,12 @@
 import numpy as np
 
 from grace.base import GraphAttrs
-from grace.evaluation.process import update_graph_with_dummy_predictions
 
-from conftest import random_image_and_graph
+from grace.evaluation.process import (
+    update_graph_with_dummy_predictions,
+)
+
+from _utils import random_image_and_graph
 
 
 def test_update_dummy_graph_predictions(default_rng):

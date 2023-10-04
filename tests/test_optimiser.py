@@ -2,7 +2,7 @@ from grace.base import GraphAttrs
 from grace.models.optimiser import optimise_graph
 from grace.evaluation.process import update_graph_with_dummy_predictions
 
-from conftest import random_image_and_graph
+from _utils import random_image_and_graph
 
 
 def test_optimisation_of_dummy_graph(default_rng):
