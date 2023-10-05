@@ -9,15 +9,21 @@ import networkx as nx
 import numpy as np
 import numpy.typing as npt
 
-from grace.base import Annotation, GraphAttrs, graph_from_dataframe
+from grace.base import (
+    Annotation,
+    GraphAttrs,
+    Properties,
+    Prediction,
+    graph_from_dataframe,
+)
 from grace.io.schema import NODE_SCHEMA, EDGE_SCHEMA
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclasses.dataclass
 class GraceFileDataset:
-    metadata: Dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
     graph: nx.Graph | None = None
     annotation: npt.NDArray = None
 
@@ -129,18 +135,38 @@ class GraceFile:
             edges_df = pq.read_table(
                 self.edges_filename, schema=EDGE_SCHEMA
             ).to_pandas()
-            edges = [
-                (
-                    edges_df[GraphAttrs.EDGE_SOURCE][idx],
-                    edges_df[GraphAttrs.EDGE_TARGET][idx],
-                    {
-                        GraphAttrs.EDGE_GROUND_TRUTH: Annotation(
-                            edges_df[GraphAttrs.EDGE_GROUND_TRUTH][idx]
-                        ),
-                    },
+
+            edges = []
+            for idx in range(edges_df.shape[0]):
+                src = edges_df[GraphAttrs.EDGE_SOURCE][idx]
+                dst = edges_df[GraphAttrs.EDGE_TARGET][idx]
+                edge_attrs = {}
+
+                # GT annotation:
+                edge_attrs[GraphAttrs.EDGE_GROUND_TRUTH] = Annotation(
+                    edges_df[GraphAttrs.EDGE_GROUND_TRUTH][idx]
                 )
-                for idx in range(edges_df.shape[0])
-            ]
+
+                # Predicted class probabilities:
+                if edges_df[GraphAttrs.EDGE_PREDICTION][idx] is not None:
+                    edge_attrs[GraphAttrs.EDGE_PREDICTION] = Prediction(
+                        edges_df[GraphAttrs.EDGE_PREDICTION][idx]
+                    )
+
+                # Organise the relevant properties:
+                if (
+                    edges_df["edge_properties_keys"][idx] is not None
+                    and edges_df["edge_properties_vals"][idx] is not None
+                ):
+                    attribute_dictionary = Properties(
+                        properties_keys=edges_df["edge_properties_keys"][idx],
+                        properties_vals=edges_df["edge_properties_vals"][idx],
+                    )
+                    edge_attrs[
+                        GraphAttrs.EDGE_PROPERTIES
+                    ] = attribute_dictionary
+
+                edges.append((src, dst, edge_attrs))
 
             if not graph:
                 raise IOError("Graph nodes are missing.")
@@ -175,7 +201,7 @@ def write_graph(
     filename: os.PathLike,
     *,
     graph: nx.Graph | None = None,
-    metadata: Dict[str, Any] | None = None,
+    metadata: dict[str, Any] | None = None,
     annotation: npt.NDArray | None = None,
 ) -> None:
     """Write graph to file."""
