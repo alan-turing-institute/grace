@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 import enum
 import networkx as nx
 import numpy as np
@@ -8,6 +7,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from typing import Any
+from dataclasses import dataclass
 from scipy.spatial import Delaunay
 
 
@@ -25,6 +25,7 @@ class GraphAttrs(str, enum.Enum):
     EDGE_TARGET = "target"
     EDGE_GROUND_TRUTH = "edge_ground_truth"
     EDGE_PREDICTION = "edge_prediction"
+    EDGE_PROPERTIES = "edge_properties"
 
 
 class Annotation(enum.IntEnum):
@@ -35,7 +36,51 @@ class Annotation(enum.IntEnum):
     UNKNOWN = 2
 
 
-@dataclasses.dataclass
+@dataclass
+class Properties:
+    """TODO: Fill in stuff."""
+
+    properties_dict: dict[str, float] = None
+    properties_keys: list[str] = None
+    properties_vals: list[str] = None
+
+    def __post_init__(self) -> None:
+        if self.properties_dict is not None:
+            self.properties_keys = self.property_keys
+            self.properties_vals = self.property_vals
+            assert len(self.properties_keys) == len(self.properties_vals)
+        else:
+            assert self.properties_keys is not None
+            assert self.properties_vals is not None
+            assert len(self.properties_keys) == len(self.properties_vals)
+
+            # Create the dict & clean the keys & vals:
+            self.properties_dict = self.create_dict()
+            self.properties_keys = None
+            self.properties_vals = None
+
+    @property
+    def property_keys(self) -> list[str]:
+        return self.split_dict()["keys"]
+
+    @property
+    def property_vals(self) -> list[float]:
+        return self.split_dict()["values"]
+
+    def split_dict(self) -> dict[str, list]:
+        keys_and_values = {
+            "keys": list(self.properties_dict.keys()),
+            "values": list(self.properties_dict.values()),
+        }
+        return keys_and_values
+
+    def create_dict(self) -> dict[str, float]:
+        return {
+            k: v for k, v in zip(self.properties_keys, self.properties_vals)
+        }
+
+
+@dataclass
 class Prediction:
     """Prediction dataclass all normalised softmax class probabilities.
 
