@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import enum
 import torch
@@ -10,7 +10,7 @@ from grace.base import GraphAttrs, Annotation
 
 
 def find_average_annotation(
-    edge: Tuple[int],
+    edge: tuple[int],
     graph: nx.Graph,
 ) -> Annotation:
     """Finds the average annotation of edges connected to
@@ -18,7 +18,7 @@ def find_average_annotation(
 
     Parameters
     ----------
-    edge : Tuple[int]
+    edge : tuple[int]
         Tuple of nodes that define the edge
 
     Returns
@@ -101,8 +101,8 @@ class RandomEdgeAdditionAndRemoval:
             self.assign_annotation = lambda edge, graph: Annotation.UNKNOWN
 
     def __call__(
-        self, x: torch.Tensor, graph: Dict[str, Any]
-    ) -> Tuple[torch.Tensor, dict]:
+        self, x: torch.Tensor, graph: dict[str, Any]
+    ) -> tuple[torch.Tensor, dict]:
         new_graph = graph["graph"].copy()
         graph = graph.copy()
 
@@ -149,8 +149,8 @@ class RandomXYTranslation:
         self.max_shift = max_shift
 
     def __call__(
-        self, img: torch.Tensor, graph: Dict[str, Any]
-    ) -> Tuple[torch.Tensor, dict]:
+        self, img: torch.Tensor, graph: dict[str, Any]
+    ) -> tuple[torch.Tensor, dict]:
         new_graph = graph["graph"].copy()
         graph = graph.copy()
 
