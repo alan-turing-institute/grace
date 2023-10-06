@@ -2,17 +2,78 @@ import networkx as nx
 import numpy as np
 import torch
 
+from dataclasses import dataclass, field
 from torch_geometric.data import Data
 from grace.base import GraphAttrs
 
-# type properly!
+
+@dataclass
+class NormalisedProperties:
+    keys: list[str] = field(
+        default_factory=lambda: NormalisedProperties.ordered_keys
+    )
+
+    # Define the class-level ordered keys
+    ordered_keys = [
+        "edge_length_nrm",
+        "edge_orientation_radians",
+        "east_to_mid_length_nrm",
+        "west_to_mid_length_nrm",
+        "east_to_mid_orient_raw",
+        "west_to_mid_orient_raw",
+        "east_triangle_area_nrm",
+        "west_triangle_area_nrm",
+    ]
+
+
+# @dataclass
+# class NormalisedProperties:
+#     """TODO: """
+#     # keys: list[str] = [
+#     #     NrmProperties.EDGE_LENGTH,
+#     #     NrmProperties.EDGE_ORIENT,
+#     #     NrmProperties.EAST_NEIGHBOUR_LENGTH,
+#     #     NrmProperties.WEST_NEIGHBOUR_LENGTH,
+#     #     NrmProperties.EAST_NEIGHBOUR_ORIENT,
+#     #     NrmProperties.WEST_NEIGHBOUR_ORIENT,
+#     #     NrmProperties.EAST_TRIANGLE_AREA,
+#     #     NrmProperties.WEST_TRIANGLE_AREA,
+#     # ]
+#     keys: list[str] = field(
+#         default_factory = [
+#             "edge_length_nrm",
+#             "edge_orientation_radians",
+#             "east_to_mid_length_nrm",
+#             "west_to_mid_length_nrm",
+#             "east_to_mid_orient_raw",
+#             "west_to_mid_orient_raw",
+#             "east_triangle_area_nrm",
+#             "west_triangle_area_nrm",
+#         ]
+#     )
+
+#     @property
+#     def get_properties(self) -> list[str]:
+#         return self.keys
+
+
+# @dataclass
+# class KeyExtractor:
+#     keys: list[str] = field(
+#         default_factory=lambda: KeyExtractor.ordered_keys
+#     )
+
+#     # Define the class-level ordered keys
+#     ordered_keys = ["key1", "key2", "key3"]
 
 
 def dataset_from_graph(
     graph: nx.Graph,
     *,
+    num_hops: int = 1,
     mode: str = "whole",
-    n_hop: int = 1,
+    connection: str = "spiderweb",
+    node_order: bool = False,
 ) -> list[Data]:
     """Create a pytorch geometric dataset from a given networkx graph.
 
@@ -20,10 +81,11 @@ def dataset_from_graph(
     ----------
     graph : graph
         A networkx graph.
+    num_hops : int
+        The number of hops from the central node when creating the subgraphs.
     mode : str
         "sub" or "whole".
-    n_hop : int
-        The number of hops from the central node when creating the subgraphs.
+
 
     Returns
     -------
@@ -41,94 +103,40 @@ def dataset_from_graph(
     if mode == "sub":
         dataset = []
 
-        for node_idx, node in graph.nodes(data=True):
+        for node_idx, _ in graph.nodes(data=True):
             # Isolate a small subgraph:
-            sub_graph = nx.ego_graph(graph, node_idx, radius=n_hop)
-            sub_graph_nodes = list(sub_graph.nodes())
-            # print (f"Created a subgraph: {sub_graph} around node index = {node_idx}")
+            sub_graph = nx.ego_graph(graph, node_idx, radius=num_hops)
 
-            # NODES:
-            # Order nodes by locating neighbours angle:
-            absolute_pos = _node_pos_coords(sub_graph)
-            central_node = torch.Tensor(
-                [node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y]]
-            )
-            neighbours_relative = absolute_pos - central_node
-
-            # Sort the neighbours:
-            relative_pos, neighbour_idx = _sort_neighbors_by_angle(
-                neighbors=neighbours_relative
-            )
-            sorted_neighbour_idx_list = [
-                sub_graph_nodes[g] for g in neighbour_idx
-            ]
-
-            # Sorted node features:
-            x = _x(sub_graph, sorted_neighbour_idx_list)
-            y = _y(sub_graph, sorted_neighbour_idx_list)
-            degree = _node_degree(sub_graph, sorted_neighbour_idx_list)
-
-            # EDGES:
             # Release spider web - only edges in contact with central node:
-            sub_graph = _release_non_central_edges(sub_graph, node_idx)
-            sub_graph_edges = list(sub_graph.edges(data=True))
-
-            # Sanity check for a fireworks edge subgraph:
-            assert len(sub_graph_edges) == len(sub_graph_nodes) - 1
-
-            # Read the labels of the edges the central node forms:
-            # edge_labels = _edge_label(graph, sub_graph_edges)
-            edge_labels = _edge_label(sub_graph)
-
-            # Create a list of edge indices, as simple as it gets:
-            edge_indices = _edge_index(sub_graph)
-
-            # Calculate edge lenghts:
-            edge_length = _edge_length(graph)
-            mean_length = torch.mean(edge_length)
-            edge_length = _edge_length(sub_graph, mean_length=mean_length)
-
-            # Calculate the edge angle:
-            edge_orient = _edge_orientation(sub_graph)
+            if connection == "fireworks":
+                sub_graph = _release_non_central_edges(sub_graph, node_idx)
+                assert len(sub_graph.edges()) == len(sub_graph.nodes()) - 1
+            elif connection == "spiderweb":
+                pass
+            else:
+                raise ValueError(
+                    f"Graph connectivity type '{connection}' not implemented"
+                )
 
             # Store the data as pytorch.geometric object:
             data = Data(
-                x=x,
-                y=y,
-                degree=degree,
-                pos_abs=absolute_pos,
-                pos_rel=relative_pos,
-                edge_label=edge_labels,
-                edge_index=edge_indices,
-                edge_length=edge_length,
-                edge_orient=edge_orient,
+                x=_x(sub_graph),
+                y=_y(sub_graph),
+                edge_label=_edge_label(sub_graph),
+                edge_index=_edge_index(sub_graph),
+                edge_properties=_edge_properties(sub_graph),
             )
-            # print (data)
             dataset.append(data)
 
         return dataset
 
     elif mode == "whole":
-        pos_abs = _node_pos_coords(graph)
-        pos_rel = torch.zeros_like(pos_abs)
-        nodes = range(len(graph.nodes()))
-
-        edge_length = _edge_length(graph)
-        mean_length = torch.mean(edge_length)
-        edge_length = _edge_length(graph, mean_length=mean_length)
-
-        edge_orient = _edge_orientation(graph)
-
         data = Data(
-            x=_x(graph, nodes),
-            y=_y(graph, nodes),
-            degree=_node_degree(graph, nodes),
-            pos_abs=pos_abs,
-            pos_rel=pos_rel,
+            x=_x(graph),
+            y=_y(graph),
             edge_label=_edge_label(graph),
             edge_index=_edge_index(graph),
-            edge_length=edge_length,
-            edge_orient=edge_orient,
+            edge_properties=_edge_properties(graph),
         )
 
         return [
@@ -183,22 +191,19 @@ def _release_non_central_edges(
     return sub_graph
 
 
-def _x(graph: nx.Graph, ordered_node_idx_list: list[int]) -> torch.Tensor:
+def _x(graph: nx.Graph) -> torch.Tensor:
     x = np.stack(
-        [
-            graph.nodes[idx][GraphAttrs.NODE_FEATURES]
-            for idx in ordered_node_idx_list
-        ],
+        [graph.nodes[idx][GraphAttrs.NODE_FEATURES] for idx in graph.nodes()],
         axis=0,
     )
     return torch.Tensor(x).float()
 
 
-def _y(graph: nx.Graph, ordered_node_idx_list: list[int]) -> torch.Tensor:
+def _y(graph: nx.Graph) -> torch.Tensor:
     y = np.stack(
         [
             graph.nodes[idx][GraphAttrs.NODE_GROUND_TRUTH]
-            for idx in ordered_node_idx_list
+            for idx in graph.nodes()
         ],
         axis=0,
     )
@@ -239,81 +244,28 @@ def _edge_index(graph: nx.Graph):
     return torch.tensor(edges, dtype=torch.long).t().contiguous()
 
 
-def _edge_length(graph: nx.Graph, mean_length: float = None):
-    edge_lengths = []
-    for src, dst, _ in list(graph.edges(data=True)):
-        src_coords = np.array(
-            [
-                graph.nodes[src][GraphAttrs.NODE_X],
-                graph.nodes[src][GraphAttrs.NODE_Y],
-            ]
-        )
-        dst_coords = np.array(
-            [
-                graph.nodes[dst][GraphAttrs.NODE_X],
-                graph.nodes[dst][GraphAttrs.NODE_Y],
-            ]
-        )
-        distance = np.linalg.norm(dst_coords - src_coords)
-        edge_lengths.append(distance)
+def _edge_properties(graph: nx.Graph):
+    properties = NormalisedProperties().keys
+    # print (type(properties), properties)
 
-    # Normalise if mean edge length is supplied:
-    edge_lengths = np.stack(edge_lengths, axis=0)
-    if mean_length is not None:
-        edge_lengths = np.divide(edge_lengths, mean_length)
+    edge_properties = []
+    for src, dst, edge in graph.edges(data=True):
+        # TODO: Check if Properties exist as an edge attribute & how many:
+        # assert
 
-    edge_lengths = torch.Tensor(edge_lengths).float()
-    # edge_lengths = torch.unsqueeze(edge_lengths, dim=0)
-    return edge_lengths
+        # print (edge[GraphAttrs.EDGE_PROPERTIES])
 
+        edge_props_dict = edge[GraphAttrs.EDGE_PROPERTIES].properties_dict
+        # print (edge_props_dict)
 
-def _edge_orientation(graph: nx.Graph):
-    edge_angles = []
-    for src, dst, _ in list(graph.edges(data=True)):
-        src_coords = np.array(
-            [
-                graph.nodes[src][GraphAttrs.NODE_X],
-                graph.nodes[src][GraphAttrs.NODE_Y],
-            ]
-        )
-        dst_coords = np.array(
-            [
-                graph.nodes[dst][GraphAttrs.NODE_X],
-                graph.nodes[dst][GraphAttrs.NODE_Y],
-            ]
-        )
-        angle = calculate_angle_with_vertical(src_coords, dst_coords)
-        edge_angles.append(angle)
+        single_edge_props = [edge_props_dict[prop] for prop in properties]
+        # print (single_edge_props)
 
-    # Normalise if mean edge length is supplied:
-    edge_angles = np.stack(edge_angles, axis=0)
-    edge_angles = torch.Tensor(edge_angles).float()
-    # edge_angles = torch.unsqueeze(edge_angles, dim=0)
-    return edge_angles
+        edge_properties.append(single_edge_props)
 
+    edge_properties = np.stack(edge_properties, axis=0)
+    # edge_properties = np.transpose(edge_properties)
 
-def calculate_angle_with_vertical(src_point, dst_point):
-    """
-    Calculate the angle between a line segment and
-    the vertical plane (measured from the vertical axis).
+    # print (edge_properties.shape)
 
-    Args:
-    x_src (float): x-coordinate of the source point.
-    y_src (float): y-coordinate of the source point.
-    x_dst (float): x-coordinate of the destination point.
-    y_dst (float): y-coordinate of the destination point.
-
-    Returns:
-    float: The angle (in radians) between line segment & vertical plane.
-    """
-    # Calculate the midpoint of the line
-    x_src, y_src = src_point
-    x_dst, y_dst = dst_point
-
-    x_mid = (x_src + x_dst) / 2.0
-    y_mid = (y_src + y_dst) / 2.0
-
-    # Calculate the angle using arctan2, measured from the vertical axis
-    angle_rad = np.arctan2(x_mid, y_mid)
-
-    return angle_rad
+    return torch.Tensor(edge_properties).float()
