@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple, Union, Optional
+from typing import Any, Union, Optional
 
 import torch
 
@@ -83,10 +83,10 @@ def rotate_coordinates(
 
 def rotate_image_and_graph(
     image: torch.Tensor,
-    target: Dict[Union[str, GraphAttrs], Any],
+    target: dict[Union[str, GraphAttrs], Any],
     rot_angle: float,
-    rot_center: List[int],
-) -> Tuple[torch.Tensor, Dict[Union[str, GraphAttrs], Any]]:
+    rot_center: list[int],
+) -> tuple[torch.Tensor, dict[Union[str, GraphAttrs], Any]]:
     """Rotate the image and graph in tandem.
 
     I.e., the graph x-y coordinates will be transformed to reflect
@@ -100,7 +100,7 @@ def rotate_image_and_graph(
         Input target dict.
     rot_angle : float
         Angle through which to rotate counter-clockwise
-    rot_center: List[int]
+    rot_center: list[int]
         x-y coordinates of the center of the rotation
 
     Returns
@@ -160,9 +160,9 @@ class RandomImageGraphRotate:
 
     Parameters
     ----------
-    rot_center : List[int]
+    rot_center : list[int]
         center of rotation, in x-y coordinates
-    rot_angle_range : Tuple[int]
+    rot_angle_range : tuple[int]
         Lower and upper limits on the rotation angle, in degrees
     rng : numpy.random.Generator
         Random number generator
@@ -170,8 +170,8 @@ class RandomImageGraphRotate:
 
     def __init__(
         self,
-        rot_center: Optional[List[int]] = None,
-        rot_angle_range: Tuple[float, float] = (0.0, 360.0),
+        rot_center: Optional[list[int]] = None,
+        rot_angle_range: tuple[float, float] = (0.0, 360.0),
         rng: np.random.Generator = np.random.default_rng(),
     ):
         self.rng = rng
@@ -180,7 +180,7 @@ class RandomImageGraphRotate:
 
     def __call__(
         self, x: torch.Tensor, graph: dict
-    ) -> Tuple[torch.Tensor, dict]:
+    ) -> tuple[torch.Tensor, dict]:
         random_angle = self.rng.uniform(
             low=self.rot_angle_range[0], high=self.rot_angle_range[-1]
         )

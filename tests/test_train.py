@@ -9,7 +9,7 @@ from grace.training.train import train_model
 from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import GCNModel
 
-from _utils import random_image_and_graph
+from conftest import random_image_and_graph
 
 
 class TestTraining:
