@@ -37,50 +37,6 @@ class Annotation(enum.IntEnum):
 
 
 @dataclass
-class Properties:
-    """TODO: Fill in stuff."""
-
-    properties_dict: dict[str, float] = None
-    properties_keys: list[str] = None
-    properties_vals: list[str] = None
-
-    def __post_init__(self) -> None:
-        if self.properties_dict is not None:
-            self.properties_keys = self.property_keys
-            self.properties_vals = self.property_vals
-            assert len(self.properties_keys) == len(self.properties_vals)
-        else:
-            assert self.properties_keys is not None
-            assert self.properties_vals is not None
-            assert len(self.properties_keys) == len(self.properties_vals)
-
-            # Create the dict & clean the keys & vals:
-            self.properties_dict = self.create_dict()
-            self.properties_keys = None
-            self.properties_vals = None
-
-    @property
-    def property_keys(self) -> list[str]:
-        return self.split_dict()["keys"]
-
-    @property
-    def property_vals(self) -> list[float]:
-        return self.split_dict()["values"]
-
-    def split_dict(self) -> dict[str, list]:
-        keys_and_values = {
-            "keys": list(self.properties_dict.keys()),
-            "values": list(self.properties_dict.values()),
-        }
-        return keys_and_values
-
-    def create_dict(self) -> dict[str, float]:
-        return {
-            k: v for k, v in zip(self.properties_keys, self.properties_vals)
-        }
-
-
-@dataclass
 class Prediction:
     """Prediction dataclass all normalised softmax class probabilities.
 
@@ -132,6 +88,68 @@ class Prediction:
     @property
     def prob_UNKNOWN(self) -> float:
         return self.softmax_probs[Annotation.UNKNOWN]
+
+
+@enum.unique
+class EdgeProps(str, enum.Enum):
+    """TODO:"""
+
+    EDGE_LENGTH = "edge_length_nrm"
+    EDGE_ORIENT = "edge_orientation_radians"
+    EAST_NEIGHBOUR_LENGTH = "east_to_mid_length_nrm"
+    WEST_NEIGHBOUR_LENGTH = "west_to_mid_length_nrm"
+    EAST_NEIGHBOUR_ORIENT = "east_to_mid_orient_raw"
+    WEST_NEIGHBOUR_ORIENT = "west_to_mid_orient_raw"
+    EAST_TRIANGLE_AREA = "east_triangle_area_nrm"
+    WEST_TRIANGLE_AREA = "west_triangle_area_nrm"
+
+
+@dataclass
+class Properties:
+    """TODO: Fill in stuff."""
+
+    properties_dict: dict[str, float] = None
+    properties_keys: list[str] = None
+    properties_vals: list[str] = None
+
+    def __post_init__(self) -> None:
+        if self.properties_dict is not None:
+            self.properties_keys = self.property_keys
+            self.properties_vals = self.property_vals
+            assert len(self.properties_keys) == len(self.properties_vals)
+        else:
+            assert self.properties_keys is not None
+            assert self.properties_vals is not None
+            assert len(self.properties_keys) == len(self.properties_vals)
+
+            # Create the dict & clean the keys & vals:
+            self.properties_dict = self.create_dict()
+            self.properties_keys = None
+            self.properties_vals = None
+
+    @property
+    def property_keys(self) -> list[str]:
+        return self.split_dict()["keys"]
+
+    @property
+    def property_vals(self) -> list[float]:
+        return self.split_dict()["values"]
+
+    def split_dict(self) -> dict[str, list]:
+        keys_and_values = {
+            "keys": list(self.properties_dict.keys()),
+            "values": list(self.properties_dict.values()),
+        }
+        return keys_and_values
+
+    def create_dict(self) -> dict[str, float]:
+        return {
+            k: v for k, v in zip(self.properties_keys, self.properties_vals)
+        }
+
+    def from_keys_and_values(self) -> dict[str, float]:
+        """TODO: Implement"""
+        return None
 
 
 def _map_annotation(annotation: int | Annotation) -> Annotation:
