@@ -121,7 +121,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             target_list.append(target)
 
             # Chop graph into subgraphs & store:
-            graphs = dataset_from_graph(target["graph"], mode=graph_processing)
+            graphs = dataset_from_graph(
+                target["graph"], num_hops=1, mode=graph_processing
+            )
             subgraph_dataset.extend(graphs)
 
         return target_list, subgraph_dataset
