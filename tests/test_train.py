@@ -1,6 +1,6 @@
 import pytest
 
-from grace.base import GraphAttrs, Annotation
+from grace.base import GraphAttrs, Annotation, Properties, EdgeProps
 from grace.evaluation.metrics_classifier import (
     accuracy_metric,
     confusion_matrix_metric,
@@ -29,7 +29,15 @@ class TestTraining:
                 (
                     src,
                     dst,
-                    {GraphAttrs.EDGE_GROUND_TRUTH: Annotation.TRUE_POSITIVE},
+                    {
+                        GraphAttrs.EDGE_GROUND_TRUTH: Annotation.TRUE_POSITIVE,
+                        GraphAttrs.EDGE_PROPERTIES: Properties(
+                            properties_dict=None
+                        ).from_keys_and_values(
+                            keys=EdgeProps,
+                            values=default_rng.uniform(size=(len(EdgeProps),)),
+                        ),
+                    },
                 )
                 for src, dst in graph.edges
             ]

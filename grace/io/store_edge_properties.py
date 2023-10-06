@@ -33,7 +33,7 @@ def store_edge_properties_in_graph(
         for _, _, edge in graph.edges(data=True):
             dictionary = edge[GraphAttrs.EDGE_PROPERTIES]
             edge["edge_properties_keys"] = dictionary.property_keys
-            edge["edge_properties_vals"] = dictionary.property_vals
+            edge["edge_properties_values"] = dictionary.property_vals
             del edge[GraphAttrs.EDGE_PROPERTIES]
 
         write_graph(

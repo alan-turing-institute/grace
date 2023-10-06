@@ -2,28 +2,28 @@ import networkx as nx
 import numpy as np
 import torch
 
-from dataclasses import dataclass, field
 from torch_geometric.data import Data
-from grace.base import GraphAttrs
+from grace.base import GraphAttrs, EdgeProps
 
+# from dataclasses import dataclass, field
 
-@dataclass
-class NormalisedProperties:
-    keys: list[str] = field(
-        default_factory=lambda: NormalisedProperties.ordered_keys
-    )
+# @dataclass
+# class NormalisedProperties:
+#     keys: list[str] = field(
+#         default_factory=lambda: NormalisedProperties.ordered_keys
+#     )
 
-    # Define the class-level ordered keys
-    ordered_keys = [
-        "edge_length_nrm",
-        "edge_orientation_radians",
-        "east_to_mid_length_nrm",
-        "west_to_mid_length_nrm",
-        "east_to_mid_orient_raw",
-        "west_to_mid_orient_raw",
-        "east_triangle_area_nrm",
-        "west_triangle_area_nrm",
-    ]
+#     # Define the class-level ordered keys
+#     ordered_keys = [
+#         "edge_length_nrm",
+#         "edge_orientation_radians",
+#         "east_to_mid_length_nrm",
+#         "west_to_mid_length_nrm",
+#         "east_to_mid_orient_raw",
+#         "west_to_mid_orient_raw",
+#         "east_triangle_area_nrm",
+#         "west_triangle_area_nrm",
+#     ]
 
 
 # @dataclass
@@ -245,27 +245,15 @@ def _edge_index(graph: nx.Graph):
 
 
 def _edge_properties(graph: nx.Graph):
-    properties = NormalisedProperties().keys
-    # print (type(properties), properties)
-
     edge_properties = []
-    for src, dst, edge in graph.edges(data=True):
-        # TODO: Check if Properties exist as an edge attribute & how many:
-        # assert
-
-        # print (edge[GraphAttrs.EDGE_PROPERTIES])
-
+    for _, _, edge in graph.edges(data=True):
+        # Check if all EdgeProps exist as an edge attribute:
         edge_props_dict = edge[GraphAttrs.EDGE_PROPERTIES].properties_dict
-        # print (edge_props_dict)
+        assert all(prop in edge_props_dict for prop in EdgeProps)
 
-        single_edge_props = [edge_props_dict[prop] for prop in properties]
-        # print (single_edge_props)
-
+        # Extract the float values:
+        single_edge_props = [edge_props_dict[prop] for prop in EdgeProps]
         edge_properties.append(single_edge_props)
 
     edge_properties = np.stack(edge_properties, axis=0)
-    # edge_properties = np.transpose(edge_properties)
-
-    # print (edge_properties.shape)
-
     return torch.Tensor(edge_properties).float()

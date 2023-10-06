@@ -156,15 +156,14 @@ class GraceFile:
                 # Organise the relevant properties:
                 if (
                     edges_df["edge_properties_keys"][idx] is not None
-                    and edges_df["edge_properties_vals"][idx] is not None
+                    and edges_df["edge_properties_values"][idx] is not None
                 ):
-                    attribute_dictionary = Properties(
-                        properties_keys=edges_df["edge_properties_keys"][idx],
-                        properties_vals=edges_df["edge_properties_vals"][idx],
+                    attrs_dict = Properties()
+                    attrs_dict.from_keys_and_values(
+                        keys=edges_df["edge_properties_keys"][idx],
+                        values=edges_df["edge_properties_values"][idx],
                     )
-                    edge_attrs[
-                        GraphAttrs.EDGE_PROPERTIES
-                    ] = attribute_dictionary
+                    edge_attrs[GraphAttrs.EDGE_PROPERTIES] = attrs_dict
 
                 edges.append((src, dst, edge_attrs))
 

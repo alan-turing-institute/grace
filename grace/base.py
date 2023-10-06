@@ -95,11 +95,11 @@ class EdgeProps(str, enum.Enum):
     """TODO:"""
 
     EDGE_LENGTH = "edge_length_nrm"
-    EDGE_ORIENT = "edge_orientation_radians"
+    EDGE_ORIENT = "edge_orient_rad"
     EAST_NEIGHBOUR_LENGTH = "east_to_mid_length_nrm"
     WEST_NEIGHBOUR_LENGTH = "west_to_mid_length_nrm"
-    EAST_NEIGHBOUR_ORIENT = "east_to_mid_orient_raw"
-    WEST_NEIGHBOUR_ORIENT = "west_to_mid_orient_raw"
+    EAST_NEIGHBOUR_ORIENT = "east_to_mid_orient_rad"
+    WEST_NEIGHBOUR_ORIENT = "west_to_mid_orient_rad"
     EAST_TRIANGLE_AREA = "east_triangle_area_nrm"
     WEST_TRIANGLE_AREA = "west_triangle_area_nrm"
 
@@ -109,47 +109,46 @@ class Properties:
     """TODO: Fill in stuff."""
 
     properties_dict: dict[str, float] = None
-    properties_keys: list[str] = None
-    properties_vals: list[str] = None
+    # properties_keys: list[str] = None
+    # properties_vals: list[str] = None
 
-    def __post_init__(self) -> None:
-        if self.properties_dict is not None:
-            self.properties_keys = self.property_keys
-            self.properties_vals = self.property_vals
-            assert len(self.properties_keys) == len(self.properties_vals)
-        else:
-            assert self.properties_keys is not None
-            assert self.properties_vals is not None
-            assert len(self.properties_keys) == len(self.properties_vals)
+    # def __post_init__(self) -> None:
+    #     if self.properties_dict is not None:
+    #         self.properties_keys = self.property_keys
+    #         self.properties_vals = self.property_vals
+    #         assert len(self.properties_keys) == len(self.properties_vals)
+    #     else:
+    #         assert self.properties_keys is not None
+    #         assert self.properties_vals is not None
+    #         assert len(self.properties_keys) == len(self.properties_vals)
 
-            # Create the dict & clean the keys & vals:
-            self.properties_dict = self.create_dict()
-            self.properties_keys = None
-            self.properties_vals = None
+    #         # Create the dict & clean the keys & vals:
+    #         self.properties_dict = self.create_dict()
+    #         self.properties_keys = None
+    #         self.properties_vals = None
 
     @property
     def property_keys(self) -> list[str]:
-        return self.split_dict()["keys"]
+        return list(self.properties_dict.keys())
 
     @property
     def property_vals(self) -> list[float]:
-        return self.split_dict()["values"]
+        return list(self.properties_dict.values())
 
-    def split_dict(self) -> dict[str, list]:
-        keys_and_values = {
-            "keys": list(self.properties_dict.keys()),
-            "values": list(self.properties_dict.values()),
-        }
-        return keys_and_values
+    @property
+    def property_training_data(self) -> npt.NDArray:
+        return np.stack(
+            [self.properties_dict[prop] for prop in EdgeProps], axis=0
+        )
 
-    def create_dict(self) -> dict[str, float]:
-        return {
-            k: v for k, v in zip(self.properties_keys, self.properties_vals)
-        }
-
-    def from_keys_and_values(self) -> dict[str, float]:
+    def from_keys_and_values(
+        self, keys: list[str], values: list[float]
+    ) -> None:
         """TODO: Implement"""
-        return None
+        assert len(keys) == len(values)
+        assert all(isinstance(k, str) for k in keys)
+        assert all(isinstance(v, (float, np.floating)) for v in values)
+        self.properties_dict = {k: v for k, v in zip(keys, values)}
 
 
 def _map_annotation(annotation: int | Annotation) -> Annotation:

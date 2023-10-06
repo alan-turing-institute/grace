@@ -21,7 +21,7 @@ EDGE_SCHEMA = pa.schema(
         pa.field(GraphAttrs.EDGE_GROUND_TRUTH, pa.int64()),
         pa.field(GraphAttrs.EDGE_PREDICTION, pa.list_(pa.float32())),
         pa.field("edge_properties_keys", pa.list_(pa.string())),
-        pa.field("edge_properties_vals", pa.list_(pa.float32())),
+        pa.field("edge_properties_values", pa.list_(pa.float32())),
     ],
     # metadata={"year": "2023"}
 )

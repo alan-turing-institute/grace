@@ -6,9 +6,14 @@ import numpy.typing as npt
 
 import torch
 
-from grace.base import GraphAttrs, graph_from_dataframe
-from grace.io.core import Annotation
 from pathlib import Path
+from grace.base import (
+    GraphAttrs,
+    Annotation,
+    Properties,
+    EdgeProps,
+    graph_from_dataframe,
+)
 
 
 def random_image_and_graph(
@@ -50,7 +55,13 @@ def random_image_and_graph(
                 {
                     GraphAttrs.EDGE_GROUND_TRUTH: rng.choice(
                         [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE],
-                    )
+                    ),
+                    GraphAttrs.EDGE_PROPERTIES: Properties(
+                        properties_dict=None
+                    ).from_keys_and_values(
+                        keys=EdgeProps,
+                        values=rng.uniform(size=(len(EdgeProps),)),
+                    ),
                 },
             )
             for src, dst in graph.edges

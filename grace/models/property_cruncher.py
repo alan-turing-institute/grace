@@ -76,8 +76,8 @@ class EdgePropertyCruncher:
             edge_orientation = self.calculate_angle_with_vertical(
                 src_coords, dst_coords
             )
-            edge_attributes["edge_orientation_radians"] = edge_orientation[0]
-            edge_attributes["edge_orientation_degrees"] = edge_orientation[1]
+            edge_attributes["edge_orient_rad"] = edge_orientation[0]
+            edge_attributes["edge_orient_deg"] = edge_orientation[1]
 
             # Identify the left & right partner node:
             neighbours = {
@@ -125,7 +125,7 @@ class EdgePropertyCruncher:
                             "west_to_mid_length_raw"
                         ] = mid_to_point_length_raw
                         edge_attributes[
-                            "west_to_mid_orient_raw"
+                            "west_to_mid_orient_rad"
                         ] = mid_to_point_orient_raw[0]
                         edge_attributes[
                             "west_triangle_area_raw"
@@ -142,7 +142,7 @@ class EdgePropertyCruncher:
                             "east_to_mid_length_raw"
                         ] = mid_to_point_length_raw
                         edge_attributes[
-                            "east_to_mid_orient_raw"
+                            "east_to_mid_orient_rad"
                         ] = mid_to_point_orient_raw[0]
                         edge_attributes[
                             "east_triangle_area_raw"
@@ -157,7 +157,7 @@ class EdgePropertyCruncher:
                 edge_attributes["west_pos_y_raw"] = mid_coords[1]
 
                 edge_attributes["west_to_mid_length_raw"] = 0.0
-                edge_attributes["west_to_mid_orient_raw"] = 0.0
+                edge_attributes["west_to_mid_orient_rad"] = 0.0
                 edge_attributes["west_triangle_area_raw"] = 0.0
 
             if neighbours["east"] == float("inf"):
@@ -165,7 +165,7 @@ class EdgePropertyCruncher:
                 edge_attributes["east_pos_y_raw"] = mid_coords[1]
 
                 edge_attributes["east_to_mid_length_raw"] = 0.0
-                edge_attributes["east_to_mid_orient_raw"] = 0.0
+                edge_attributes["east_to_mid_orient_rad"] = 0.0
                 edge_attributes["east_triangle_area_raw"] = 0.0
 
             # Done - create the 'Properties' object to store attributes:
