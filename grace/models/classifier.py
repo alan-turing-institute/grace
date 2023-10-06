@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch.nn import Linear, ModuleList
 
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv  # , GATv2Conv
 
 from grace.styling import LOGGER
 
@@ -16,6 +16,7 @@ class Classifier(torch.nn.Module):
             # "LINEAR" : LinearModel,
             "GCN": GCNModel,
             # "GAT": GATModel,
+            # "GraphSAGE": GraphSAGEModel,
         }
 
     def get_model(self, classifier_type: str, **kwargs) -> torch.nn.Module:
@@ -84,6 +85,7 @@ class GCNModel(torch.nn.Module):
             hidden_channels_list.extend(hidden_graph_channels)
             self.conv_layer_list = ModuleList(
                 [
+                    # GATv2Conv(
                     GCNConv(
                         hidden_channels_list[i], hidden_channels_list[i + 1]
                     )
@@ -106,11 +108,12 @@ class GCNModel(torch.nn.Module):
                 ]
             )
         # Final node & edge classifier:
+        # TODO: Soft code the properties length!
         self.node_classifier = Linear(
             hidden_channels_list[-1], node_output_classes
         )
         self.edge_classifier = Linear(
-            hidden_channels_list[-1] * 2 + 2, edge_output_classes
+            hidden_channels_list[-1] * 2 + 8, edge_output_classes
         )
 
         # Log the moel architecture:
@@ -126,8 +129,7 @@ class GCNModel(torch.nn.Module):
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
-        edge_length: torch.Tensor,
-        edge_orient: torch.Tensor,
+        edge_properties: torch.Tensor,
     ) -> tuple[torch.Tensor]:
         """Perform training on input data.
 
@@ -136,7 +138,10 @@ class GCNModel(torch.nn.Module):
         x : torch.Tensor
             Node features.
         edge_index : torch.Tensor
-            Edge indices.
+            Edge indices; shape = [2, num_edges]
+            where 2 are the src, dst node index.
+        edge_properties : torch.Tensor
+            Edge properties; shape = [num_edges, num_properties]
 
         Returns
         -------
@@ -185,8 +190,9 @@ class GCNModel(torch.nn.Module):
             [
                 node_embeddings[..., src, :],
                 node_embeddings[..., dst, :],
-                edge_length[..., None],
-                edge_orient[..., None],
+                edge_properties[...],
+                # edge_length[..., None],
+                # edge_orient[..., None],
             ],
             axis=-1,
         )
@@ -200,8 +206,7 @@ class GCNModel(torch.nn.Module):
         self,
         x: torch.Tensor,
         edge_index: torch.Tensor,
-        edge_length: torch.Tensor,
-        edge_orient: torch.Tensor,
+        edge_properties: torch.Tensor,
     ) -> tuple[torch.Tensor]:
         """Perform inference on input data.
 
@@ -210,7 +215,10 @@ class GCNModel(torch.nn.Module):
         x : torch.Tensor
             Node features.
         edge_index : torch.Tensor
-            Edge indices.
+            Edge indices; shape = [2, num_edges]
+            where 2 are the src, dst node index.
+        edge_properties : torch.Tensor
+            Edge properties; shape = [num_edges, num_properties]
 
         Returns
         -------
@@ -225,6 +233,6 @@ class GCNModel(torch.nn.Module):
 
         # Forward pass through the frozen model:
         with torch.no_grad():
-            node_x, edge_x = self(x, edge_index, edge_length, edge_orient)
+            node_x, edge_x = self(x, edge_index, edge_properties)
 
         return node_x, edge_x
