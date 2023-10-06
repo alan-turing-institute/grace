@@ -87,8 +87,7 @@ class GraphLabelPredictor(object):
             node_x, edge_x = self.pretrained_model.predict(
                 x=data.x,
                 edge_index=data.edge_index,
-                edge_length=data.edge_length,
-                edge_orient=data.edge_orient,
+                edge_properties=data.edge_properties,
             )
 
             # Process node probs into classes predictions:

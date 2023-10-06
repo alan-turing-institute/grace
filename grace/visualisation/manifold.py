@@ -53,11 +53,17 @@ class TSNEManifoldProjection(object):
         node_labels = dataset_batches.y
         node_embeds = dataset_batches.x
         edge_indices = dataset_batches.edge_index
+        edge_properties = dataset_batches.edge_properties
 
-        return node_labels, node_embeds, edge_indices
+        return node_labels, node_embeds, edge_indices, edge_properties
 
     def extract_GCN_node_embeddings(self) -> tuple[torch.stack]:
-        node_labels, node_embeds, edge_indices = self.read_graph_dataset_IO()
+        (
+            node_labels,
+            node_embeds,
+            edge_indices,
+            edge_properties,
+        ) = self.read_graph_dataset_IO()
 
         if self.model is None:
             LOGGER.info(
@@ -90,7 +96,9 @@ class TSNEManifoldProjection(object):
                 # Prep the model & modify embeddings in-place:
                 gcn_only_classifier.eval()
                 for module in gcn_only_classifier[0]:
-                    node_embeds = module(node_embeds, edge_indices)
+                    node_embeds = module(
+                        node_embeds, edge_indices, edge_properties
+                    )
 
             # Log the shapes:
             LOGGER.info(
