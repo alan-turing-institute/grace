@@ -1,5 +1,6 @@
 from grace.base import GraphAttrs, Annotation
 from grace.styling import COLORMAPS
+from grace import styling  # noqa: F401
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -328,12 +329,15 @@ def visualise_node_and_edge_probabilities(
             [e_st_y, e_en_y],
             color=color_map.to_rgba(edge_pred),
             marker="",
+            linewidth=2,
         )
         axes[2].plot(
             [e_st_x, e_en_x],
             [e_st_y, e_en_y],
             color=color_map.to_rgba(edge_pred),
             marker="",
+            linewidth=2,
+            zorder=0,
         )
 
     # Add colorbar

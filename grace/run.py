@@ -7,6 +7,7 @@ import torch
 from datetime import datetime
 from tqdm.auto import tqdm
 
+from grace import styling  # noqa: F401
 from grace.styling import LOGGER
 from grace.io.image_dataset import ImageGraphDataset
 

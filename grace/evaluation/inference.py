@@ -16,6 +16,7 @@ from sklearn.metrics import (
     average_precision_score,
 )
 
+from grace import styling  # noqa: F401
 from grace.base import GraphAttrs, Annotation, Prediction
 from grace.models.datasets import dataset_from_graph
 from grace.visualisation.plotting import (
@@ -334,8 +335,8 @@ class GraphLabelPredictor(object):
 
         # Areas under curves:
         plot_areas_under_curves(
-            node_pred=predictions_data["n_pred"],
-            edge_pred=predictions_data["e_pred"],
+            node_pred=predictions_data["n_prob"],
+            edge_pred=predictions_data["e_prob"],
             node_true=predictions_data["n_true"],
             edge_true=predictions_data["e_true"],
         )
@@ -347,8 +348,8 @@ class GraphLabelPredictor(object):
 
         # Predicted probs hist:
         plot_prediction_probabilities_hist(
-            node_pred=predictions_data["n_pred"],
-            edge_pred=predictions_data["e_pred"],
+            node_pred=predictions_data["n_prob"],
+            edge_pred=predictions_data["e_prob"],
             node_true=predictions_data["n_true"],
             edge_true=predictions_data["e_true"],
         )

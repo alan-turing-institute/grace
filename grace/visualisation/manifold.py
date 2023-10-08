@@ -12,6 +12,7 @@ from sklearn.manifold import TSNE
 
 from grace.models.datasets import dataset_from_graph
 from grace.styling import LOGGER, COLORMAPS
+from grace import styling  # noqa: F401
 
 
 def drop_linear_layers_from_model(
@@ -106,7 +107,7 @@ class TSNEManifoldProjection(object):
                 f"{node_embeds.shape}, {node_embeds.dtype}"
             )
 
-        return node_labels, node_embeds
+        return node_labels, node_embeds, edge_indices, edge_properties
 
     def perform_and_plot_tsne(
         self,
@@ -147,7 +148,9 @@ class TSNEManifoldProjection(object):
                 [self.read_graph_dataset_IO, self.extract_GCN_node_embeddings],
             )
         ):
-            labels, embeds = method()[:2]
+            # labels, embeds = method()[:2]
+            print(method)
+            labels, embeds, indices, properties = method()
             shape = embeds.shape[-1]
             title = f"{plot_name} GCN | Node Feature Embedding [{shape}]"
             self.perform_and_plot_tsne(
