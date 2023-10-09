@@ -5,75 +5,13 @@ import torch
 from torch_geometric.data import Data
 from grace.base import GraphAttrs, EdgeProps
 
-# from dataclasses import dataclass, field
-
-# @dataclass
-# class NormalisedProperties:
-#     keys: list[str] = field(
-#         default_factory=lambda: NormalisedProperties.ordered_keys
-#     )
-
-#     # Define the class-level ordered keys
-#     ordered_keys = [
-#         "edge_length_nrm",
-#         "edge_orientation_radians",
-#         "east_to_mid_length_nrm",
-#         "west_to_mid_length_nrm",
-#         "east_to_mid_orient_raw",
-#         "west_to_mid_orient_raw",
-#         "east_triangle_area_nrm",
-#         "west_triangle_area_nrm",
-#     ]
-
-
-# @dataclass
-# class NormalisedProperties:
-#     """TODO: """
-#     # keys: list[str] = [
-#     #     NrmProperties.EDGE_LENGTH,
-#     #     NrmProperties.EDGE_ORIENT,
-#     #     NrmProperties.EAST_NEIGHBOUR_LENGTH,
-#     #     NrmProperties.WEST_NEIGHBOUR_LENGTH,
-#     #     NrmProperties.EAST_NEIGHBOUR_ORIENT,
-#     #     NrmProperties.WEST_NEIGHBOUR_ORIENT,
-#     #     NrmProperties.EAST_TRIANGLE_AREA,
-#     #     NrmProperties.WEST_TRIANGLE_AREA,
-#     # ]
-#     keys: list[str] = field(
-#         default_factory = [
-#             "edge_length_nrm",
-#             "edge_orientation_radians",
-#             "east_to_mid_length_nrm",
-#             "west_to_mid_length_nrm",
-#             "east_to_mid_orient_raw",
-#             "west_to_mid_orient_raw",
-#             "east_triangle_area_nrm",
-#             "west_triangle_area_nrm",
-#         ]
-#     )
-
-#     @property
-#     def get_properties(self) -> list[str]:
-#         return self.keys
-
-
-# @dataclass
-# class KeyExtractor:
-#     keys: list[str] = field(
-#         default_factory=lambda: KeyExtractor.ordered_keys
-#     )
-
-#     # Define the class-level ordered keys
-#     ordered_keys = ["key1", "key2", "key3"]
-
 
 def dataset_from_graph(
     graph: nx.Graph,
     *,
-    num_hops: int = 1,
-    mode: str = "whole",
+    num_hops: int | str = 1,
     connection: str = "spiderweb",
-    node_order: bool = False,
+    ordered_nodes: bool = False,
 ) -> list[Data]:
     """Create a pytorch geometric dataset from a given networkx graph.
 
@@ -81,26 +19,31 @@ def dataset_from_graph(
     ----------
     graph : graph
         A networkx graph.
-    num_hops : int
+    num_hops : int | str
         The number of hops from the central node when creating the subgraphs.
-    mode : str
-        "sub" or "whole".
-
+        Entire graph is returned when num_hops = "whole" (no subgraphs made).
+    connection : str
+        Whether central node-formed edges are considered in the subgraph:
+        Options: "spiderweb" or "fireworks" (defaults to spiderweb)
+                      O              O
+                    / | \            |
+                  O---O---O  vs. O---O---O
+                    \ | /            |
+                      O              O
+        Ignored if num_hops = "whole" as all edges must be considered here.
+    ordered_nodes : bool
+        Whether nodes in the subgraph are returned in particular order.
+        If False, nodes are listed from north to south (Cartesian coords).
+        If True, central node is first, followed by angle-ordered neighbours.
+        TODO: Implement properly.
 
     Returns
     -------
     dataset : list[Data]
-        A (list of) pytorch geometric data object(s) representing the extracted
+        A list of pytorch geometric data object(s) representing the extracted
         subgraphs or full graph.
-
-    TODO:
-        - currently doesn't work on 'corner' nodes i.e. nodes which have
-        patches cropped at the boundary of the image - need to pad the image beforehand
     """
-
-    assert mode in {"sub", "whole"}
-
-    if mode == "sub":
+    if isinstance(num_hops, int):
         dataset = []
 
         for node_idx, _ in graph.nodes(data=True):
@@ -130,17 +73,15 @@ def dataset_from_graph(
 
         return dataset
 
-    elif mode == "whole":
-        data = Data(
-            x=_x(graph),
-            y=_y(graph),
-            edge_label=_edge_label(graph),
-            edge_index=_edge_index(graph),
-            edge_properties=_edge_properties(graph),
-        )
-
+    elif isinstance(num_hops, str) and num_hops == "whole":
         return [
-            data,
+            Data(
+                x=_x(graph),
+                y=_y(graph),
+                edge_label=_edge_label(graph),
+                edge_index=_edge_index(graph),
+                edge_properties=_edge_properties(graph),
+            ),
         ]
 
 
@@ -225,10 +166,16 @@ def _node_pos_coords(graph: nx.Graph):
         ],
         axis=0,
     )
-    return torch.Tensor(pos)
+    return torch.Tensor(pos).float()
 
 
 def _edge_label(graph: nx.Graph) -> None:
+    print(
+        [
+            edge[GraphAttrs.EDGE_GROUND_TRUTH]
+            for _, _, edge in graph.edges(data=True)
+        ]
+    )
     ground_truth_labels = np.stack(
         [
             edge[GraphAttrs.EDGE_GROUND_TRUTH]
