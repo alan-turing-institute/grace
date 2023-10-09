@@ -46,7 +46,7 @@ class TSNEManifoldProjection(object):
         # Prepare GT labels:
         dataset_batches = dataset_from_graph(
             graph=self.graph,
-            mode="whole",
+            num_hops="whole",
         )
         dataset_batches = dataset_batches[0]
 

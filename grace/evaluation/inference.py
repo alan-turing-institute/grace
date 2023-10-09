@@ -109,7 +109,7 @@ class GraphLabelPredictor(object):
 
     def set_node_and_edge_probabilities(self, G: nx.Graph) -> None:
         # Process graph into torch_geometric.data:
-        data_batch = dataset_from_graph(graph=G, mode="whole")
+        data_batch = dataset_from_graph(graph=G, num_hops="whole")
 
         # Process graph into torch_geometric.data:
         n_probs, e_probs, _, _ = self.infer_graph_predictions(data_batch)
