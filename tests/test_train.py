@@ -1,6 +1,5 @@
 import pytest
 
-from grace.base import GraphAttrs, Annotation, Properties, EdgeProps
 from grace.evaluation.metrics_classifier import (
     accuracy_metric,
     confusion_matrix_metric,
@@ -24,26 +23,9 @@ class TestTraining:
         _, graph = random_image_and_graph(
             default_rng, num_nodes=10, feature_ndim=2
         )
-        graph.update(
-            edges=[
-                (
-                    src,
-                    dst,
-                    {
-                        GraphAttrs.EDGE_GROUND_TRUTH: Annotation.TRUE_POSITIVE,
-                        GraphAttrs.EDGE_PROPERTIES: Properties(
-                            properties_dict=None
-                        ).from_keys_and_values(
-                            keys=EdgeProps,
-                            values=default_rng.uniform(size=(len(EdgeProps),)),
-                        ),
-                    },
-                )
-                for src, dst in graph.edges
-            ]
-        )
+
         target = {"graph": graph, "metadata": {"image_filename": "filename"}}
-        dataset = dataset_from_graph(graph, mode="sub")
+        dataset = dataset_from_graph(graph, num_hops=1)
 
         return (
             dataset,

@@ -16,19 +16,12 @@ from grace.base import (
 )
 
 
-def random_image_and_graph(
-    rng,
-    *,
-    num_nodes: int = 4,
-    image_size: tuple[int] = (128, 128),
-    feature_ndim: int = 32,
-) -> tuple[npt.NDArray, list[nx.Graph]]:
-    """Create a random image and graph."""
-    image = np.zeros(image_size, dtype=np.uint16)
-
+# @pytest.fixture(scope="session")
+def create_nodes(
+    num_nodes: int, feature_ndim: int, rng, image_size: tuple[int, int]
+):
     features = [rng.uniform(size=(feature_ndim,)) for _ in range(num_nodes)]
-
-    node_coords = rng.integers(0, image.shape[1], size=(num_nodes, 2))
+    node_coords = rng.integers(0, image_size[1], size=(num_nodes, 2))
     node_ground_truth = rng.choice(
         [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE], size=(num_nodes,)
     )
@@ -43,30 +36,48 @@ def random_image_and_graph(
             ),
         }
     )
+    return df, node_coords
 
-    image[tuple(node_coords[:, 1]), tuple(node_coords[:, 0])] = 1
-    graph = graph_from_dataframe(df, triangulate=True)
 
-    graph.update(
-        edges=[
-            (
-                src,
-                dst,
-                {
-                    GraphAttrs.EDGE_GROUND_TRUTH: rng.choice(
-                        [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE],
-                    ),
-                    GraphAttrs.EDGE_PROPERTIES: Properties(
-                        properties_dict=None
-                    ).from_keys_and_values(
-                        keys=EdgeProps,
-                        values=rng.uniform(size=(len(EdgeProps),)),
-                    ),
-                },
-            )
-            for src, dst in graph.edges
-        ]
+# @pytest.fixture(scope="session")
+def create_edges(
+    src: int,
+    dst: int,
+    rng,
+) -> tuple[int, int, dict]:
+    keys = [item.value for item in EdgeProps]
+    vals = rng.uniform(size=(len(keys),))
+    print(len(keys), len(vals))
+    properties = Properties()
+    properties.from_keys_and_values(keys=keys, values=vals)
+    annotation = rng.choice(
+        [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE],
     )
+    attribute_dict = {
+        GraphAttrs.EDGE_GROUND_TRUTH: annotation,
+        GraphAttrs.EDGE_PROPERTIES: properties,
+    }
+    return (src, dst, attribute_dict)
+
+
+# @pytest.fixture(scope="session")
+def random_image_and_graph(
+    rng,
+    *,
+    num_nodes: int = 4,
+    image_size: tuple[int] = (128, 128),
+    feature_ndim: int = 32,
+) -> tuple[npt.NDArray, list[nx.Graph]]:
+    """Create a random image and graph."""
+    # Create the graph's nodes & edges:
+    df, node_coords = create_nodes(num_nodes, feature_ndim, rng, image_size)
+    graph = graph_from_dataframe(df, triangulate=True)
+    graph.update(
+        edges=[create_edges(src, dst, rng) for src, dst in graph.edges]
+    )
+    # Create an accompanying image:
+    image = np.zeros(image_size, dtype=np.uint16)
+    image[tuple(node_coords[:, 1]), tuple(node_coords[:, 0])] = 1
 
     return image, graph
 
