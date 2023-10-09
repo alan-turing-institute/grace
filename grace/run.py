@@ -7,13 +7,13 @@ import torch
 from datetime import datetime
 from tqdm.auto import tqdm
 
-from grace import styling  # noqa: F401
 from grace.styling import LOGGER
 from grace.io.image_dataset import ImageGraphDataset
 
 from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import Classifier
 from grace.models.feature_extractor import FeatureExtractor
+from grace.models.property_cruncher import EdgePropertyCruncher
 from grace.models.optimiser import optimise_graph
 
 from grace.training.archiver import ModelArchiver
@@ -88,9 +88,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         if in_train_mode is True:
             image, graph = img_graph_augs(image, graph)
         return feature_extractor(image, graph)
-        if in_train_mode is True:
-            image, graph = img_graph_augs(image, graph)
-        return feature_extractor(image, graph)
 
     # Process the datasets as desired:
     def prepare_dataset(
@@ -98,7 +95,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         grace_dir: Union[str, os.PathLike],
         transform_method: Callable,
         *,
-        graph_processing: str = "sub",
+        num_hops: int | str = 1,
         verbose: bool = True,
     ) -> tuple[list]:
         # Read the data & terate through images & extract node features:
@@ -120,11 +117,13 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
             # Store the valid graph list:
             target_list.append(target)
+            graph = target["graph"]
+
+            # Recompute edge properties if needed:
+            graph = EdgePropertyCruncher(graph).process()
 
             # Chop graph into subgraphs & store:
-            graphs = dataset_from_graph(
-                target["graph"], num_hops=1, mode=graph_processing
-            )
+            graphs = dataset_from_graph(graph, num_hops=num_hops)
             subgraph_dataset.extend(graphs)
 
         return target_list, subgraph_dataset
@@ -138,16 +137,19 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         config.train_image_dir,
         config.train_grace_dir,
         transform_train_mode,
+        num_hops=1,
     )
     valid_target_list, valid_dataset = prepare_dataset(
         config.valid_image_dir,
         config.valid_grace_dir,
         transform_valid_mode,
+        num_hops=1,
     )
     infer_target_list, _ = prepare_dataset(
         config.infer_image_dir,
         config.infer_grace_dir,
         transform_valid_mode,
+        num_hops="whole",
     )
 
     # Define the Classifier model:

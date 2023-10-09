@@ -170,12 +170,6 @@ def _node_pos_coords(graph: nx.Graph):
 
 
 def _edge_label(graph: nx.Graph) -> None:
-    print(
-        [
-            edge[GraphAttrs.EDGE_GROUND_TRUTH]
-            for _, _, edge in graph.edges(data=True)
-        ]
-    )
     ground_truth_labels = np.stack(
         [
             edge[GraphAttrs.EDGE_GROUND_TRUTH]
