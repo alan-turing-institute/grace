@@ -214,6 +214,7 @@ class EdgePropertyCruncher:
             )
 
     def normalise_coordinates(self) -> None:
+        """TODO: Complete!"""
         pass
 
     def process(self) -> nx.Graph:

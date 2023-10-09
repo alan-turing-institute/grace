@@ -92,7 +92,7 @@ class Prediction:
 
 @enum.unique
 class EdgeProps(str, enum.Enum):
-    """TODO:"""
+    """Ordered list of edge properties to be used for classifier training."""
 
     EDGE_LENGTH = "edge_length_nrm"
     EDGE_ORIENT = "edge_orient_rad"
@@ -106,26 +106,9 @@ class EdgeProps(str, enum.Enum):
 
 @dataclass
 class Properties:
-    """TODO: Fill in stuff."""
+    """Structure to organise the key: value pairs of EdgeProps properties."""
 
     properties_dict: dict[str, float] = None
-    # properties_keys: list[str] = None
-    # properties_vals: list[str] = None
-
-    # def __post_init__(self) -> None:
-    #     if self.properties_dict is not None:
-    #         self.properties_keys = self.property_keys
-    #         self.properties_vals = self.property_vals
-    #         assert len(self.properties_keys) == len(self.properties_vals)
-    #     else:
-    #         assert self.properties_keys is not None
-    #         assert self.properties_vals is not None
-    #         assert len(self.properties_keys) == len(self.properties_vals)
-
-    #         # Create the dict & clean the keys & vals:
-    #         self.properties_dict = self.create_dict()
-    #         self.properties_keys = None
-    #         self.properties_vals = None
 
     @property
     def property_keys(self) -> list[str]:
@@ -144,7 +127,6 @@ class Properties:
     def from_keys_and_values(
         self, keys: list[str], values: list[float]
     ) -> None:
-        """TODO: Implement"""
         assert len(keys) == len(values)
         assert all(isinstance(k, str) for k in keys)
         assert all(isinstance(v, (float, np.floating)) for v in values)
