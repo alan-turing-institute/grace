@@ -10,7 +10,6 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
     confusion_matrix,
 )
-from grace import styling  # noqa: F401
 
 
 def accuracy_metric(
