@@ -151,7 +151,7 @@ class EdgePropertyCruncher:
                 else:
                     raise ValueError("Node cannot be collinear to an edge.")
 
-            # In case you only have 1 formed triangle:
+            # In case you only have 1 formed triangle (image boundary edges):
             if neighbours["west"] == float("inf"):
                 edge_attributes["west_pos_x_raw"] = mid_coords[0]
                 edge_attributes["west_pos_y_raw"] = mid_coords[1]

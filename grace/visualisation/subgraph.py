@@ -5,6 +5,7 @@ import matplotlib
 import torch_geometric
 import numpy.typing as npt
 
+from grace import styling  # noqa: F401
 from grace.base import GraphAttrs
 from grace.models.datasets import _pos, _edge_index
 

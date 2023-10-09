@@ -16,7 +16,6 @@ from sklearn.metrics import (
     average_precision_score,
 )
 
-from grace import styling  # noqa: F401
 from grace.base import GraphAttrs, Annotation, Prediction
 from grace.models.datasets import dataset_from_graph
 from grace.visualisation.plotting import (

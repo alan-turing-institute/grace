@@ -142,6 +142,8 @@ class GCNModel(torch.nn.Module):
             where 2 are the src, dst node index.
         edge_properties : torch.Tensor
             Edge properties; shape = [num_edges, num_properties]
+            where num_properties equals len(EdgeProps) dataclass
+            TODO: Implement check / test
 
         Returns
         -------
@@ -191,8 +193,6 @@ class GCNModel(torch.nn.Module):
                 node_embeddings[..., src, :],
                 node_embeddings[..., dst, :],
                 edge_properties[...],
-                # edge_length[..., None],
-                # edge_orient[..., None],
             ],
             axis=-1,
         )

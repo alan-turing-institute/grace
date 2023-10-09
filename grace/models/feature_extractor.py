@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, Callable
+from typing import Any, Callable
 
 import torch
 
@@ -115,8 +115,8 @@ class FeatureExtractor(torch.nn.Module):
     def forward(
         self,
         image: torch.Tensor,
-        graph: Dict[str, Any],
-    ) -> Tuple[torch.Tensor, dict]:
+        graph: dict[str, Any],
+    ) -> tuple[torch.Tensor, dict]:
         """Adds a feature vector to each graph node.
 
         Parameters
@@ -125,6 +125,11 @@ class FeatureExtractor(torch.nn.Module):
             Image of shape (W,H), (C,W,H) or (B,C,W,H)
         graph : dict
             Dictionary with key "graph" that accesses the networkx graph
+
+        Returns
+        -------
+        image, graph : tuple[torch.Tensor, dict]
+            Transformed image & graph.
         """
 
         image_shape = image.size()

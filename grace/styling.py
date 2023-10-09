@@ -1,5 +1,5 @@
 import logging
-import seaborn as sn  # noqa: F401
+import seaborn as sn
 
 
 LOGGER = logging

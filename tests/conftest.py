@@ -16,7 +16,6 @@ from grace.base import (
 )
 
 
-# @pytest.fixture(scope="session")
 def create_nodes(
     num_nodes: int, feature_ndim: int, rng, image_size: tuple[int, int]
 ):
@@ -39,7 +38,6 @@ def create_nodes(
     return df, node_coords
 
 
-# @pytest.fixture(scope="session")
 def create_edges(
     src: int,
     dst: int,
@@ -60,7 +58,6 @@ def create_edges(
     return (src, dst, attribute_dict)
 
 
-# @pytest.fixture(scope="session")
 def random_image_and_graph(
     rng,
     *,

@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from torch_geometric.data import Data
-from grace.base import GraphAttrs, EdgeProps
+from grace.base import GraphAttrs
 
 
 def dataset_from_graph(
@@ -186,15 +186,11 @@ def _edge_index(graph: nx.Graph):
 
 
 def _edge_properties(graph: nx.Graph):
-    edge_properties = []
-    for _, _, edge in graph.edges(data=True):
-        # Check if all EdgeProps exist as an edge attribute:
-        edge_props_dict = edge[GraphAttrs.EDGE_PROPERTIES].properties_dict
-        assert all(prop in edge_props_dict for prop in EdgeProps)
-
-        # Extract the float values:
-        single_edge_props = [edge_props_dict[prop] for prop in EdgeProps]
-        edge_properties.append(single_edge_props)
-
-    edge_properties = np.stack(edge_properties, axis=0)
+    edge_properties = np.stack(
+        [
+            edge[GraphAttrs.EDGE_PROPERTIES].property_training_data
+            for _, _, edge in graph.edges(data=True)
+        ],
+        axis=0,
+    )
     return torch.Tensor(edge_properties).float()

@@ -123,8 +123,8 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             graph = EdgePropertyCruncher(graph).process()
 
             # Chop graph into subgraphs & store:
-            graphs = dataset_from_graph(graph, num_hops=num_hops)
-            subgraph_dataset.extend(graphs)
+            graph_data = dataset_from_graph(graph, num_hops=num_hops)
+            subgraph_dataset.extend(graph_data)
 
         return target_list, subgraph_dataset
 
