@@ -6,7 +6,7 @@ import torch_geometric
 import numpy.typing as npt
 
 from grace.base import GraphAttrs
-from grace.models.datasets import _pos, _edge_index
+from grace.models.datasets import _node_pos_coords, _edge_index
 
 
 COLOR_MAPPING = {0: "royalblue", 1: "firebrick", 2: "grey"}
@@ -38,17 +38,17 @@ def plot_subgraph_geometry(
 
 
 def plot_local_node_geometry(
-    G: nx.Graph, node_idx: int, **kwargs
+    G: nx.Graph, node_idx: int, num_hops: int = 1, **kwargs
 ) -> tuple[npt.NDArray]:
     # Define a subgraph with 1-hop connectivity:
-    sub_graph = nx.ego_graph(G, node_idx, radius=1)
+    sub_graph = nx.ego_graph(G, node_idx, radius=num_hops)
     central_node = np.array(
         [
             G.nodes[node_idx][GraphAttrs.NODE_X],
             G.nodes[node_idx][GraphAttrs.NODE_Y],
         ]
     )
-    node_positions = _pos(sub_graph).numpy() - central_node
+    node_positions = _node_pos_coords(sub_graph).numpy() - central_node
     edge_indices = _edge_index(sub_graph)
 
     # Extract data from subgraph:
@@ -174,10 +174,10 @@ def plot_subgraph_coordinates(
             )
 
     # Fake a legend:
-    for i in range(len(color_mapping)):
-        ax.scatter(x=[], y=[], c=color_mapping[i], label=f"GT Label '{i}'")
+    for i in range(len(color_mapping) - 1):
         if i > 1:
             continue
+        ax.scatter(x=[], y=[], c=color_mapping[i], label=f"GT Label '{i}'")
         ax.scatter(
             x=[],
             y=[],
@@ -189,10 +189,10 @@ def plot_subgraph_coordinates(
 
     ax.legend(
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.05),
-        ncol=len(color_mapping),
+        bbox_to_anchor=(0.5, -0.1),
+        ncol=len(color_mapping) - 1,
+        fontsize=12,
     )
-
     # Plot the title:
     ax.set_title(f"Subgraph Geometry\n{title}")
     return ax
