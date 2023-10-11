@@ -16,6 +16,7 @@ COLORMAPS = {
     "manifold": "rainbow",
     "patches": "binary_r",
     "mask": "binary_r",
+    "attention": "BuPu",
 }
 
 sn.set_theme(
