@@ -11,6 +11,7 @@ def dataset_from_graph(
     *,
     num_hops: int | str = 1,
     connection: str = "spiderweb",
+    include_coords: bool = False,
     ordered_nodes: bool = False,
 ) -> list[Data]:
     """Create a pytorch geometric dataset from a given networkx graph.
@@ -31,11 +32,14 @@ def dataset_from_graph(
                     \ | /            |
                       O              O
         Ignored if num_hops = "whole" as all edges must be considered here.
+    include_coords : bool
+        Whether to include the node / points coordinates in edge_properties.
+        Defaults to False. TODO: Implement properly.
     ordered_nodes : bool
         Whether nodes in the subgraph are returned in particular order.
         If False, nodes are listed from north to south (Cartesian coords).
         If True, central node is first, followed by angle-ordered neighbours.
-        TODO: Implement properly.
+        Defaults to False. TODO: Implement properly.
 
     Returns
     -------
@@ -65,6 +69,7 @@ def dataset_from_graph(
             data = Data(
                 x=_x(sub_graph),
                 y=_y(sub_graph),
+                node_pos=_node_pos_coords(sub_graph),
                 edge_label=_edge_label(sub_graph),
                 edge_index=_edge_index(sub_graph),
                 edge_properties=_edge_properties(sub_graph),
@@ -78,11 +83,23 @@ def dataset_from_graph(
             Data(
                 x=_x(graph),
                 y=_y(graph),
+                node_pos=_node_pos_coords(graph),
                 edge_label=_edge_label(graph),
                 edge_index=_edge_index(graph),
                 edge_properties=_edge_properties(graph),
             ),
         ]
+
+
+def _release_non_central_edges(
+    sub_graph: nx.Graph, central_node_idx: int
+) -> nx.Graph:
+    edges_to_remove = []
+    for src, dst, _ in sub_graph.edges(data=True):
+        if not (central_node_idx == src or central_node_idx == dst):
+            edges_to_remove.append((src, dst))
+    sub_graph.remove_edges_from(edges_to_remove)
+    return sub_graph
 
 
 def _sort_neighbors_by_angle(neighbors) -> tuple[list[torch.Tensor]]:
@@ -121,15 +138,13 @@ def _sort_neighbors_by_angle(neighbors) -> tuple[list[torch.Tensor]]:
     return sorted_neighbors, sorted_indices
 
 
-def _release_non_central_edges(
-    sub_graph: nx.Graph, central_node_idx: int
-) -> nx.Graph:
-    edges_to_remove = []
-    for src, dst, _ in sub_graph.edges(data=True):
-        if not (central_node_idx == src or central_node_idx == dst):
-            edges_to_remove.append((src, dst))
-    sub_graph.remove_edges_from(edges_to_remove)
-    return sub_graph
+def _node_degree(
+    graph: nx.Graph, ordered_node_idx_list: list[int]
+) -> torch.Tensor:
+    deg = np.stack(
+        [graph.degree[idx] for idx in ordered_node_idx_list], axis=0
+    )
+    return torch.Tensor(deg).long()
 
 
 def _x(graph: nx.Graph) -> torch.Tensor:
@@ -151,14 +166,7 @@ def _y(graph: nx.Graph) -> torch.Tensor:
     return torch.Tensor(y).long()
 
 
-def _node_degree(graph: nx.Graph, ordered_node_idx_list: list[int]):
-    deg = np.stack(
-        [graph.degree[idx] for idx in ordered_node_idx_list], axis=0
-    )
-    return torch.Tensor(deg).long()
-
-
-def _node_pos_coords(graph: nx.Graph):
+def _node_pos_coords(graph: nx.Graph) -> torch.Tensor:
     pos = np.stack(
         [
             (node[GraphAttrs.NODE_X], node[GraphAttrs.NODE_Y])
@@ -169,7 +177,7 @@ def _node_pos_coords(graph: nx.Graph):
     return torch.Tensor(pos).float()
 
 
-def _edge_label(graph: nx.Graph) -> None:
+def _edge_label(graph: nx.Graph) -> torch.Tensor:
     ground_truth_labels = np.stack(
         [
             edge[GraphAttrs.EDGE_GROUND_TRUTH]
@@ -179,13 +187,13 @@ def _edge_label(graph: nx.Graph) -> None:
     return torch.Tensor(ground_truth_labels).long()
 
 
-def _edge_index(graph: nx.Graph):
+def _edge_index(graph: nx.Graph) -> torch.Tensor:
     item = nx.convert_node_labels_to_integers(graph)
     edges = list(item.edges)
-    return torch.tensor(edges, dtype=torch.long).t().contiguous()
+    return torch.Tensor(edges, dtype=torch.long).t().contiguous()
 
 
-def _edge_properties(graph: nx.Graph):
+def _edge_properties(graph: nx.Graph) -> torch.Tensor:
     edge_properties = np.stack(
         [
             edge[GraphAttrs.EDGE_PROPERTIES].property_training_data
