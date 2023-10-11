@@ -102,6 +102,24 @@ class EdgeProps(str, enum.Enum):
     WEST_NEIGHBOUR_ORIENT = "west_to_mid_orient_rad"
     EAST_TRIANGLE_AREA = "east_triangle_area_nrm"
     WEST_TRIANGLE_AREA = "west_triangle_area_nrm"
+    EAST_DISTANCE = "east_to_mid_length_rel"
+    WEST_DISTANCE = "west_to_mid_length_rel"
+
+
+@enum.unique
+class PointCoords(str, enum.Enum):
+    """Ordered list of relative point positions (x, y coords) in the graph."""
+
+    SOUTH_POS_X_REL = "south_pos_x_rel"
+    SOUTH_POS_Y_REL = "south_pos_y_rel"
+    NORTH_POS_X_REL = "north_pos_x_rel"
+    NORTH_POS_Y_REL = "north_pos_y_rel"
+    MID_POS_X_REL = "mid_pos_x_rel"
+    MID_POS_Y_REL = "mid_pos_y_rel"
+    EAST_POS_X_REL = "east_pos_x_rel"
+    EAST_POS_Y_REL = "east_pos_y_rel"
+    WEST_POS_X_REL = "west_pos_x_rel"
+    WEST_POS_Y_REL = "west_pos_y_rel"
 
 
 @dataclass
@@ -119,10 +137,18 @@ class Properties:
         return list(self.properties_dict.values())
 
     @property
-    def property_training_data(self) -> npt.NDArray:
-        return np.stack(
-            [self.properties_dict[prop] for prop in EdgeProps], axis=0
-        )
+    def property_training_data(
+        self, include_relative_coords: bool = False
+    ) -> npt.NDArray:
+        if include_relative_coords is False:
+            return np.stack(
+                [self.properties_dict[prop] for prop in EdgeProps], axis=0
+            )
+        else:
+            keys = list(EdgeProps) + list(PointCoords)
+            return np.stack(
+                [self.properties_dict[prop] for prop in keys], axis=0
+            )
 
     def from_keys_and_values(
         self, keys: list[str], values: list[float]
