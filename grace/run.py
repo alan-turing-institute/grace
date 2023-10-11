@@ -62,8 +62,8 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     def prepare_dataset(
         image_dir: Union[str, os.PathLike],
         grace_dir: Union[str, os.PathLike],
-        *,
-        num_hops: int | str = 1,
+        num_hops: int | str,
+        connection: str = "spiderweb",
         verbose: bool = True,
     ) -> tuple[list]:
         # Read the data & terate through images & extract node features:
@@ -84,17 +84,12 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
             # Store the valid graph list:
             target_list.append(target)
-            graph = target["graph"]
-
-            # Recompute edge properties if needed:
-            # graph = EdgePropertyCruncher(graph).process()
 
             # Chop graph into subgraphs & store:
-            # TODO: Define these as config hparams:
             graph_data = dataset_from_graph(
-                graph,
+                target["graph"],
                 num_hops=num_hops,
-                connection="fireworks",
+                connection=connection,
             )
             subgraph_dataset.extend(graph_data)
 
@@ -104,12 +99,14 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     _, train_dataset = prepare_dataset(
         config.train_image_dir,
         config.train_grace_dir,
-        num_hops=1,
+        num_hops=config.num_hops,
+        connection=config.connection,
     )
     valid_target_list, valid_dataset = prepare_dataset(
         config.valid_image_dir,
         config.valid_grace_dir,
-        num_hops=1,
+        num_hops=config.num_hops,
+        connection=config.connection,
     )
     infer_target_list, _ = prepare_dataset(
         config.infer_image_dir,
@@ -119,11 +116,12 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Define the Classifier model:
     classifier = Classifier().get_model(
-        config.classifier_type,
+        classifier_type=config.classifier_type,
         input_channels=config.feature_dim,
         hidden_graph_channels=config.hidden_graph_channels,
         hidden_dense_channels=config.hidden_dense_channels,
         dropout=config.dropout,
+        num_heads=config.num_attention_heads,
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
         verbose=True,
