@@ -4,11 +4,12 @@ import networkx as nx
 
 from grace.base import EdgeProps
 from grace.models.datasets import dataset_from_graph
-from grace.models.classifier import GCNModel
+from grace.models.classifier import GNNModel
 
 from conftest import random_image_and_graph, create_edges
 
 
+@pytest.mark.parametrize("classifier_type", ["GCN", "GAT"])
 @pytest.mark.parametrize("input_channels", [1, 2])
 @pytest.mark.parametrize("node_output_classes", [2, 4])
 @pytest.mark.parametrize("edge_output_classes", [2, 4])
@@ -18,13 +19,15 @@ class TestGCN:
     @pytest.fixture
     def gcn(
         self,
+        classifier_type,
         input_channels,
         hidden_graph_channels,
         hidden_dense_channels,
         node_output_classes,
         edge_output_classes,
     ):
-        return GCNModel(
+        return GNNModel(
+            classifier_type=classifier_type,
             input_channels=input_channels,
             hidden_graph_channels=hidden_graph_channels,
             hidden_dense_channels=hidden_dense_channels,
@@ -116,7 +119,7 @@ class TestGCN:
         subgraph = nx.ego_graph(graph, 0)
         num_nodes = subgraph.number_of_nodes()
         num_edges = subgraph.number_of_edges()
-        node_x, edge_x = gcn(
+        node_x, edge_x, _ = gcn(
             x=data.x,
             edge_index=data.edge_index,
             edge_properties=data.edge_properties,

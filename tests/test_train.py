@@ -6,7 +6,7 @@ from grace.evaluation.metrics_classifier import (
 )
 from grace.training.train import train_model
 from grace.models.datasets import dataset_from_graph
-from grace.models.classifier import GCNModel
+from grace.models.classifier import GNNModel
 
 from conftest import random_image_and_graph
 
@@ -14,7 +14,8 @@ from conftest import random_image_and_graph
 class TestTraining:
     @pytest.fixture
     def data_and_model(self, default_rng):
-        model = GCNModel(
+        model = GNNModel(
+            classifier_type="GCN",
             input_channels=2,
             hidden_graph_channels=[16, 8],
             hidden_dense_channels=[4, 2],
@@ -46,6 +47,7 @@ class TestTraining:
         dataset, model, graph_list = data_and_model
 
         train_model(
+            classifier_type="GCN",
             model=model,
             train_dataset=dataset,
             valid_dataset=dataset,
