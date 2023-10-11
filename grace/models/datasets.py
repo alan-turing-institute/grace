@@ -190,7 +190,7 @@ def _edge_label(graph: nx.Graph) -> torch.Tensor:
 def _edge_index(graph: nx.Graph) -> torch.Tensor:
     item = nx.convert_node_labels_to_integers(graph)
     edges = list(item.edges)
-    return torch.Tensor(edges, dtype=torch.long).t().contiguous()
+    return torch.tensor(edges, dtype=torch.long).t().contiguous()
 
 
 def _edge_properties(graph: nx.Graph) -> torch.Tensor:
