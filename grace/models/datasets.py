@@ -32,6 +32,7 @@ def dataset_from_graph(
                     \ | /            |
                       O              O
         Ignored if num_hops = "whole" as all edges must be considered here.
+        TODO: Fix the edge logic if num_hops > 1!
     include_coords : bool
         Whether to include the node / points coordinates in edge_properties.
         Defaults to False. TODO: Implement properly.
@@ -56,8 +57,9 @@ def dataset_from_graph(
 
             # Release spider web - only edges in contact with central node:
             if connection == "fireworks":
-                sub_graph = _release_non_central_edges(sub_graph, node_idx)
-                assert len(sub_graph.edges()) == len(sub_graph.nodes()) - 1
+                if num_hops == 1:
+                    sub_graph = _release_non_central_edges(sub_graph, node_idx)
+                    assert len(sub_graph.edges()) == len(sub_graph.nodes()) - 1
             elif connection == "spiderweb":
                 pass
             else:
