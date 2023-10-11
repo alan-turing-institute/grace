@@ -55,6 +55,8 @@ class Config:
 
     # Classifier architecture setup
     classifier_type: str = "GCN"
+    num_attention_heads: int = 1
+
     num_node_classes: int = 2
     num_edge_classes: int = 2
     hidden_graph_channels: list[int] = field(
@@ -64,8 +66,12 @@ class Config:
         default_factory=lambda: [1024, 256, 64]
     )
 
-    # Training run hyperparameters:
+    # Subgraph dataset builder:
     batch_size: int = 64
+    num_hops: int = 1
+    connection: str = "spiderweb"
+
+    # Training run hyperparameters:
     epochs: int = 100
     dropout: float = 0.2
     learning_rate: float = 0.001
