@@ -1,4 +1,5 @@
 from pathlib import Path
+from tqdm.auto import tqdm
 
 from grace.base import GraphAttrs, EdgeProps
 from grace.models.datasets import dataset_from_graph
@@ -66,7 +67,8 @@ def check_dataset_requirements(
     )
 
     # Process the (sub)graph data into torch_geometric dataset:
-    for _, target in input_data:
+    desc = f"Chopping subgraphs from {grace_dir}"
+    for _, target in tqdm(input_data, desc=desc):
         # Graph sanity checks: NODE_FEATURES:
 
         for _, node in target["graph"].nodes(data=True):
