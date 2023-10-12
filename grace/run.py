@@ -4,17 +4,16 @@ import os
 import click
 import torch
 from datetime import datetime
-from tqdm.auto import tqdm
 
 from grace.styling import LOGGER
-from grace.io.image_dataset import ImageGraphDataset
+from grace.base import EdgeProps
 
-from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import Classifier
 from grace.models.optimiser import optimise_graph
 
 from grace.training.archiver import ModelArchiver
 from grace.training.train import train_model
+from grace.training.build import check_and_chop_dataset
 from grace.training.config import (
     validate_required_config_hparams,
     load_config_params,
@@ -58,59 +57,37 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         subfolder_path = run_dir / subfolder
         subfolder_path.mkdir(parents=True, exist_ok=True)
 
-    # Process the datasets as desired:
-    def prepare_dataset(
-        image_dir: Union[str, os.PathLike],
-        grace_dir: Union[str, os.PathLike],
-        num_hops: int | str,
-        connection: str = "spiderweb",
-        verbose: bool = True,
-    ) -> tuple[list]:
-        # Read the data & terate through images & extract node features:
-        input_data = ImageGraphDataset(
-            image_dir=image_dir,
-            grace_dir=grace_dir,
-            image_filetype=config.filetype,
-            keep_node_unknown_labels=config.keep_node_unknown_labels,
-            keep_edge_unknown_labels=config.keep_edge_unknown_labels,
-        )
-
-        # Process the (sub)graph data into torch_geometric dataset:
-        target_list, subgraph_dataset = [], []
-        desc = "Extracting patch features from images... "
-        for _, target in tqdm(input_data, desc=desc, disable=not verbose):
-            file_name = target["metadata"]["image_filename"]
-            LOGGER.info(f"Processing file: {file_name}")
-
-            # Store the valid graph list:
-            target_list.append(target)
-
-            # Chop graph into subgraphs & store:
-            graph_data = dataset_from_graph(
-                target["graph"],
-                num_hops=num_hops,
-                connection=connection,
-            )
-            subgraph_dataset.extend(graph_data)
-
-        return target_list, subgraph_dataset
-
     # Read the respective datasets:
-    _, train_dataset = prepare_dataset(
+    _, train_dataset = check_and_chop_dataset(
         config.train_image_dir,
         config.train_grace_dir,
+        filetype=config.filetype,
+        node_feature_ndim=config.feature_dim,
+        edge_property_len=len(EdgeProps),
+        keep_node_unknown_labels=config.keep_node_unknown_labels,
+        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
         num_hops=config.num_hops,
         connection=config.connection,
     )
-    valid_target_list, valid_dataset = prepare_dataset(
+    valid_target_list, valid_dataset = check_and_chop_dataset(
         config.valid_image_dir,
         config.valid_grace_dir,
+        filetype=config.filetype,
+        node_feature_ndim=config.feature_dim,
+        edge_property_len=len(EdgeProps),
+        keep_node_unknown_labels=config.keep_node_unknown_labels,
+        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
         num_hops=config.num_hops,
         connection=config.connection,
     )
-    infer_target_list, _ = prepare_dataset(
+    infer_target_list, _ = check_and_chop_dataset(
         config.infer_image_dir,
         config.infer_grace_dir,
+        filetype=config.filetype,
+        node_feature_ndim=config.feature_dim,
+        edge_property_len=len(EdgeProps),
+        keep_node_unknown_labels=config.keep_node_unknown_labels,
+        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
         num_hops="whole",
     )
 
