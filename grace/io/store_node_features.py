@@ -8,27 +8,9 @@ from grace.io.image_dataset import ImageGraphDataset
 from grace.models.feature_extractor import FeatureExtractor
 
 
-# Define a click command to input the file name directly:
-@click.command(name="Graph Storage")
-@click.option(
-    "--data_path",
-    type=click.Path(exists=True),
-    help="Path to images and grace annotations",
-)
-@click.option(
-    "--extractor_fn",
-    type=click.Path(exists=True),
-    help="Path to feature extractor model",
-)
-@click.option(
-    "--extractor_fn",
-    type=tuple[int, int],
-    help="Image patch shape for feature extraction",
-    default=(224, 224),
-)
 def store_node_features_in_graph(
     data_path: str | Path,
-    extractor_fn=str | Path,
+    extractor_fn: str | Path,
     bbox_size: tuple[int, int] = (224, 224),
 ) -> None:
     # Process the check the paths:
@@ -70,5 +52,31 @@ def store_node_features_in_graph(
         )
 
 
+# Define a click command to input the file name directly:
+@click.command(name="Graph Node Storage")
+@click.option(
+    "--data_path",
+    type=click.Path(exists=True),
+    help="Path to images and grace annotations",
+)
+@click.option(
+    "--extractor_fn",
+    type=click.Path(exists=True),
+    help="Path to feature extractor model",
+)
+@click.option(
+    "--bbox_size",
+    type=tuple[int, int],
+    help="Image patch shape for feature extraction",
+    default=(224, 224),
+)
+def run_node_storage(
+    data_path: str | Path,
+    extractor_fn: str | Path,
+    bbox_size: tuple[int, int],
+) -> None:
+    store_node_features_in_graph(data_path, extractor_fn, bbox_size)
+
+
 if __name__ == "__main__":
-    store_node_features_in_graph()
+    run_node_storage()

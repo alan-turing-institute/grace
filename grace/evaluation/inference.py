@@ -16,6 +16,7 @@ from sklearn.metrics import (
     average_precision_score,
 )
 
+from grace.styling import LOGGER
 from grace.base import GraphAttrs, Annotation, Prediction
 from grace.models.datasets import dataset_from_graph
 from grace.visualisation.plotting import (
@@ -23,6 +24,7 @@ from grace.visualisation.plotting import (
     plot_areas_under_curves,
     plot_prediction_probabilities_hist,
     visualise_node_and_edge_probabilities,
+    visualise_attention_weights,
 )
 
 
@@ -84,8 +86,10 @@ class GraphLabelPredictor(object):
             edge_labels.extend(data.edge_label)
 
             # Get the model predictions:
-            node_x, edge_x = self.pretrained_model.predict(
-                x=data.x, edge_index=data.edge_index
+            node_x, edge_x, _ = self.pretrained_model.predict(
+                x=data.x,
+                edge_index=data.edge_index,
+                edge_properties=data.edge_properties,
             )
 
             # Process node probs into classes predictions:
@@ -106,9 +110,8 @@ class GraphLabelPredictor(object):
 
     def set_node_and_edge_probabilities(self, G: nx.Graph) -> None:
         # Process graph into torch_geometric.data:
-        data_batch = dataset_from_graph(
-            graph=G, mode="whole", in_train_mode=False
-        )
+        data_batch = dataset_from_graph(graph=G, num_hops="whole")
+
         # Process graph into torch_geometric.data:
         n_probs, e_probs, _, _ = self.infer_graph_predictions(data_batch)
 
@@ -152,6 +155,97 @@ class GraphLabelPredictor(object):
         if show_figure is True:
             plt.show()
         plt.close()
+
+    def access_attention_weights(
+        self, G: nx.Graph, verbose: bool = False
+    ) -> tuple[npt.NDArray]:
+        """Returns stacks of GAT attention weights from graph dataset(s)."""
+
+        # Instantiate the vectors to return:
+        node_positions = []
+        edge_GT_labels = []
+        edge_attention_indices = []
+        edge_attention_weights = []
+
+        # Predict labels from sub-graph:
+        data_batch = dataset_from_graph(graph=G, num_hops="whole")
+
+        desc = "Inferring predictions from graph data batches: "
+        for data in tqdm(data_batch, desc=desc, disable=not verbose):
+            # Get the ground truth labels:
+            node_positions.extend(data.node_pos)
+            edge_GT_labels.extend(data.edge_label)
+
+            # Get the model predictions:
+            _, _, attention = self.pretrained_model.predict(
+                x=data.x,
+                edge_index=data.edge_index,
+                edge_properties=data.edge_properties,
+            )
+
+            # Stop here if attention = None:
+            if attention is None:
+                return None
+
+            # Store the edge attentions:
+            edge_indices_with_self_loops, attention_weights = attention
+            edge_attention_indices.extend(edge_indices_with_self_loops)
+            edge_attention_weights.extend(attention_weights)
+
+        # Stack the results & return:
+        data_dictonary = {
+            "node_positions": np.stack(node_positions, axis=0),
+            "edge_GT_labels": np.stack(edge_GT_labels, axis=0),
+            "edge_attention_indices": np.stack(edge_attention_indices, axis=0),
+            "edge_attention_weights": np.stack(edge_attention_weights, axis=0),
+        }
+        return data_dictonary
+
+    def visualise_attention_weights_on_graph(
+        self,
+        G: nx.Graph,
+        *,
+        graph_filename: str = "Attention",
+        save_figure: str | Path = None,
+        show_figure: bool = False,
+    ):
+        # Create the save path:
+        if save_figure is not None:
+            save_path = save_figure
+            if isinstance(save_path, str):
+                save_path = Path(save_path)
+            assert save_path.is_dir()
+            save_figure = True
+        else:
+            save_figure = False
+
+        # Prep the data:
+        data_dictionary = self.access_attention_weights(G=G)
+        if data_dictionary is None:
+            LOGGER.warning("Stopping attention plotter due to no weights")
+            return
+        else:
+            assert isinstance(data_dictionary, dict)
+            assert "edge_attention_weights" in data_dictionary
+
+            attention_heads = data_dictionary["edge_attention_weights"]
+            assert attention_heads.ndim == 2
+            assert attention_heads.shape[-1] >= 1
+            num_attention_heads = attention_heads.shape[-1]
+
+            # Plot the thing:
+            for head_idx in range(num_attention_heads):
+                visualise_attention_weights(
+                    data_dictionary, attn_head_idx=head_idx
+                )
+                if save_figure is True:
+                    attn_filename = f"Graph_Attention_Weights-Head_{head_idx}"
+                    plt.savefig(
+                        save_path / f"{graph_filename}-{attn_filename}.png"
+                    )
+                if show_figure is True:
+                    plt.show()
+                plt.close()
 
     def get_predictions_for_entire_batch(
         self,
@@ -333,8 +427,8 @@ class GraphLabelPredictor(object):
 
         # Areas under curves:
         plot_areas_under_curves(
-            node_pred=predictions_data["n_pred"],
-            edge_pred=predictions_data["e_pred"],
+            node_pred=predictions_data["n_prob"],
+            edge_pred=predictions_data["e_prob"],
             node_true=predictions_data["n_true"],
             edge_true=predictions_data["e_true"],
         )
@@ -346,8 +440,8 @@ class GraphLabelPredictor(object):
 
         # Predicted probs hist:
         plot_prediction_probabilities_hist(
-            node_pred=predictions_data["n_pred"],
-            edge_pred=predictions_data["e_pred"],
+            node_pred=predictions_data["n_prob"],
+            edge_pred=predictions_data["e_prob"],
             node_true=predictions_data["n_true"],
             edge_true=predictions_data["e_true"],
         )

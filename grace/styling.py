@@ -1,7 +1,5 @@
 import logging
-
-# import warnings
-# import matplotlib.pyplot as plt
+import seaborn as sn
 
 
 LOGGER = logging
@@ -11,18 +9,6 @@ LOGGER.basicConfig(
     datefmt="%m/%d/%Y %I:%M:%S %p",
 )
 
-# warnings.filterwarnings('ignore')
-
-# font = {'family' : 'normal',
-#         'weight' : 'bold',
-#         'size'   : 22}
-
-# matplotlib.rc('font', **font)
-
-# FONT_SETTER = plt.rcParams["font.size"] = 12  # desired font size
-# LOGGER.info(f"Font set to: {FONT_SETTER}")
-
-
 COLORMAPS = {
     "annotation": "turbo",
     "classifier": "coolwarm",
@@ -30,4 +16,12 @@ COLORMAPS = {
     "manifold": "rainbow",
     "patches": "binary_r",
     "mask": "binary_r",
+    "attention": "BuPu",
 }
+
+sn.set_theme(
+    context="notebook",
+    style="dark",
+    font="Helvetica",
+    font_scale=1.5,
+)

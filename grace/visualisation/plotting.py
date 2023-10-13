@@ -358,6 +358,79 @@ def visualise_node_and_edge_probabilities(
     return fig
 
 
+def visualise_attention_weights(
+    data_dictionary: dict[str, npt.NDArray],
+    attn_head_idx: int = 0,
+    cmap: str = COLORMAPS["attention"],
+) -> plt.figure:
+    node_positions = data_dictionary["node_positions"]
+    edge_attention_indices = data_dictionary["edge_attention_indices"]
+    edge_attention_weights = data_dictionary["edge_attention_weights"]
+
+    # Prepare the figure & axis
+    fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+    x_scatter, y_scatter, colors = [], [], []
+
+    mn, mx = np.min(edge_attention_weights), np.max(edge_attention_weights)
+    norm = plt.Normalize(mn, mx)
+    color_map = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+
+    for i in range(edge_attention_indices.shape[-1]):
+        src, dst = edge_attention_indices[:, i]
+        x_src, y_src = node_positions[src]
+        x_dst, y_dst = node_positions[dst]
+
+        # Attention between two nodes:
+        if x_src != x_dst and y_src != y_dst:
+            ax.plot(
+                [x_src, x_dst],
+                [y_src, y_dst],
+                marker="",
+                color=color_map.to_rgba(
+                    edge_attention_weights[i, attn_head_idx]
+                ),
+            )
+
+        # Self-attention on single node:
+        else:
+            x_scatter.append(x_src)
+            y_scatter.append(y_src)
+            colors.append(edge_attention_weights[i, attn_head_idx])
+
+    scatter = ax.scatter(
+        x=x_scatter, y=y_scatter, c=colors, cmap=cmap, vmin=0.0, vmax=1.0
+    )
+
+    # Add colorbar
+    cbar = plt.colorbar(scatter, ax=ax)
+    cbar.set_label("Attention weights")
+
+    # Fake a legend handles & artificial colorbar:
+    ax.plot(
+        [],
+        [],
+        color=color_map.to_rgba(1.0),
+        label="Edge attention between nodes",
+    )
+    ax.scatter(
+        x=[],
+        y=[],
+        color=color_map.to_rgba(1.0),
+        label="Self-attention on single nodes",
+    )
+
+    # Annotate the plot:
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.05))
+    ax.set_title(f"GAT Attention weights | head = {attn_head_idx}")
+    ax.invert_yaxis()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # Format & return:
+    plt.tight_layout()
+    return fig
+
+
 def read_patch_stack_by_label(
     G: nx.Graph,
     image: npt.NDArray,

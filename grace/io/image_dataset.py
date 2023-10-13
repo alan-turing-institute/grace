@@ -51,8 +51,8 @@ class ImageGraphDataset(Dataset):
         *,
         transform: Callable = lambda x, g: (x, g),
         image_filetype: str = "mrc",
-        keep_node_unknown_labels: bool = False,
-        keep_edge_unknown_labels: bool = False,
+        keep_node_unknown_labels: bool = True,
+        keep_edge_unknown_labels: bool = True,
         verbose: bool = True,
     ) -> None:
         self.image_reader_fn = FILETYPES[image_filetype]

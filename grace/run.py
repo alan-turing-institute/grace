@@ -1,5 +1,4 @@
-from typing import Union, Callable
-from functools import partial
+from typing import Union
 
 import os
 import click
@@ -12,7 +11,6 @@ from grace.io.image_dataset import ImageGraphDataset
 
 from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import Classifier
-from grace.models.feature_extractor import FeatureExtractor
 from grace.models.optimiser import optimise_graph
 
 from grace.training.archiver import ModelArchiver
@@ -23,7 +21,6 @@ from grace.training.config import (
     write_config_file,
     write_file_with_suffix,
 )
-from grace.utils.transforms import get_transforms
 from grace.evaluation.inference import GraphLabelPredictor
 from grace.evaluation.process import generate_ground_truth_graph
 from grace.visualisation.animation import animate_entire_valid_set
@@ -49,55 +46,24 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Define where you'll save the outputs:
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    # run_dir = config.log_dir / current_time / "model"
     run_dir = config.log_dir / current_time
     setattr(config, "run_dir", run_dir)
 
     # Create subdirectory to save out plots:
-    for subfolder in ["model", "valid", "infer"]:
+    subfolders = ["model", "valid", "infer"]
+    if config.classifier_type == "GAT":
+        subfolders.append("weights")
+
+    for subfolder in subfolders:
         subfolder_path = run_dir / subfolder
         subfolder_path.mkdir(parents=True, exist_ok=True)
-
-    # Augmentations, if any:
-    img_patch_augs = get_transforms(config, "patch")
-    img_graph_augs = get_transforms(config, "graph")
-
-    def return_unchanged(image, graph):
-        return image, graph
-
-    # Condition the augmentations to train mode only:
-    def transform(
-        image: torch.Tensor, graph: dict, *, in_train_mode: bool = True
-    ) -> Callable:
-        # Prepare the feature extractor:
-        if config.extractor_fn is not None:
-            # Feature extractor:
-            extractor_model = torch.load(config.extractor_fn)
-            feature_extractor = FeatureExtractor(
-                model=extractor_model,
-                augmentations=img_patch_augs,
-                normalize=config.normalize,
-                bbox_size=config.patch_size,
-                keep_patch_fraction=config.keep_patch_fraction,
-            )
-        else:
-            feature_extractor = return_unchanged
-
-        # Ensure augmentations are only run on train data:
-        if in_train_mode is True:
-            image, graph = img_graph_augs(image, graph)
-        return feature_extractor(image, graph)
-        if in_train_mode is True:
-            image, graph = img_graph_augs(image, graph)
-        return feature_extractor(image, graph)
 
     # Process the datasets as desired:
     def prepare_dataset(
         image_dir: Union[str, os.PathLike],
         grace_dir: Union[str, os.PathLike],
-        transform_method: Callable,
-        *,
-        graph_processing: str = "sub",
+        num_hops: int | str,
+        connection: str = "spiderweb",
         verbose: bool = True,
     ) -> tuple[list]:
         # Read the data & terate through images & extract node features:
@@ -107,7 +73,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             image_filetype=config.filetype,
             keep_node_unknown_labels=config.keep_node_unknown_labels,
             keep_edge_unknown_labels=config.keep_edge_unknown_labels,
-            transform=transform_method,
         )
 
         # Process the (sub)graph data into torch_geometric dataset:
@@ -121,39 +86,42 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             target_list.append(target)
 
             # Chop graph into subgraphs & store:
-            graphs = dataset_from_graph(target["graph"], mode=graph_processing)
-            subgraph_dataset.extend(graphs)
+            graph_data = dataset_from_graph(
+                target["graph"],
+                num_hops=num_hops,
+                connection=connection,
+            )
+            subgraph_dataset.extend(graph_data)
 
         return target_list, subgraph_dataset
-
-    # Create a transform function with frozen 'in_train_mode' parameter:
-    transform_train_mode = partial(transform, in_train_mode=True)
-    transform_valid_mode = partial(transform, in_train_mode=False)
 
     # Read the respective datasets:
     _, train_dataset = prepare_dataset(
         config.train_image_dir,
         config.train_grace_dir,
-        transform_train_mode,
+        num_hops=config.num_hops,
+        connection=config.connection,
     )
     valid_target_list, valid_dataset = prepare_dataset(
         config.valid_image_dir,
         config.valid_grace_dir,
-        transform_valid_mode,
+        num_hops=config.num_hops,
+        connection=config.connection,
     )
     infer_target_list, _ = prepare_dataset(
         config.infer_image_dir,
         config.infer_grace_dir,
-        transform_valid_mode,
+        num_hops="whole",
     )
 
     # Define the Classifier model:
     classifier = Classifier().get_model(
-        config.classifier_type,
+        classifier_type=config.classifier_type,
         input_channels=config.feature_dim,
         hidden_graph_channels=config.hidden_graph_channels,
         hidden_dense_channels=config.hidden_dense_channels,
         dropout=config.dropout,
+        num_heads=config.num_attention_heads,
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
         verbose=True,
@@ -161,6 +129,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
 
     # Perform the training:
     train_model(
+        config.classifier_type,
         classifier,
         train_dataset,
         valid_dataset,
@@ -243,6 +212,14 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         infer_graph = graph_data["graph"]
         GLP.set_node_and_edge_probabilities(G=infer_graph)
         GLP.visualise_prediction_probs_on_graph(
+            G=infer_graph,
+            graph_filename=fn,
+            save_figure=run_dir / "infer",
+            show_figure=False,
+        )
+        if config.classifier_type != "GAT":
+            continue
+        GLP.visualise_attention_weights_on_graph(
             G=infer_graph,
             graph_filename=fn,
             save_figure=run_dir / "infer",

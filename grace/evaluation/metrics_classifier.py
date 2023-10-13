@@ -101,11 +101,10 @@ def confusion_matrix_metric(
     )
 
     # Visualise confusion matrices:
-    sn.set_theme(font="Helvetica", font_scale=2)
     fig_node = plt.figure(figsize=figsize)
-    sn.heatmap(df_node, annot=True, vmin=0.0, vmax=1.0)
+    sn.heatmap(df_node, annot=True, annot_kws={"size": 40}, vmin=0.0, vmax=1.0)
     fig_edge = plt.figure(figsize=figsize)
-    sn.heatmap(df_edge, annot=True, vmin=0.0, vmax=1.0)
+    sn.heatmap(df_edge, annot=True, annot_kws={"size": 40}, vmin=0.0, vmax=1.0)
 
     for fig in (fig_node, fig_edge):
         fig.set_figwidth(figsize[0])

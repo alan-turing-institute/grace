@@ -16,6 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 def train_model(
+    classifier_type: str,
     model: torch.nn.Module,
     train_dataset: list[torch_geometric.data.Data],
     valid_dataset: list[torch_geometric.data.Data],
@@ -39,6 +40,8 @@ def train_model(
 
     Parameters
     ----------
+    classifier_type : str
+        Type of the classifier to train, e.g. "GCN" or "GAT"
     model : torch.nn.Module
         Model to train
     train_dataset : list[torch_geometric.data.Data]
@@ -132,7 +135,11 @@ def train_model(
         model.train()
 
         for data in loader:
-            node_x, edge_x = model(data.x, data.edge_index)
+            node_x, edge_x, _ = model(
+                data.x,
+                data.edge_index,
+                data.edge_properties,
+            )
 
             loss_node = node_criterion(node_x, data.y)
             loss_edge = edge_criterion(edge_x, data.edge_label)
@@ -156,7 +163,11 @@ def train_model(
 
         # Iterate through the data loader contents:
         for data in loader:
-            node_x, edge_x = model(data.x, data.edge_index)
+            node_x, edge_x, _ = model(
+                data.x,
+                data.edge_index,
+                data.edge_properties,
+            )
 
             node_pred.extend(node_x)
             edge_pred.extend(edge_x)
@@ -289,6 +300,15 @@ def train_model(
                         G=valid_graph,
                         graph_filename=valid_name,
                         save_figure=log_dir / "valid",
+                        show_figure=False,
+                    )
+                    # Visualise attention weights, if returned:
+                    if classifier_type != "GAT":
+                        continue
+                    GLP.visualise_attention_weights_on_graph(
+                        G=valid_graph,
+                        graph_filename=valid_name,
+                        save_figure=log_dir / "weights",
                         show_figure=False,
                     )
 
