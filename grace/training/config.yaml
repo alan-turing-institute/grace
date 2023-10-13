@@ -15,10 +15,13 @@ keep_edge_unknown_labels: False     # relabels UNKNOWN edges to TRUE_NEGATIVE
 
 # Feature extractor path & patch normalization:
 extractor_fn: /path/to/your/extractor/resnet152.pt
+store_graph_attributes_permanently: False     # write out graph attributes
+
+feature_dim: 2048     # output dimensionality: 1D feature vector
+
 patch_size:           # input dimensionality: 2D patch shape
   - 224
   - 224
-feature_dim: 2048     # output dimensionality: 1D feature vector
 normalise:            # [0-1] image patch standardisation
   - False             # before augmentations
   - False             # after augmentations
