@@ -39,11 +39,34 @@ def run_grace_training(
     run_grace(config_file=config_fn)
 
 
-@pytest.mark.parametrize("store_graph_attributes_permanently", [False, True])
+@pytest.mark.parametrize(
+    "store_graph_attributes_permanently",
+    [
+        False,
+    ],
+)
 @pytest.mark.xfail(
     reason="sample graph contains no node features & edge properties"
 )
-def test_run_grace(
+def test_run_grace_without_required_graph_attributes(
+    mrc_image_and_annotations_dir,
+    simple_extractor,
+    store_graph_attributes_permanently,
+):
+    run_grace_training(
+        mrc_image_and_annotations_dir,
+        simple_extractor,
+        store_graph_attributes_permanently,
+    )
+
+
+@pytest.mark.parametrize(
+    "store_graph_attributes_permanently",
+    [
+        True,
+    ],
+)
+def test_run_grace_if_graph_attribute_computation_allowed(
     mrc_image_and_annotations_dir,
     simple_extractor,
     store_graph_attributes_permanently,
