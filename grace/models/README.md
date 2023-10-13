@@ -127,5 +127,3 @@ These properties will ensure that the ranges are not considered in raw pixel val
 ### Including the positional coordinates
 
 Although the `EdgePropertyCruncher` allows the calculation of positional coordinates of selected points on the graph, it is not recommended to supply these value as input into the training as the classifier could **memorise** the positions of the objects, as opposed to actually **learning** the descriptors which _constitute a true edge_. For instance, such classifier could be prompted to score edges in the upper left corner of the image as true positive if it experienced objects to be present in that region of the image from the training data, leading to false predictions.
-
-<!-- An more versatile option is coming in the following PR. -->
