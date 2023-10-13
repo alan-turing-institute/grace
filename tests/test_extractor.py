@@ -1,8 +1,8 @@
-# import math
+import math
 import torch
 import pytest
 
-from grace.base import GraphAttrs  # , Annotation
+from grace.base import GraphAttrs, Annotation
 from grace.models.feature_extractor import FeatureExtractor
 
 from conftest import random_image_and_graph
@@ -55,47 +55,48 @@ class TestFeatureExtractor:
             if bbox_image.shape == bbox_size:
                 assert features == model(bbox_image)
 
-    # @pytest.mark.parametrize("keep_patch_fraction", [0.3, 0.5, 0.7])
-    # def test_feature_extractor_rejects_edge_touching_boxes(
-    #     self, bbox_size, model, vars, keep_patch_fraction
-    # ):
-    #     """TODO: There's a bug here if parametrised with:
-    #         "keep_patch_fraction", [0.3, 0.5, 0.7] """
-    #     extractor = vars["extractor"]
-    #     image = vars["image"]
-    #     graph = vars["graph"]
+    @pytest.mark.skip(reason="keep patch fraction needs to be re-implemented")
+    @pytest.mark.parametrize("keep_patch_fraction", [0.3, 0.5, 0.7])
+    def test_feature_extractor_rejects_edge_touching_boxes(
+        self, bbox_size, model, vars, keep_patch_fraction
+    ):
+        """TODO: There's a bug here if parametrised with:
+        "keep_patch_fraction", [0.3, 0.5, 0.7]"""
+        extractor = vars["extractor"]
+        image = vars["image"]
+        graph = vars["graph"]
 
-    #     setattr(extractor, "keep_patch_fraction", keep_patch_fraction)
-    #     graph.add_node(
-    #         4,
-    #         **{
-    #             GraphAttrs.NODE_X: bbox_size[0] * 0.5
-    #             + math.ceil(
-    #                 image.size(-1) - bbox_size[0] * keep_patch_fraction * 0.99
-    #             ),
-    #             GraphAttrs.NODE_Y: 0,
-    #             GraphAttrs.NODE_GROUND_TRUTH: Annotation.TRUE_POSITIVE,
-    #         },
-    #     )
-    #     graph.add_node(
-    #         5,
-    #         **{
-    #             GraphAttrs.NODE_X: 0,
-    #             GraphAttrs.NODE_Y: bbox_size[1] * 0.5
-    #             + math.floor(-bbox_size[1] * keep_patch_fraction * 1.01),
-    #             GraphAttrs.NODE_GROUND_TRUTH: Annotation.TRUE_POSITIVE,
-    #         },
-    #     )
+        setattr(extractor, "keep_patch_fraction", keep_patch_fraction)
+        graph.add_node(
+            4,
+            **{
+                GraphAttrs.NODE_X: bbox_size[0] * 0.5
+                + math.ceil(
+                    image.size(-1) - bbox_size[0] * keep_patch_fraction * 0.99
+                ),
+                GraphAttrs.NODE_Y: 0,
+                GraphAttrs.NODE_GROUND_TRUTH: Annotation.TRUE_POSITIVE,
+            },
+        )
+        graph.add_node(
+            5,
+            **{
+                GraphAttrs.NODE_X: 0,
+                GraphAttrs.NODE_Y: bbox_size[1] * 0.5
+                + math.floor(-bbox_size[1] * keep_patch_fraction * 1.01),
+                GraphAttrs.NODE_GROUND_TRUTH: Annotation.TRUE_POSITIVE,
+            },
+        )
 
-    #     _, target_out = extractor(image, {"graph": graph})
-    #     graph_out = target_out["graph"]
-    #     print(bbox_size)
-    #     print(graph_out.number_of_nodes(), graph_out.nodes(data=True))
-    #     labels = [
-    #         node_attr[GraphAttrs.NODE_GROUND_TRUTH]
-    #         for _, node_attr in graph_out.nodes(data=True)
-    #     ]
+        _, target_out = extractor(image, {"graph": graph})
+        graph_out = target_out["graph"]
+        print(bbox_size)
+        print(graph_out.number_of_nodes(), graph_out.nodes(data=True))
+        labels = [
+            node_attr[GraphAttrs.NODE_GROUND_TRUTH]
+            for _, node_attr in graph_out.nodes(data=True)
+        ]
 
-    #     num_unknown = len([lab for lab in labels if lab == Annotation.UNKNOWN])
+        num_unknown = len([lab for lab in labels if lab == Annotation.UNKNOWN])
 
-    #     assert num_unknown == 2
+        assert num_unknown == 2
