@@ -27,10 +27,11 @@ class Config:
     keep_edge_unknown_labels: bool = False
 
     # Feature extraction:
+    store_graph_attributes_permanently: bool = False
     extractor_fn: Optional[os.PathLike] = None
     patch_size: tuple[int] = (224, 224)
-    feature_dim: int = 2048
     normalize: tuple[bool] = (False, False)
+    feature_dim: int = 2048
 
     # Augmentations:
     img_graph_augs: list[str] = field(
