@@ -13,7 +13,6 @@ from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import Classifier
 from grace.models.optimiser import optimise_graph
 
-from grace.training.archiver import ModelArchiver
 from grace.training.train import train_model
 from grace.training.config import (
     validate_required_config_hparams,
@@ -120,12 +119,15 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         input_channels=config.feature_dim,
         hidden_graph_channels=config.hidden_graph_channels,
         hidden_dense_channels=config.hidden_dense_channels,
-        dropout=config.dropout,
-        num_heads=config.num_attention_heads,
         node_output_classes=config.num_node_classes,
         edge_output_classes=config.num_edge_classes,
-        verbose=True,
+        num_heads=config.num_attention_heads,
+        dropout=config.dropout,
     )
+
+    # Log the model architecture:
+    model_architecture_str = classifier.__str__()
+    LOGGER.info(model_architecture_str)
 
     # Perform the training:
     train_model(
@@ -157,17 +159,9 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     write_config_file(config, filetype="yaml")
 
     # Archive the model architecture:
-    model_architecture = ModelArchiver(classifier).architecture
-    write_file_with_suffix(
-        model_architecture,
-        config.run_dir / "summary_architecture.json",
-        convert_types=False,
-    )
-    write_file_with_suffix(
-        model_architecture,
-        config.run_dir / "summary_architecture.yaml",
-        convert_types=False,
-    )
+    model_architecture_dir = config.run_dir / "summary_architecture.txt"
+    with open(model_architecture_dir, "w") as summary_file:
+        summary_file.write(model_architecture_str)
 
     # Project the TSNE manifold:
     if config.visualise_tsne_manifold is True:
