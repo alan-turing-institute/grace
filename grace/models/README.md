@@ -19,7 +19,6 @@ Although the edges in GRACE are *undirected*, each edge is positioned to orient 
 1. More than 2 triangles in case there is an extra overarching node. This condition is caught in the code & it is guaranteed to only include the closest neighbour for triangle are consideration. See the schematic below:
 
 
-
 There is currently a set of 36 calculated edge properties, which can be categorised into various categories, as described below.
 
 
@@ -112,3 +111,19 @@ EAST_TO_MID_LENGTH_REL = "east_to_mid_length_rel"
 ### Properties storage & processing:
 
 To store the edge properties appropriately, the `dataclass` object `Properties` allows the storage & correct packaging of the edge keys & corresponding values into a dictionary, which forms the `GraphAttrs.EDGE_PROPERTIES`. More details can be found in the [grace/base.py](../base.py) module.
+
+
+## Property choice for classifier training:
+
+For classifier training purposes, one should restrain to use only the:
+
++ normalised geometrical properties;
++ relative edge-to-neighbour distances;
++ orientation angles in radians.
+
+These properties will ensure that the ranges are not considered in raw pixel values / degrees, which could lead to unstable training.
+
+
+### Including the positional coordinates
+
+Although the `EdgePropertyCruncher` allows the calculation of positional coordinates of selected points on the graph, it is not recommended to supply these value as input into the training as the classifier could **memorise** the positions of the objects, as opposed to actually **learning** the descriptors which _constitute a true edge_. For instance, such classifier could be prompted to score edges in the upper left corner of the image as true positive if it experienced objects to be present in that region of the image from the training data, leading to false predictions.
