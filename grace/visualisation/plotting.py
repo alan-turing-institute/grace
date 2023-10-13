@@ -1,5 +1,5 @@
-from grace.base import GraphAttrs, Annotation
 from grace.styling import COLORMAPS
+from grace.base import GraphAttrs, Annotation
 from grace.evaluation.metrics_classifier import safe_roc_auc_score
 
 import matplotlib.pyplot as plt
@@ -11,11 +11,10 @@ import numpy.typing as npt
 
 from skimage.util import montage
 from sklearn.metrics import (
-    ConfusionMatrixDisplay,
-    # roc_auc_score,
-    RocCurveDisplay,
     average_precision_score,
+    ConfusionMatrixDisplay,
     PrecisionRecallDisplay,
+    RocCurveDisplay,
 )
 
 
