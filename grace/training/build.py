@@ -1,18 +1,13 @@
 from pathlib import Path
 from tqdm.auto import tqdm
 
+from grace.styling import LOGGER
 from grace.base import GraphAttrs, EdgeProps
 from grace.models.datasets import dataset_from_graph
+
 from grace.io.image_dataset import ImageGraphDataset
-
-
-# def preprocess_grace_dataset(
-#     data_path: str | Path,
-#     extractor_fn: str | Path,
-#     bbox_size: tuple[int, int] = (224, 224),
-# ) -> None:
-#     store_node_features_in_graph(data_path, extractor_fn, bbox_size)
-#     store_edge_properties_in_graph(data_path)
+from grace.io.store_node_features import store_node_features_in_graph
+from grace.io.store_edge_properties import store_edge_properties_in_graph
 
 
 def check_and_chop_dataset(
@@ -25,6 +20,8 @@ def check_and_chop_dataset(
     keep_edge_unknown_labels: bool,
     num_hops: int | str,
     connection: str = "spiderweb",
+    store_permanently: bool = False,
+    extractor_fn: str | Path = None,
 ):
     # Check if datasets are ready for training:
     dataset_ready_for_training = check_dataset_requirements(
@@ -35,8 +32,20 @@ def check_and_chop_dataset(
         edge_property_len=edge_property_len,
     )
     if not dataset_ready_for_training:
-        raise GraceGraphError(grace_dir=grace_dir)
+        if store_permanently is True:
+            assert extractor_fn is not None, "Provide feature extractor"
 
+            # Inform the user about the delay:
+            LOGGER.warning(
+                "\n\nComputing node features & edge properties for data in "
+                f"{grace_dir}. Expect to take ~30-40 seconds per file...\n\n"
+            )
+            store_node_features_in_graph(grace_dir, extractor_fn)
+            store_edge_properties_in_graph(grace_dir)
+        else:
+            raise GraceGraphError(grace_dir=grace_dir)
+
+    # Now that you have the files with node features & edge properties:
     target_list, subgraph_dataset = prepare_dataset_subgraphs(
         image_dir=image_dir,
         grace_dir=grace_dir,
@@ -147,9 +156,11 @@ class GraceGraphError(Exception):
         super().__init__(
             "\n\nThe GRACE annotation files don't contain the proper node "
             "features & edge attributes for training \nin the `grace_dir` "
-            f"= '{grace_dir}'\n\nPlease consider running the scripts below "
-            "for all your 'train', 'valid' & 'infer' directories before "
-            "launching the next run session:"
+            f"= '{grace_dir}'\n\nPlease consider:\n\n(i) changing your config"
+            " 'store_graph_attributes_permanently' argument to 'True', which "
+            "will automatically compute & store the graph attributes & or \n"
+            "(ii) manually run the scripts below for all your data paths, "
+            "incl. 'train', 'valid' & 'infer' before launching the next run:"
             "\n\n\t`python3 grace/io/store_edge_properties.py --data_path="
             "/path/to/your/data` \nand"
             "\n\t`python3 grace/io/store_node_features.py --data_path="
