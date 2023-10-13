@@ -1,4 +1,5 @@
 from typing import Union
+from functools import partial
 
 import os
 import click
@@ -57,37 +58,33 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         subfolder_path = run_dir / subfolder
         subfolder_path.mkdir(parents=True, exist_ok=True)
 
+    # Create a transform function with frozen arguments:
+    check_and_chop_partial = partial(
+        check_and_chop_dataset,
+        filetype=config.filetype,
+        node_feature_ndim=config.feature_dim,
+        edge_property_len=len(EdgeProps),
+        keep_node_unknown_labels=config.keep_node_unknown_labels,
+        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
+        connection=config.connection,
+        store_permanently=config.store_graph_attributes_permanently,
+        extractor_fn=config.extractor_fn,
+    )
+
     # Read the respective datasets:
-    _, train_dataset = check_and_chop_dataset(
+    _, train_dataset = check_and_chop_partial(
         config.train_image_dir,
         config.train_grace_dir,
-        filetype=config.filetype,
-        node_feature_ndim=config.feature_dim,
-        edge_property_len=len(EdgeProps),
-        keep_node_unknown_labels=config.keep_node_unknown_labels,
-        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
         num_hops=config.num_hops,
-        connection=config.connection,
     )
-    valid_target_list, valid_dataset = check_and_chop_dataset(
+    valid_target_list, valid_dataset = check_and_chop_partial(
         config.valid_image_dir,
         config.valid_grace_dir,
-        filetype=config.filetype,
-        node_feature_ndim=config.feature_dim,
-        edge_property_len=len(EdgeProps),
-        keep_node_unknown_labels=config.keep_node_unknown_labels,
-        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
         num_hops=config.num_hops,
-        connection=config.connection,
     )
-    infer_target_list, _ = check_and_chop_dataset(
+    infer_target_list, _ = check_and_chop_partial(
         config.infer_image_dir,
         config.infer_grace_dir,
-        filetype=config.filetype,
-        node_feature_ndim=config.feature_dim,
-        edge_property_len=len(EdgeProps),
-        keep_node_unknown_labels=config.keep_node_unknown_labels,
-        keep_edge_unknown_labels=config.keep_edge_unknown_labels,
         num_hops="whole",
     )
 
@@ -194,14 +191,13 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             save_figure=run_dir / "infer",
             show_figure=False,
         )
-        if config.classifier_type != "GAT":
-            continue
-        GLP.visualise_attention_weights_on_graph(
-            G=infer_graph,
-            graph_filename=fn,
-            save_figure=run_dir / "infer",
-            show_figure=False,
-        )
+        if config.classifier_type == "GAT":
+            GLP.visualise_attention_weights_on_graph(
+                G=infer_graph,
+                graph_filename=fn,
+                save_figure=run_dir / "infer",
+                show_figure=False,
+            )
 
         # Generate GT & optimised graphs:
         true_graph = generate_ground_truth_graph(infer_graph)
