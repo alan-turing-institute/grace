@@ -1,11 +1,9 @@
 import torch
+import inspect
 
-import torch.nn.functional as F
-from torch.nn import Linear, ModuleList
-
+from torch.nn import functional, Linear, ModuleList
 from torch_geometric.nn import GCNConv, GATv2Conv, RGCNConv
 
-from grace.styling import LOGGER
 from grace.base import EdgeProps
 
 
@@ -69,18 +67,24 @@ class GNNModel(torch.nn.Module):
         edge_output_classes: int = 2,
         num_heads: int = 1,
         dropout: float = 0.0,
-        verbose: bool = False,
     ):
         super(GNNModel, self).__init__()
 
         # Define the model attributes:
         self.classifier_type = classifier_type
+        self.input_channels = input_channels
+        self.hidden_graph_channels = hidden_graph_channels
+        self.hidden_dense_channels = hidden_dense_channels
+        self.node_output_classes = node_output_classes
+        self.edge_output_classes = edge_output_classes
+        self.num_heads = num_heads
+        self.dropout = dropout
+
         hidden_channels_list = [input_channels]
         self.conv_layer_list = None
         self.node_dense_list = None
         self.node_classifier = None
         self.edge_classifier = None
-        self.dropout = dropout
 
         # Define how many (if any) graph conv layers are specified:
         if hidden_graph_channels:
@@ -151,14 +155,24 @@ class GNNModel(torch.nn.Module):
             hidden_channels_list[-1] * 2 + len(EdgeProps), edge_output_classes
         )
 
-        # Log the moel architecture:
-        if verbose is True:
-            logger_string = "Model architecture:\n"
-            logger_string += f"Conv_layer_list: {self.conv_layer_list}\n"
-            logger_string += f"Node_dense_list: {self.node_dense_list}\n"
-            logger_string += f"Node_classifier: {self.node_classifier}\n"
-            logger_string += f"Edge_classifier: {self.edge_classifier}\n"
-            LOGGER.info(logger_string)
+    def __str__(self):
+        logger_string = f"{self.__class__.__name__}\n"
+
+        # Read model architecture:
+        logger_string += "\n\tModel Architecture:\n"
+        logger_string += f"Conv_layer_list: {self.conv_layer_list}\n"
+        logger_string += f"Node_dense_list: {self.node_dense_list}\n"
+        logger_string += f"Node_classifier: {self.node_classifier}\n"
+        logger_string += f"Edge_classifier: {self.edge_classifier}\n"
+
+        # Include model arguments:
+        arg_dict = inspect.signature(self.__init__).parameters
+
+        logger_string += "\n\tSetup Arguments:\n"
+        for arg in arg_dict:
+            logger_string += f"{arg} : {getattr(self, arg)}\n"
+
+        return logger_string
 
     def forward(
         self,
@@ -260,7 +274,7 @@ class GNNModel(torch.nn.Module):
         node_embeddings = x
 
         # Implement dropout at set probability:
-        node_embeddings = F.dropout(
+        node_embeddings = functional.dropout(
             node_embeddings, p=self.dropout, training=self.training
         )
 
