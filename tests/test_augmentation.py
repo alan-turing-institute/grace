@@ -9,7 +9,8 @@ import numpy as np
 from grace.base import GraphAttrs, Annotation
 from grace.utils.augment_image import (
     RandomEdgeCrop,
-)  # , RandomImageGraphRotate
+    RandomImageGraphRotate,
+)
 from grace.utils.augment_graph import (
     find_average_annotation,
     RandomEdgeAdditionAndRemoval,
@@ -146,51 +147,48 @@ expected_end_coords_float = [
 ]
 
 
-# @pytest.mark.parametrize(
-#     "n, rot_angle, rot_center",
-#     [
-#         (0, 0, None),
-#         (1, 90, None),
-#         (2, 45, None),
-#         (3, 30, None),
-#         (4, 28, None),
-#         (5, 28, [2, 2]),
-#     ],
-# )
-# def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
-#     print ("hello-1")
-#     with patch("numpy.random.default_rng") as mock:
-#         rng = mock.return_value
-#         rng.uniform.return_value = 0
-#         rng.integers.return_value = augment_rotate_coords[n]
-#         rng.choice.return_value = [1] * 4
-#         image, graph = random_image_and_graph(rng, image_size=(6, 6))
-#     print ("hello-2")
+@pytest.mark.skip(reason="augmentations throw an error for some reason")
+@pytest.mark.parametrize(
+    "n, rot_angle, rot_center",
+    [
+        (0, 0, None),
+        (1, 90, None),
+        (2, 45, None),
+        (3, 30, None),
+        (4, 28, None),
+        (5, 28, [2, 2]),
+    ],
+)
+def test_augment_rotate_image_and_graph(n, rot_angle, rot_center):
+    with patch("numpy.random.default_rng") as mock:
+        rng = mock.return_value
+        rng.uniform.return_value = 0
+        rng.integers.return_value = augment_rotate_coords[n]
+        rng.choice.return_value = [1] * 4
+        image, graph = random_image_and_graph(rng, image_size=(6, 6))
 
-#     image = torch.tensor(image.astype("int16"))
-#     target = {"graph": graph}
+    image = torch.tensor(image.astype("int16"))
+    target = {"graph": graph}
 
-#     with patch("numpy.random.default_rng") as mock:
-#         rng = mock.return_value
-#         rng.uniform.return_value = rot_angle
-#         transform = RandomImageGraphRotate(rot_center=rot_center, rng=rng)
-#         image, target = transform(image, target)
-#     print ("hello-3")
+    with patch("numpy.random.default_rng") as mock:
+        rng = mock.return_value
+        rng.uniform.return_value = rot_angle
+        transform = RandomImageGraphRotate(rot_center=rot_center, rng=rng)
+        image, target = transform(image, target)
 
-#     augmented_img_coords = np.where(image.squeeze().numpy())
-#     augmented_float_coords = np.array(
-#         [
-#             [f[GraphAttrs.NODE_X], f[GraphAttrs.NODE_Y]]
-#             for f in target["graph"].nodes.values()
-#         ],
-#         dtype=np.float32,
-#     )
-#     print ("hello-4")
+    augmented_img_coords = np.where(image.squeeze().numpy())
+    augmented_float_coords = np.array(
+        [
+            [f[GraphAttrs.NODE_X], f[GraphAttrs.NODE_Y]]
+            for f in target["graph"].nodes.values()
+        ],
+        dtype=np.float32,
+    )
 
-#     assert np.array_equal(expected_end_coords_img[n], augmented_img_coords)
-#     assert np.allclose(
-#         expected_end_coords_float[n], augmented_float_coords, atol=0.01
-#     )
+    assert np.array_equal(expected_end_coords_img[n], augmented_img_coords)
+    assert np.allclose(
+        expected_end_coords_float[n], augmented_float_coords, atol=0.01
+    )
 
 
 @pytest.mark.parametrize(
