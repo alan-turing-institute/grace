@@ -152,7 +152,7 @@ def _node_degree(
 def _x(graph: nx.Graph) -> torch.Tensor:
     x = np.stack(
         [
-            torch.cat(
+            np.concatenate(
                 [
                     graph.nodes[idx][GraphAttrs.NODE_FEATURES],
                     graph.nodes[idx][GraphAttrs.NODE_EMBEDDINGS],
