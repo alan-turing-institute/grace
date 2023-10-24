@@ -9,6 +9,7 @@ from tqdm.auto import tqdm
 from grace.styling import LOGGER
 from grace.io.image_dataset import ImageGraphDataset
 
+from grace.models.feature_extractor import FeatureExtractor, SimpleDescriptor
 from grace.models.datasets import dataset_from_graph
 from grace.models.classifier import Classifier
 from grace.models.optimiser import optimise_graph
@@ -66,12 +67,28 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
         verbose: bool = True,
     ) -> tuple[list]:
         # Read the data & terate through images & extract node features:
+        # Choose extractor:
+        if config.extractor_fn is not None:
+            assert str(config.extractor_fn).endswith(".pt")
+            extractor_model = torch.load(config.extractor_fn)
+            feature_extractor = FeatureExtractor(
+                model=extractor_model,
+                normalize=config.normalize,
+                bbox_size=config.patch_size,
+            )
+        else:
+            feature_extractor = SimpleDescriptor(
+                bbox_size=config.patch_size,
+            )
+            config.feature_dim = 4 * 2
+
         input_data = ImageGraphDataset(
             image_dir=image_dir,
             grace_dir=grace_dir,
             image_filetype=config.filetype,
             keep_node_unknown_labels=config.keep_node_unknown_labels,
             keep_edge_unknown_labels=config.keep_edge_unknown_labels,
+            transform=feature_extractor,
         )
 
         # Process the (sub)graph data into torch_geometric dataset:
