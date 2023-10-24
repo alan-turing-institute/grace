@@ -30,28 +30,29 @@ class Config:
     extractor_fn: Optional[os.PathLike] = None
     patch_size: tuple[int] = (224, 224)
     normalize: bool = False
-    feature_dim: int = 2048
+    laplacian: bool = True
+    # HACK: set attribute: feature_dim: int = 2048
 
     # Augmentations:
-    img_graph_augs: list[str] = field(
-        default_factory=lambda: [
-            "random_edge_addition_and_removal",
-            "random_xy_translation",
-            "random_image_graph_rotate",
-        ]
-    )
-    img_graph_aug_params: list[dict[str, Any]] = field(
-        default_factory=lambda: [{}, {}, {}]
-    )
-    patch_augs: list[str] = field(
-        default_factory=lambda: [
-            "random_edge_crop",
-        ]
-    )
-    patch_aug_params: list[dict[str, Any]] = field(
-        default_factory=lambda: [{}]
-    )
-    keep_patch_fraction: float = 1.0
+    # img_graph_augs: list[str] = field(
+    #     default_factory=lambda: [
+    #         "random_edge_addition_and_removal",
+    #         "random_xy_translation",
+    #         "random_image_graph_rotate",
+    #     ]
+    # )
+    # img_graph_aug_params: list[dict[str, Any]] = field(
+    #     default_factory=lambda: [{}, {}, {}]
+    # )
+    # patch_augs: list[str] = field(
+    #     default_factory=lambda: [
+    #         "random_edge_crop",
+    #     ]
+    # )
+    # patch_aug_params: list[dict[str, Any]] = field(
+    #     default_factory=lambda: [{}]
+    # )
+    # keep_patch_fraction: float = 1.0
 
     # Classifier architecture setup
     classifier_type: str = "GCN"
@@ -95,6 +96,40 @@ class Config:
     valid_graph_ploter_frequency: int = 1
     animate_valid_progress: bool = False
     visualise_tsne_manifold: bool = False
+
+    @property
+    def node_embedding_ndim(self) -> int:
+        # Set attribute for number of feature dimensions:
+        if self.extractor_fn == "None" or self.extractor_fn == Path("None"):
+            self.extractor_fn = None
+
+        if self.extractor_fn is None:
+            ndim = 4
+        else:
+            if not str(self.extractor_fn).endswith(".pt"):
+                raise ExtractorNotDefinedError(path_name=self.extractor_fn)
+
+            ext_stem = self.extractor_fn.stem.lower()
+            if not ext_stem.startswith("resnet"):
+                raise ExtractorNotDefinedError(path_name=self.extractor_fn)
+
+            else:
+                if ext_stem.endswith("18") or ext_stem.endswith("34"):
+                    ndim = 512
+                elif (
+                    ext_stem.endswith("50")
+                    or ext_stem.endswith("101")
+                    or ext_stem.endswith("152")
+                ):
+                    ndim = 2048
+                else:
+                    raise ExtractorNotDefinedError(path_name=self.extractor_fn)
+
+        # Double if Laplacian embeddings are to be used:
+        if self.laplacian is True:
+            return ndim * 2
+        else:
+            return ndim
 
 
 def load_config_params(params_file: Union[str, Path]) -> Config:
@@ -275,11 +310,19 @@ def write_file_with_suffix(
         ValueError("Filetype suffix must be 'json' or 'yaml'.")
 
 
+class EmptyDirectoryError(Exception):
+    def __init__(self, path_name):
+        super().__init__(f"The path '{path_name}' is empty.")
+
+
 class PathNotDefinedError(Exception):
     def __init__(self, path_name):
         super().__init__(f"The path '{path_name}' is not defined.")
 
 
-class EmptyDirectoryError(Exception):
+class ExtractorNotDefinedError(Exception):
     def __init__(self, path_name):
-        super().__init__(f"The path '{path_name}' is empty.")
+        super().__init__(
+            f"The extractor '{path_name}' is not defined. "
+            "Consider renaming your Resnet to 'resnetXX.pt'"
+        )
