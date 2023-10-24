@@ -16,7 +16,7 @@ class TestTraining:
     def data_and_model(self, default_rng):
         model = GNNModel(
             classifier_type="GCN",
-            input_channels=2,
+            input_channels=2 * 2,
             hidden_graph_channels=[16, 8],
             hidden_dense_channels=[4, 2],
         )

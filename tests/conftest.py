@@ -15,6 +15,9 @@ from grace.base import (
     graph_from_dataframe,
 )
 
+from grace.models.property_cruncher import EdgePropertyCruncher
+from grace.models.graph_laplacian import LaplacianEmbedder
+
 
 def create_nodes(
     num_nodes: int, feature_ndim: int, rng, image_size: tuple[int, int]
@@ -45,7 +48,6 @@ def create_edges(
 ) -> tuple[int, int, dict]:
     keys = [item.value for item in EdgeProps]
     vals = rng.uniform(size=(len(keys),))
-    print(len(keys), len(vals))
     properties = Properties()
     properties.from_keys_and_values(keys=keys, values=vals)
     annotation = rng.choice(
@@ -63,12 +65,19 @@ def random_image_and_graph(
     *,
     num_nodes: int = 4,
     image_size: tuple[int] = (128, 128),
-    feature_ndim: int = 32,
+    feature_ndim: int = 512,
 ) -> tuple[npt.NDArray, list[nx.Graph]]:
     """Create a random image and graph."""
     # Create the graph's nodes & edges:
     df, node_coords = create_nodes(num_nodes, feature_ndim, rng, image_size)
     graph = graph_from_dataframe(df, triangulate=True)
+
+    # Multiply node embeddings by graph Laplacian:
+    graph = LaplacianEmbedder(graph=graph).transform_feature_embeddings()
+
+    # Calculate edge properties:
+    graph = EdgePropertyCruncher(graph=graph).process()
+
     graph.update(
         edges=[create_edges(src, dst, rng) for src, dst in graph.edges]
     )
@@ -107,6 +116,16 @@ def simple_graph_dataframe(default_rng) -> pd.DataFrame:
 def simple_graph(simple_graph_dataframe) -> nx.Graph:
     """Fixture for a simple graph."""
     graph = graph_from_dataframe(simple_graph_dataframe)
+
+    # Calculate node features:
+    print(graph.nodes()[0])
+
+    # Multiply node embeddings by graph Laplacian:
+    graph = LaplacianEmbedder(graph=graph).transform_feature_embeddings()
+
+    # Calculate edge properties:
+    graph = EdgePropertyCruncher(graph=graph).process()
+
     return graph
 
 
@@ -119,9 +138,12 @@ def mrc_image_and_annotations_dir(tmp_path_factory, default_rng) -> Path:
 
     tmp_data_dir = Path(tmp_path_factory.mktemp("data"))
     num_images = 10
+    feature_ndim = 512
 
     for idx in range(num_images):
-        image, graph = random_image_and_graph(default_rng)
+        image, graph = random_image_and_graph(
+            default_rng, feature_ndim=feature_ndim
+        )
 
         image_fn = tmp_data_dir / f"image_{idx}.mrc"
         grace_fn = tmp_data_dir / f"image_{idx}.grace"
