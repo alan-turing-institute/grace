@@ -29,8 +29,8 @@ class Config:
     # Feature extraction:
     extractor_fn: Optional[os.PathLike] = None
     patch_size: tuple[int] = (224, 224)
+    normalize: bool = False
     feature_dim: int = 2048
-    normalize: tuple[bool] = (False, False)
 
     # Augmentations:
     img_graph_augs: list[str] = field(
