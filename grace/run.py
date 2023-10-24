@@ -80,7 +80,6 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
             feature_extractor = SimpleDescriptor(
                 bbox_size=config.patch_size,
             )
-            config.feature_dim = 4 * 2
 
         input_data = ImageGraphDataset(
             image_dir=image_dir,
@@ -133,7 +132,7 @@ def run_grace(config_file: Union[str, os.PathLike]) -> None:
     # Define the Classifier model:
     classifier = Classifier().get_model(
         classifier_type=config.classifier_type,
-        input_channels=config.feature_dim,
+        input_channels=config.node_embedding_ndim,
         hidden_graph_channels=config.hidden_graph_channels,
         hidden_dense_channels=config.hidden_dense_channels,
         node_output_classes=config.num_node_classes,
