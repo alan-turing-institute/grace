@@ -1,5 +1,6 @@
-from grace.base import GraphAttrs, Annotation
 from grace.styling import COLORMAPS
+from grace.base import GraphAttrs, Annotation
+from grace.evaluation.metrics_classifier import safe_roc_auc_score
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -10,11 +11,10 @@ import numpy.typing as npt
 
 from skimage.util import montage
 from sklearn.metrics import (
-    ConfusionMatrixDisplay,
-    roc_auc_score,
-    RocCurveDisplay,
     average_precision_score,
+    ConfusionMatrixDisplay,
     PrecisionRecallDisplay,
+    RocCurveDisplay,
 )
 
 
@@ -179,7 +179,7 @@ def plot_areas_under_curves(
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=figsize)
 
     # Area under ROC:
-    roc_score_nodes = roc_auc_score(y_true=node_true, y_score=node_pred)
+    roc_score_nodes = safe_roc_auc_score(y_true=node_true, y_score=node_pred)
     RocCurveDisplay.from_predictions(
         y_true=node_true,
         y_pred=node_pred,
@@ -189,7 +189,7 @@ def plot_areas_under_curves(
         ax=axes[0],
     )
 
-    roc_score_edges = roc_auc_score(y_true=edge_true, y_score=edge_pred)
+    roc_score_edges = safe_roc_auc_score(y_true=edge_true, y_score=edge_pred)
     RocCurveDisplay.from_predictions(
         y_true=edge_true,
         y_pred=edge_pred,

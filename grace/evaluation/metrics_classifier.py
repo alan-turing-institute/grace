@@ -9,6 +9,7 @@ from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
     confusion_matrix,
+    roc_auc_score,
 )
 
 
@@ -111,6 +112,17 @@ def confusion_matrix_metric(
         fig.set_figheight(figsize[1])
 
     return fig_node, fig_edge
+
+
+def safe_roc_auc_score(
+    y_true: torch.Tensor,
+    y_score: torch.Tensor,
+):
+    unique_classes = len(set(y_true))
+    if unique_classes > 1:
+        return roc_auc_score(y_true=y_true, y_score=y_score)
+    else:
+        return 0.0
 
 
 METRICS = {

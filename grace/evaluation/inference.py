@@ -12,13 +12,13 @@ from torch_geometric.data import Data
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
-    roc_auc_score,
     average_precision_score,
 )
 
 from grace.styling import LOGGER
 from grace.base import GraphAttrs, Annotation, Prediction
 from grace.models.datasets import dataset_from_graph
+from grace.evaluation.metrics_classifier import safe_roc_auc_score
 from grace.visualisation.plotting import (
     plot_confusion_matrix_tiles,
     plot_areas_under_curves,
@@ -359,11 +359,11 @@ class GraphLabelPredictor(object):
         inference_batch_metrics["Batch F1-score (edges)"] = prf1_edges[2]
 
         # AUC scores:
-        inference_batch_metrics["Batch AUROC (nodes)"] = roc_auc_score(
+        inference_batch_metrics["Batch AUROC (nodes)"] = safe_roc_auc_score(
             y_true=predictions_data["n_true"],
             y_score=predictions_data["n_prob"],
         )
-        inference_batch_metrics["Batch AUROC (edges)"] = roc_auc_score(
+        inference_batch_metrics["Batch AUROC (edges)"] = safe_roc_auc_score(
             y_true=predictions_data["e_true"],
             y_score=predictions_data["e_prob"],
         )
