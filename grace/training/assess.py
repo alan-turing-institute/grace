@@ -15,12 +15,13 @@ def assess_training_performance(
     compute_exact_metrics: bool,
     compute_approx_metrics: bool,
 ) -> None:
-    """Callable to perform GRACE inference with a trained classifier model.
+    """Wrapper to perform GRACE inference with a trained classifier model.
 
     Parameters
     ----------
     run_dir : str | Path
-        Pointer to the time-stamped directory of training run. Structure:
+        Pointer to the directory of pre-trained node & edge classifier.
+        Usually in form on a time-stamped path. Required structure:
         |-- time-stamp (e.g. 2023-10-25_18-00-00)
             |-- events.out.tfevents...
             |-- model
