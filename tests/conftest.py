@@ -31,7 +31,7 @@ def create_nodes(
         {
             GraphAttrs.NODE_X: node_coords[:, 0],
             GraphAttrs.NODE_Y: node_coords[:, 1],
-            GraphAttrs.NODE_FEATURES: features,
+            GraphAttrs.NODE_IMG_EMBEDDING: features,
             GraphAttrs.NODE_GROUND_TRUTH: node_ground_truth,
             GraphAttrs.NODE_CONFIDENCE: rng.uniform(
                 size=(num_nodes),
@@ -104,7 +104,7 @@ def simple_graph_dataframe(default_rng) -> pd.DataFrame:
         {
             GraphAttrs.NODE_X: [0.0, 1.0, 2.0],
             GraphAttrs.NODE_Y: [0.0, 1.0, 0.0],
-            GraphAttrs.NODE_FEATURES: features,
+            GraphAttrs.NODE_IMG_EMBEDDING: features,
             GraphAttrs.NODE_GROUND_TRUTH: [1, 1, 1],
             GraphAttrs.NODE_CONFIDENCE: [0.9, 0.1, 0.8],
         }

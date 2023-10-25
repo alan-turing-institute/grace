@@ -154,8 +154,8 @@ def _x(graph: nx.Graph) -> torch.Tensor:
         [
             np.concatenate(
                 [
-                    graph.nodes[idx][GraphAttrs.NODE_FEATURES],
-                    graph.nodes[idx][GraphAttrs.NODE_EMBEDDINGS],
+                    graph.nodes[idx][GraphAttrs.NODE_IMG_EMBEDDING],
+                    graph.nodes[idx][GraphAttrs.NODE_ENV_EMBEDDING],
                 ],
                 axis=-1,
             )

@@ -9,7 +9,7 @@ NODE_SCHEMA = pa.schema(
         pa.field(GraphAttrs.NODE_Y, pa.float32()),
         pa.field(GraphAttrs.NODE_GROUND_TRUTH, pa.int64()),
         pa.field(GraphAttrs.NODE_CONFIDENCE, pa.float32()),
-        pa.field(GraphAttrs.NODE_FEATURES, pa.list_(pa.float32())),
+        pa.field(GraphAttrs.NODE_IMG_EMBEDDING, pa.list_(pa.float32())),
     ],
     # metadata={"year": "2023"}
 )

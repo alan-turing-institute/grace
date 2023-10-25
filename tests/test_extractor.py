@@ -40,7 +40,7 @@ class TestFeatureExtractor:
 
         for _, node_attrs in graph_out.nodes.data():
             x, y = node_attrs[GraphAttrs.NODE_X], node_attrs[GraphAttrs.NODE_Y]
-            features = node_attrs[GraphAttrs.NODE_FEATURES]
+            features = node_attrs[GraphAttrs.NODE_IMG_EMBEDDING]
 
             x_low = int(x - bbox_size[0] / 2)
             x_box = slice(x_low, x_low + bbox_size[0])

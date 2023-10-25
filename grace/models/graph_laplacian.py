@@ -18,7 +18,7 @@ class LaplacianEmbedder:
     def extract_node_features(self) -> npt.NDArray:
         feature_matrix = np.stack(
             [
-                n[GraphAttrs.NODE_FEATURES]
+                n[GraphAttrs.NODE_IMG_EMBEDDING]
                 for _, n in self.graph.nodes(data=True)
             ],
             axis=0,
@@ -35,7 +35,7 @@ class LaplacianEmbedder:
 
         # Append node attributes to the graph:
         for node_idx, node in self.graph.nodes(data=True):
-            node[GraphAttrs.NODE_EMBEDDINGS] = torch.Tensor(
+            node[GraphAttrs.NODE_ENV_EMBEDDING] = torch.Tensor(
                 embedded_matrix[:, node_idx]
             )
 

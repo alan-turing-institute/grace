@@ -131,7 +131,7 @@ class FeatureExtractor(torch.nn.Module):
 
             # Run through the feature extractor model:
             features = self.model(bbox_image)
-            node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
+            node_attrs[GraphAttrs.NODE_IMG_EMBEDDING] = features.squeeze()
 
         # Back to the original shape:
         image = image.reshape(image_shape)
@@ -192,7 +192,7 @@ class SimpleDescriptor(torch.nn.Module):
             # Run through these shortlisted torch methods:
             methods = [torch.mean, torch.std, torch.min, torch.max]
             features = torch.Tensor([m(bbox_image) for m in methods])
-            node_attrs[GraphAttrs.NODE_FEATURES] = features.squeeze()
+            node_attrs[GraphAttrs.NODE_IMG_EMBEDDING] = features.squeeze()
 
         # Back to the original shape:
         image = image.reshape(image_shape)
