@@ -6,13 +6,13 @@ from grace.training.config import Config, write_config_file
 
 
 @pytest.mark.xfail(
-    reason="sample graph contains no node features & edge properties"
+    reason="sample graph attribute dimensionality doesn't agree"
 )
 def test_run_grace(mrc_image_and_annotations_dir, simple_extractor):
     tmp_data_dir = mrc_image_and_annotations_dir
 
     # temp extractor
-    extractor_fn = tmp_data_dir / "extractor.pt"
+    extractor_fn = tmp_data_dir / "resnet18.pt"
     torch.save(simple_extractor, extractor_fn)
 
     config = Config(
@@ -28,39 +28,9 @@ def test_run_grace(mrc_image_and_annotations_dir, simple_extractor):
         epochs=1,
         batch_size=1,
         patch_size=(1, 1),
-        feature_dim=2,
     )
     write_config_file(config, filetype="json")
 
     # run
     config_fn = tmp_data_dir / "config_hyperparams.json"
     run_grace(config_file=config_fn)
-
-
-# def test_run_grace_without_required_graph_attributes(
-#     mrc_image_and_annotations_dir,
-#     simple_extractor,
-# ):
-#     run_grace_training(
-#         mrc_image_and_annotations_dir,
-#         simple_extractor,
-#         store_graph_attributes_permanently,
-#     )
-
-
-# @pytest.mark.parametrize(
-#     "store_graph_attributes_permanently",
-#     [
-#         True,
-#     ],
-# )
-# def test_run_grace_if_graph_attribute_computation_allowed(
-#     mrc_image_and_annotations_dir,
-#     simple_extractor,
-#     store_graph_attributes_permanently,
-# ):
-#     run_grace_training(
-#         mrc_image_and_annotations_dir,
-#         simple_extractor,
-#         store_graph_attributes_permanently,
-#     )
