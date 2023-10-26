@@ -40,8 +40,8 @@ def store_node_features_in_graph(
         graph = target["graph"]
 
         for _, node in graph.nodes(data=True):
-            node[GraphAttrs.NODE_FEATURES] = node[
-                GraphAttrs.NODE_FEATURES
+            node[GraphAttrs.NODE_IMG_EMBEDDING] = node[
+                GraphAttrs.NODE_IMG_EMBEDDING
             ].numpy()
 
         write_graph(
