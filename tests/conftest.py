@@ -2,14 +2,90 @@ import pytest
 import pandas as pd
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
 
 import torch
-import torch.nn as nn
 
-from grace.base import GraphAttrs, graph_from_dataframe
 from pathlib import Path
+from grace.base import (
+    GraphAttrs,
+    Annotation,
+    Properties,
+    EdgeProps,
+    graph_from_dataframe,
+)
 
-from _utils import random_image_and_graph
+from grace.models.property_cruncher import EdgePropertyCruncher
+from grace.models.graph_laplacian import LaplacianEmbedder
+
+
+def create_nodes(
+    num_nodes: int, feature_ndim: int, rng, image_size: tuple[int, int]
+):
+    features = [rng.uniform(size=(feature_ndim,)) for _ in range(num_nodes)]
+    node_coords = rng.integers(0, image_size[1], size=(num_nodes, 2))
+    node_ground_truth = rng.choice(
+        [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE], size=(num_nodes,)
+    )
+    df = pd.DataFrame(
+        {
+            GraphAttrs.NODE_X: node_coords[:, 0],
+            GraphAttrs.NODE_Y: node_coords[:, 1],
+            GraphAttrs.NODE_IMG_EMBEDDING: features,
+            GraphAttrs.NODE_GROUND_TRUTH: node_ground_truth,
+            GraphAttrs.NODE_CONFIDENCE: rng.uniform(
+                size=(num_nodes),
+            ),
+        }
+    )
+    return df, node_coords
+
+
+def create_edges(
+    src: int,
+    dst: int,
+    rng,
+) -> tuple[int, int, dict]:
+    keys = [item.value for item in EdgeProps]
+    vals = rng.uniform(size=(len(keys),))
+    properties = Properties()
+    properties.from_keys_and_values(keys=keys, values=vals)
+    annotation = rng.choice(
+        [Annotation.TRUE_NEGATIVE, Annotation.TRUE_POSITIVE],
+    )
+    attribute_dict = {
+        GraphAttrs.EDGE_GROUND_TRUTH: annotation,
+        GraphAttrs.EDGE_PROPERTIES: properties,
+    }
+    return (src, dst, attribute_dict)
+
+
+def random_image_and_graph(
+    rng,
+    *,
+    num_nodes: int = 4,
+    image_size: tuple[int] = (128, 128),
+    feature_ndim: int = 512,
+) -> tuple[npt.NDArray, list[nx.Graph]]:
+    """Create a random image and graph."""
+    # Create the graph's nodes & edges:
+    df, node_coords = create_nodes(num_nodes, feature_ndim, rng, image_size)
+    graph = graph_from_dataframe(df, triangulate=True)
+
+    # Multiply node embeddings by graph Laplacian:
+    graph = LaplacianEmbedder(graph=graph).transform_feature_embeddings()
+
+    # Calculate edge properties:
+    graph = EdgePropertyCruncher(graph=graph).process()
+
+    graph.update(
+        edges=[create_edges(src, dst, rng) for src, dst in graph.edges]
+    )
+    # Create an accompanying image:
+    image = np.zeros(image_size, dtype=np.uint16)
+    image[tuple(node_coords[:, 1]), tuple(node_coords[:, 0])] = 1
+
+    return image, graph
 
 
 @pytest.fixture(scope="session")
@@ -28,7 +104,7 @@ def simple_graph_dataframe(default_rng) -> pd.DataFrame:
         {
             GraphAttrs.NODE_X: [0.0, 1.0, 2.0],
             GraphAttrs.NODE_Y: [0.0, 1.0, 0.0],
-            GraphAttrs.NODE_FEATURES: features,
+            GraphAttrs.NODE_IMG_EMBEDDING: features,
             GraphAttrs.NODE_GROUND_TRUTH: [1, 1, 1],
             GraphAttrs.NODE_CONFIDENCE: [0.9, 0.1, 0.8],
         }
@@ -40,6 +116,16 @@ def simple_graph_dataframe(default_rng) -> pd.DataFrame:
 def simple_graph(simple_graph_dataframe) -> nx.Graph:
     """Fixture for a simple graph."""
     graph = graph_from_dataframe(simple_graph_dataframe)
+
+    # Calculate node features:
+    print(graph.nodes()[0])
+
+    # Multiply node embeddings by graph Laplacian:
+    graph = LaplacianEmbedder(graph=graph).transform_feature_embeddings()
+
+    # Calculate edge properties:
+    graph = EdgePropertyCruncher(graph=graph).process()
+
     return graph
 
 
@@ -52,9 +138,12 @@ def mrc_image_and_annotations_dir(tmp_path_factory, default_rng) -> Path:
 
     tmp_data_dir = Path(tmp_path_factory.mktemp("data"))
     num_images = 10
+    feature_ndim = 512
 
     for idx in range(num_images):
-        image, graph = random_image_and_graph(default_rng)
+        image, graph = random_image_and_graph(
+            default_rng, feature_ndim=feature_ndim
+        )
 
         image_fn = tmp_data_dir / f"image_{idx}.mrc"
         grace_fn = tmp_data_dir / f"image_{idx}.grace"
@@ -72,11 +161,11 @@ def mrc_image_and_annotations_dir(tmp_path_factory, default_rng) -> Path:
     return tmp_data_dir
 
 
-class SimpleExtractor(nn.Module):
+class SimpleExtractor(torch.nn.Module):
     def forward(self, x):
         return torch.rand(x.size(0), 2)
 
 
 @pytest.fixture(scope="session")
-def simple_extractor() -> nn.Module:
+def simple_extractor() -> torch.nn.Module:
     return SimpleExtractor()

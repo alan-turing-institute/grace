@@ -9,8 +9,10 @@ import tifffile
 import mrcfile
 
 from grace.io import read_graph
-from grace.base import GraphAttrs, Annotation
 from grace.styling import LOGGER
+from grace.base import GraphAttrs, Annotation
+from grace.models.property_cruncher import EdgePropertyCruncher
+from grace.models.graph_laplacian import LaplacianEmbedder
 
 import torch
 from torch.utils.data import Dataset
@@ -51,8 +53,8 @@ class ImageGraphDataset(Dataset):
         *,
         transform: Callable = lambda x, g: (x, g),
         image_filetype: str = "mrc",
-        keep_node_unknown_labels: bool = False,
-        keep_edge_unknown_labels: bool = False,
+        keep_node_unknown_labels: bool = True,
+        keep_edge_unknown_labels: bool = True,
         verbose: bool = True,
     ) -> None:
         self.image_reader_fn = FILETYPES[image_filetype]
@@ -121,7 +123,17 @@ class ImageGraphDataset(Dataset):
         target["annotation"] = grace_dataset.annotation
         assert img_path.stem == target["metadata"]["image_filename"]
 
+        # Calculate node features:
         image, target = self.transform(image, target)
+
+        # Multiply node embeddings by graph Laplacian:
+        # NOTE: This is to make each node aware of its neighbourhood:
+        LE = LaplacianEmbedder(graph=target["graph"])
+        target["graph"] = LE.transform_feature_embeddings()
+
+        # Calculate edge properties:
+        EPC = EdgePropertyCruncher(graph=target["graph"])
+        target["graph"] = EPC.process()
 
         return image, target
 

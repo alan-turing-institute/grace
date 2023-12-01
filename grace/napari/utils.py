@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 import enum
 import networkx as nx
 import numpy as np
@@ -26,7 +24,7 @@ def color_edges(graph: nx.Graph) -> str:
     return edge_colors
 
 
-def graph_to_napari_layers(graph: nx.Graph) -> Tuple[npt.NDArray, npt.NDArray]:
+def graph_to_napari_layers(graph: nx.Graph) -> tuple[npt.NDArray, npt.NDArray]:
     """Convert a networkx graph to a napari compatible layer.
 
     Parameters
@@ -56,7 +54,7 @@ def cut_graph_using_mask(
     mask: np.ndarray,
     *,
     update_graph: bool = True,
-) -> Tuple[List[int], List[int], List[int]]:
+) -> tuple[list[int], list[int], list[int]]:
     """Given a binary mask, cut the graph to contain only edges that are within
     the mask.
 

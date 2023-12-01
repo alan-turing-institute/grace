@@ -11,59 +11,125 @@ from grace.styling import LOGGER
 
 @dataclass
 class Config:
+    # Paths to inputs & outputs:
     train_image_dir: Optional[os.PathLike] = None
     train_grace_dir: Optional[os.PathLike] = None
     valid_image_dir: Optional[os.PathLike] = None
     valid_grace_dir: Optional[os.PathLike] = None
     infer_image_dir: Optional[os.PathLike] = None
     infer_grace_dir: Optional[os.PathLike] = None
-    extractor_fn: Optional[os.PathLike] = None
     log_dir: Optional[os.PathLike] = None
     run_dir: Optional[os.PathLike] = log_dir
+
+    # Feature extraction:
     filetype: str = "mrc"
-    normalize: tuple[bool] = (False, False)
-    img_graph_augs: list[str] = field(
-        default_factory=lambda: [
-            "random_edge_addition_and_removal",
-            "random_xy_translation",
-            "random_image_graph_rotate",
-        ]
-    )
-    img_graph_aug_params: list[dict[str, Any]] = field(
-        default_factory=lambda: [{}, {}, {}]
-    )
-    patch_augs: list[str] = field(
-        default_factory=lambda: [
-            "random_edge_crop",
-        ]
-    )
-    patch_aug_params: list[dict[str, Any]] = field(
-        default_factory=lambda: [{}]
-    )
-    patch_size: tuple[int] = (224, 224)
-    keep_patch_fraction: float = 1.0
     keep_node_unknown_labels: bool = False
     keep_edge_unknown_labels: bool = False
-    feature_dim: int = 2048
 
+    # Feature extraction:
+    extractor_fn: Optional[os.PathLike] = None
+    patch_size: tuple[int] = (224, 224)
+    normalize: bool = False
+    laplacian: bool = True
+    # HACK: set attribute: feature_dim: int = 2048
+
+    # Augmentations:
+    # img_graph_augs: list[str] = field(
+    #     default_factory=lambda: [
+    #         "random_edge_addition_and_removal",
+    #         "random_xy_translation",
+    #         "random_image_graph_rotate",
+    #     ]
+    # )
+    # img_graph_aug_params: list[dict[str, Any]] = field(
+    #     default_factory=lambda: [{}, {}, {}]
+    # )
+    # patch_augs: list[str] = field(
+    #     default_factory=lambda: [
+    #         "random_edge_crop",
+    #     ]
+    # )
+    # patch_aug_params: list[dict[str, Any]] = field(
+    #     default_factory=lambda: [{}]
+    # )
+    # keep_patch_fraction: float = 1.0
+
+    # Classifier architecture setup
     classifier_type: str = "GCN"
+    num_attention_heads: int = 1
+
     num_node_classes: int = 2
     num_edge_classes: int = 2
+    hidden_graph_channels: list[int] = field(
+        default_factory=lambda: [1024, 256, 64]
+    )
+    hidden_dense_channels: list[int] = field(
+        default_factory=lambda: [1024, 256, 64]
+    )
+
+    # Subgraph dataset builder:
+    batch_size: int = 64
+    num_hops: int = 1
+    connection: str = "spiderweb"
+
+    # Training run hyperparameters:
     epochs: int = 100
-    hidden_channels: list[int] = field(default_factory=lambda: [1024, 256, 64])
+    dropout: float = 0.2
+    learning_rate: float = 0.001
+    weight_decay: float = 0.0
+
+    # Learning rate scheduler:
+    scheduler_type: str = "none"
+    scheduler_step: int = 1
+    scheduler_gamma: float = 1.0
+
+    # Performance evaluation:
     metrics_classifier: list[str] = field(
         default_factory=lambda: ["accuracy", "f1_score", "confusion_matrix"]
     )
     metrics_objects: list[str] = field(
         default_factory=lambda: ["exact", "approx"]
     )
-    dropout: float = 0.2
-    batch_size: int = 64
-    learning_rate: float = 0.001
+
+    # Validation & visualisation:
     tensorboard_update_frequency: int = 1
     valid_graph_ploter_frequency: int = 1
     animate_valid_progress: bool = False
     visualise_tsne_manifold: bool = False
+
+    @property
+    def node_embedding_ndim(self) -> int:
+        # Set attribute for number of feature dimensions:
+        if self.extractor_fn == "None" or self.extractor_fn == Path("None"):
+            self.extractor_fn = None
+
+        if self.extractor_fn is None:
+            ndim = 4
+        else:
+            if not str(self.extractor_fn).endswith(".pt"):
+                raise ExtractorNotDefinedError(path_name=self.extractor_fn)
+
+            ext_stem = self.extractor_fn.stem.lower()
+            if not ext_stem.startswith("resnet"):
+                raise ExtractorNotDefinedError(path_name=self.extractor_fn)
+
+            else:
+                if ext_stem.endswith("18") or ext_stem.endswith("34"):
+                    ndim = 512
+                elif (
+                    ext_stem.endswith("50")
+                    or ext_stem.endswith("101")
+                    or ext_stem.endswith("152")
+                ):
+                    ndim = 2048
+                else:
+                    raise ExtractorNotDefinedError(path_name=self.extractor_fn)
+
+        # Double if Laplacian embeddings are to be used:
+        if self.laplacian is True:
+            return ndim * 2
+        else:
+            return ndim
 
 
 def load_config_params(params_file: Union[str, Path]) -> Config:
@@ -148,17 +214,33 @@ def validate_required_config_hparams(config: Config) -> None:
         raise PathNotDefinedError(path_name=dr)
 
     # Check extractor is there:
-    if not config.extractor_fn.is_file():
-        raise PathNotDefinedError(path_name=dr)
+    if config.extractor_fn is not None:
+        if not config.extractor_fn.is_file():
+            raise PathNotDefinedError(path_name=dr)
 
-    # Define which metrics to calculate:
+    # Check that hidden_channels are all integers:
+    assert all(isinstance(ch, int) for ch in config.hidden_graph_channels)
+    assert all(isinstance(ch, int) for ch in config.hidden_dense_channels)
+
+    # Validate the learning rate schedule is implemented:
+    assert config.scheduler_type in {"none", "step", "expo"}
+
+    # Define which object metrics to calculate:
+    for i in range(len(config.metrics_classifier)):
+        m = config.metrics_classifier[i].lower()
+        config.metrics_classifier[i] = m
+    assert all(
+        m in {"accuracy", "f1_score", "confusion_matrix"}
+        for m in config.metrics_classifier
+    )
+
+    # Define which object metrics to calculate:
     for i in range(len(config.metrics_objects)):
-        m = config.metrics_objects[i].upper()
-        if m == "APPROXIMATE":
-            m = "APPROX"
+        m = config.metrics_objects[i].lower()
+        if m == "approximate":
+            m = "approx"
         config.metrics_objects[i] = m
-
-    # Make sure saving file suffix is expected:
+    assert all(m in {"exact", "approx"} for m in config.metrics_objects)
 
     # HACK: not automated yet:
     if config.animate_valid_progress is True:
@@ -181,19 +263,22 @@ def write_config_file(config: Config, filetype: str = "json") -> None:
         setattr(config, "run_dir", Path(config.run_dir))
 
     fn = config.run_dir / f"config_hyperparams.{filetype}"
-    write_params_as_file_with_suffix(params, fn)
+    write_file_with_suffix(params, fn)
 
 
-def write_params_as_file_with_suffix(
-    parameters_dict: dict[Any], filename: str | Path
+def write_file_with_suffix(
+    parameters_dict: dict[Any],
+    filename: str | Path,
+    convert_types: bool = True,
 ) -> None:
     if isinstance(filename, str):
         filename = Path(filename)
 
     if filename.suffix == ".json":
-        # Convert all params to strings:
-        for attr, param in parameters_dict.items():
-            parameters_dict[attr] = str(param)
+        if convert_types is True:
+            # Convert all params to strings:
+            for attr, param in parameters_dict.items():
+                parameters_dict[attr] = str(param)
         # Write the file out:
         with open(filename, "w") as outfile:
             json.dump(
@@ -203,14 +288,15 @@ def write_params_as_file_with_suffix(
             )
 
     elif filename.suffix == ".yaml":
-        # Convert all params to yaml-parsable types:
-        for attr, param in parameters_dict.items():
-            if isinstance(param, Path):
-                parameters_dict[attr] = str(param)
-            elif isinstance(param, tuple):
-                parameters_dict[attr] = list(param)
-            else:
-                parameters_dict[attr] = param
+        if convert_types is True:
+            # Convert all params to yaml-parsable types:
+            for attr, param in parameters_dict.items():
+                if isinstance(param, Path):
+                    parameters_dict[attr] = str(param)
+                elif isinstance(param, tuple):
+                    parameters_dict[attr] = list(param)
+                else:
+                    parameters_dict[attr] = param
         # Write the file out in human-readable form:
         with open(filename, "w") as outfile:
             yaml.dump(
@@ -224,11 +310,19 @@ def write_params_as_file_with_suffix(
         ValueError("Filetype suffix must be 'json' or 'yaml'.")
 
 
+class EmptyDirectoryError(Exception):
+    def __init__(self, path_name):
+        super().__init__(f"The path '{path_name}' is empty.")
+
+
 class PathNotDefinedError(Exception):
     def __init__(self, path_name):
         super().__init__(f"The path '{path_name}' is not defined.")
 
 
-class EmptyDirectoryError(Exception):
+class ExtractorNotDefinedError(Exception):
     def __init__(self, path_name):
-        super().__init__(f"The path '{path_name}' is empty.")
+        super().__init__(
+            f"The extractor '{path_name}' is not defined. "
+            "Consider renaming your Resnet to 'resnetXX.pt'"
+        )

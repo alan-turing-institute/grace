@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 import enum
 import networkx as nx
 import numpy as np
@@ -8,6 +7,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from typing import Any
+from dataclasses import dataclass
 from scipy.spatial import Delaunay
 
 
@@ -19,12 +19,14 @@ class GraphAttrs(str, enum.Enum):
     NODE_Y = "y"
     NODE_GROUND_TRUTH = "node_ground_truth"
     NODE_PREDICTION = "node_prediction"
-    NODE_FEATURES = "features"
+    NODE_IMG_EMBEDDING = "node_image_patch_latent_embedding"
+    NODE_ENV_EMBEDDING = "laplacian_matrix_multiplied_embedding"
     NODE_CONFIDENCE = "confidence"
     EDGE_SOURCE = "source"
     EDGE_TARGET = "target"
     EDGE_GROUND_TRUTH = "edge_ground_truth"
     EDGE_PREDICTION = "edge_prediction"
+    EDGE_PROPERTIES = "edge_properties"
 
 
 class Annotation(enum.IntEnum):
@@ -35,7 +37,7 @@ class Annotation(enum.IntEnum):
     UNKNOWN = 2
 
 
-@dataclasses.dataclass
+@dataclass
 class Prediction:
     """Prediction dataclass all normalised softmax class probabilities.
 
@@ -87,6 +89,75 @@ class Prediction:
     @property
     def prob_UNKNOWN(self) -> float:
         return self.softmax_probs[Annotation.UNKNOWN]
+
+
+@enum.unique
+class EdgeProps(str, enum.Enum):
+    """Ordered list of edge properties to be used for classifier training."""
+
+    EDGE_LENGTH = "edge_length_nrm"
+    EDGE_ORIENT = "edge_orient_rad"
+    EAST_NEIGHBOUR_LENGTH = "east_to_mid_length_nrm"
+    WEST_NEIGHBOUR_LENGTH = "west_to_mid_length_nrm"
+    EAST_NEIGHBOUR_ORIENT = "east_to_mid_orient_rad"
+    WEST_NEIGHBOUR_ORIENT = "west_to_mid_orient_rad"
+    EAST_TRIANGLE_AREA = "east_triangle_area_nrm"
+    WEST_TRIANGLE_AREA = "west_triangle_area_nrm"
+    EAST_DISTANCE = "east_to_mid_length_rel"
+    WEST_DISTANCE = "west_to_mid_length_rel"
+
+
+@enum.unique
+class PointCoords(str, enum.Enum):
+    """Ordered list of relative point positions (x, y coords) in the graph."""
+
+    SOUTH_POS_X_REL = "south_pos_x_rel"
+    SOUTH_POS_Y_REL = "south_pos_y_rel"
+    NORTH_POS_X_REL = "north_pos_x_rel"
+    NORTH_POS_Y_REL = "north_pos_y_rel"
+    MID_POS_X_REL = "mid_pos_x_rel"
+    MID_POS_Y_REL = "mid_pos_y_rel"
+    EAST_POS_X_REL = "east_pos_x_rel"
+    EAST_POS_Y_REL = "east_pos_y_rel"
+    WEST_POS_X_REL = "west_pos_x_rel"
+    WEST_POS_Y_REL = "west_pos_y_rel"
+
+
+@dataclass
+class Properties:
+    """Structure to organise the key: value pairs of EdgeProps properties."""
+
+    properties_dict: dict[str, float] = None
+
+    @property
+    def property_keys(self) -> list[str]:
+        return list(self.properties_dict.keys())
+
+    @property
+    def property_vals(self) -> list[float]:
+        return list(self.properties_dict.values())
+
+    @property
+    def property_training_data(
+        self, include_relative_coords: bool = False
+    ) -> npt.NDArray:
+        if include_relative_coords is False:
+            return np.stack(
+                [self.properties_dict[prop] for prop in EdgeProps], axis=0
+            )
+        else:
+            keys = list(EdgeProps) + list(PointCoords)
+            return np.stack(
+                [self.properties_dict[prop] for prop in keys], axis=0
+            )
+
+    def from_keys_and_values(
+        self, keys: list[str], values: list[float]
+    ) -> None:
+        assert len(keys) == len(values)
+        assert all(isinstance(k, str) for k in keys)
+        assert all(isinstance(v, (float, np.floating)) for v in values)
+        self.properties_dict = {k: v for k, v in zip(keys, values)}
 
 
 def _map_annotation(annotation: int | Annotation) -> Annotation:

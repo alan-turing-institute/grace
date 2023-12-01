@@ -30,34 +30,45 @@ patch_augs: []              # see 'grace.utils/augment_image.py' for full option
 patch_aug_params: []
 keep_patch_fraction: 1.0    # original patch image ration to include in training
 
+# Subgraph dataset builder:
+batch_size: 512
+num_hops: 1
+connection: spiderweb
+
 # Classifier architecture setup
-classifier_type: GCN
+classifier_type: GAT
+num_attention_heads: 1
 num_node_classes: 2
 num_edge_classes: 2
-hidden_channels:
+hidden_graph_channels:
   - 512
+#  - 64
+hidden_dense_channels:
   - 128
-  - 32
+#  - 64
 
 # Training run hyperparameters
 epochs: 500
 dropout: 0.0
-batch_size: 512
 learning_rate: 0.05
+weight_decay: 0.0
 
-# Training Tensorboard logging:
-metrics_classifier:
-  - accuracy
-  - f1_score
-  - confusion_matrix
-tensorboard_update_frequency: 1  # stores loss / metrics output every x epochs
+# Learning rate scheduler:
+scheduler_type: expo
+scheduler_step: 5
+scheduler_gamma: 0.99
 
 # Validation monitoring:
+tensorboard_update_frequency: 1  # stores loss / metrics output every X epochs
 valid_graph_ploter_frequency: 20
 animate_valid_progress: False
 visualise_tsne_manifold: False
 
-# Optimisation evaluation:
+# Performance metrics evaluation:
+metrics_classifier:
+  - accuracy
+  - f1_score
+  - confusion_matrix
 metrics_objects:
   - exact
   - approx

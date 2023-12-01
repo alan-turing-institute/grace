@@ -1,4 +1,4 @@
-from typing import List, Callable
+from typing import Callable
 
 from grace.training.config import Config
 from grace.utils.augment_graph import (
@@ -35,7 +35,7 @@ class ImageGraphCompose:
 def get_transforms(
     config: Config,
     group: str,
-) -> List[Callable]:
+) -> list[Callable]:
     if group not in ["patch", "graph"]:
         raise ValueError("group must be either 'patch' or 'graph'.")
 

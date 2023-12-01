@@ -9,6 +9,7 @@ from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
     confusion_matrix,
+    roc_auc_score,
 )
 
 
@@ -101,17 +102,27 @@ def confusion_matrix_metric(
     )
 
     # Visualise confusion matrices:
-    sn.set_theme(font="Helvetica", font_scale=2)
     fig_node = plt.figure(figsize=figsize)
-    sn.heatmap(df_node, annot=True, vmin=0.0, vmax=1.0)
+    sn.heatmap(df_node, annot=True, annot_kws={"size": 40}, vmin=0.0, vmax=1.0)
     fig_edge = plt.figure(figsize=figsize)
-    sn.heatmap(df_edge, annot=True, vmin=0.0, vmax=1.0)
+    sn.heatmap(df_edge, annot=True, annot_kws={"size": 40}, vmin=0.0, vmax=1.0)
 
     for fig in (fig_node, fig_edge):
         fig.set_figwidth(figsize[0])
         fig.set_figheight(figsize[1])
 
     return fig_node, fig_edge
+
+
+def safe_roc_auc_score(
+    y_true: torch.Tensor,
+    y_score: torch.Tensor,
+):
+    unique_classes = len(set(y_true))
+    if unique_classes > 1:
+        return roc_auc_score(y_true=y_true, y_score=y_score)
+    else:
+        return 0.0
 
 
 METRICS = {

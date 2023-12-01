@@ -81,8 +81,8 @@ def _build_matrices(
 
     # # some sanity checks while debugging
     # assert len(rows) == len(cols)
-    # assert all([isinstance(x, int) for x in rows])
-    # assert all([isinstance(x, int) for x in cols])
+    # assert all(isinstance(x, int) for x in rows)
+    # assert all(isinstance(x, int) for x in cols)
 
     # A = spmatrix([1.0]*len(rows), cols, rows, (2 * N, n_hypotheses), "d")
     # rho = matrix([h.rho for h in hypotheses], (n_hypotheses, 1), "d")
