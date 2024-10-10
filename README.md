@@ -167,6 +167,7 @@ More details about how this type of graph representation analysis could be appli
 + 👩‍💻 [Kristina Ulicna](https://github.com/KristinaUlicna "KristinaUlicna")
 + 👨‍💻 [Christorpher J Soelistyo](https://github.com/chris-soelistyo "chris-soelistyo")
 + 👩‍💻 [Camila Rangel Smith](https://github.com/crangelsmith "crangelsmith")
++ 👩‍💻 [Marjan Famili](https://github.com/marjanfamili "marjanfamili")
 + 👨‍💻 [Alan R Lowe](https://github.com/quantumjot "quantumjot")
 
 
